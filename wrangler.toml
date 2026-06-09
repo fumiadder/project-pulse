@@ -1,0 +1,7 @@
+name = "project-pulse"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "DB"
+id = "9f5273356cf2488c981b118cc3662f97"

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+.wrangler/
+*.local
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-wal
+*.db-shm
+ssl/
+.DS_Store

@@ -1,0 +1,253 @@
+/* ============================================
+   Project Pulse - Dark Sci-Fi Theme
+   ============================================ */
+
+/* --- Google Fonts Import --- */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* --- Tailwind Directives --- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   CSS Custom Properties (Design Tokens)
+   ============================================ */
+:root {
+  /* Dark sci-fi palette */
+  --bg-primary: #0b1120;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1e293b;
+
+  /* Accent colors */
+  --accent-cyan: #00d4ff;
+  --accent-green: #00ff88;
+  --accent-orange: #ff8c00;
+  --accent-red: #ff3366;
+  --accent-purple: #a855f7;
+
+  /* Text */
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Border */
+  --border-color: #1e293b;
+  --border-hover: #334155;
+
+  /* shadcn/ui CSS variable overrides (dark theme) */
+  --background: 222 47% 11%;
+  --foreground: 214 32% 91%;
+  --card: 220 21% 9%;
+  --card-foreground: 214 32% 91%;
+  --popover: 220 21% 9%;
+  --popover-foreground: 214 32% 91%;
+  --primary: 187 100% 50%;
+  --primary-foreground: 222 47% 11%;
+  --secondary: 215 28% 17%;
+  --secondary-foreground: 214 32% 91%;
+  --muted: 215 28% 17%;
+  --muted-foreground: 215 20% 55%;
+  --accent: 215 28% 17%;
+  --accent-foreground: 214 32% 91%;
+  --destructive: 340 100% 60%;
+  --destructive-foreground: 214 32% 91%;
+  --border: 215 28% 17%;
+  --input: 215 28% 17%;
+  --ring: 187 100% 50%;
+  --radius: 0.5rem;
+
+  /* Chart colors */
+  --chart-1: #00d4ff;
+  --chart-2: #00ff88;
+  --chart-3: #ff8c00;
+  --chart-4: #ff3366;
+  --chart-5: #a855f7;
+
+  /* Sidebar */
+  --sidebar-background: 222 47% 8%;
+  --sidebar-foreground: 214 32% 91%;
+  --sidebar-primary: 187 100% 50%;
+  --sidebar-primary-foreground: 222 47% 11%;
+  --sidebar-accent: 215 28% 17%;
+  --sidebar-accent-foreground: 214 32% 91%;
+  --sidebar-border: 215 28% 17%;
+  --sidebar-ring: 187 100% 50%;
+}
+
+/* ============================================
+   Base Layer
+   ============================================ */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  /* Grid pattern overlay on body */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+      linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ensure content sits above the grid overlay */
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: rgba(0, 212, 255, 0.3);
+    color: #f1f5f9;
+  }
+}
+
+/* ============================================
+   Custom Scrollbar
+   ============================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hover) var(--bg-primary);
+}
+
+/* ============================================
+   Component Utilities
+   ============================================ */
+@layer components {
+  /* Glow effects */
+  .glow-cyan {
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3), 0 0 30px rgba(0, 212, 255, 0.1);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3), 0 0 30px rgba(0, 255, 136, 0.1);
+  }
+
+  .glow-orange {
+    box-shadow: 0 0 15px rgba(255, 140, 0, 0.3), 0 0 30px rgba(255, 140, 0, 0.1);
+  }
+
+  .glow-red {
+    box-shadow: 0 0 15px rgba(255, 51, 102, 0.3), 0 0 30px rgba(255, 51, 102, 0.1);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.3), 0 0 30px rgba(168, 85, 247, 0.1);
+  }
+
+  /* Card glass effect */
+  .card-glass {
+    background: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 212, 255, 0.1);
+    border-radius: 0.75rem;
+  }
+
+  .card-glass:hover {
+    border-color: rgba(0, 212, 255, 0.25);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.05);
+  }
+
+  /* Text gradient */
+  .text-gradient-cyan {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Pulse animation for status indicators */
+  .status-pulse {
+    animation: status-pulse 2s ease-in-out infinite;
+  }
+
+  /* Scan line effect */
+  .scan-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    animation: scan 3s ease-in-out infinite;
+    opacity: 0.5;
+  }
+}
+
+/* ============================================
+   Keyframe Animations
+   ============================================ */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes scan {
+  0% { top: 0; }
+  50% { top: 100%; }
+  100% { top: 0; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow-breathe {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 212, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+  }
+}

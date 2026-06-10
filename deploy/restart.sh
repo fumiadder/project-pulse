@@ -22,7 +22,10 @@ cp -r "$REPO_DIR/dist" "$DEPLOY_DIR/dist"
 echo "[4/5] 复制 api..."
 rm -rf "$DEPLOY_DIR/api"
 mkdir -p "$DEPLOY_DIR/api"
-cp -r "$REPO_DIR/deploy/api/*" "$DEPLOY_DIR/api/"
+# 复制 server.js, package.json, Dockerfile, migrate.js 等（跳过嵌套的 api 子目录）
+for f in "$REPO_DIR"/deploy/api/*; do
+  [ -f "$f" ] && cp "$f" "$DEPLOY_DIR/api/"
+done
 
 # 5. 重启服务
 echo "[5/5] 重启服务..."

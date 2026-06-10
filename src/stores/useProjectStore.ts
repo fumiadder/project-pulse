@@ -14,6 +14,9 @@ interface ProjectStore {
   getSubProjects: (parentId: string) => Project[];
 }
 
+const safeProjects = (state: { projects?: Project[] }): Project[] =>
+  Array.isArray(state.projects) ? state.projects : [];
+
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   projects: [],
   isLoading: false,
@@ -22,7 +25,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await api.listProjects();
-      const projects = res.data?.projects ?? (res.data as unknown as Project[]) ?? [];
+      const projects = res.data?.projects ?? (Array.isArray(res.data) ? res.data : []) ?? [];
       set({ projects });
     } finally {
       set({ isLoading: false });
@@ -31,22 +34,22 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   addProject: async (project) => {
     await api.putProject(project);
-    set(state => ({ projects: [...state.projects, project] }));
+    set(state => ({ projects: [...safeProjects(state), project] }));
   },
 
   updateProject: async (project) => {
     await api.putProject(project);
     set(state => ({
-      projects: state.projects.map(p => p.id === project.id ? project : p),
+      projects: safeProjects(state).map(p => p.id === project.id ? project : p),
     }));
   },
 
   deleteProject: async (id) => {
     await api.deleteProject(id);
-    set(state => ({ projects: state.projects.filter(p => p.id !== id) }));
+    set(state => ({ projects: safeProjects(state).filter(p => p.id !== id) }));
   },
 
-  getByOwner: (ownerName) => get().projects.filter(p => p.owner === ownerName),
-  getParentProjects: () => get().projects.filter(p => !p.parentId),
-  getSubProjects: (parentId) => get().projects.filter(p => p.parentId === parentId),
+  getByOwner: (ownerName) => safeProjects(get()).filter(p => p.owner === ownerName),
+  getParentProjects: () => safeProjects(get()).filter(p => !p.parentId),
+  getSubProjects: (parentId) => safeProjects(get()).filter(p => p.parentId === parentId),
 }));

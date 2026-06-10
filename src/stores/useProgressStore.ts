@@ -15,6 +15,10 @@ interface ProgressStore {
   getLatestByProject: (projectId: string) => Progress | undefined;
 }
 
+// Safe array getter - guards against undefined from localStorage persist
+const safeEntries = (state: { entries?: Progress[] }): Progress[] =>
+  Array.isArray(state.entries) ? state.entries : [];
+
 export const useProgressStore = create<ProgressStore>((set, get) => ({
   entries: [],
   isLoading: false,
@@ -23,7 +27,7 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await api.listProgress(userId, projectId);
-      const entries = res.data?.progress ?? (res.data as unknown as Progress[]) ?? [];
+      const entries = res.data?.progress ?? (Array.isArray(res.data) ? res.data : []) ?? [];
       set({ entries });
     } finally {
       set({ isLoading: false });
@@ -32,32 +36,32 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
 
   addEntry: async (entry) => {
     await api.putProgress(entry);
-    set(state => ({ entries: [...state.entries, entry] }));
+    set(state => ({ entries: [...safeEntries(state), entry] }));
   },
 
   updateEntry: async (entry) => {
     await api.putProgress(entry);
     set(state => ({
-      entries: state.entries.map(e => e.id === entry.id ? entry : e),
+      entries: safeEntries(state).map(e => e.id === entry.id ? entry : e),
     }));
   },
 
   deleteEntry: async (id) => {
     await api.deleteProgress(id);
-    set(state => ({ entries: state.entries.filter(e => e.id !== id) }));
+    set(state => ({ entries: safeEntries(state).filter(e => e.id !== id) }));
   },
 
   getByProject: (projectId) =>
-    get().entries.filter(e => e.projectId === projectId),
+    safeEntries(get()).filter(e => e.projectId === projectId),
 
   getByUser: (userId) =>
-    get().entries.filter(e => e.userId === userId),
+    safeEntries(get()).filter(e => e.userId === userId),
 
   getByDate: (date) =>
-    get().entries.filter(e => e.date === date),
+    safeEntries(get()).filter(e => e.date === date),
 
   getLatestByProject: (projectId) => {
-    const entries = get().entries
+    const entries = safeEntries(get())
       .filter(e => e.projectId === projectId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return entries[0];

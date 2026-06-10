@@ -59,42 +59,6 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
     }
   };
 
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        // Push projects to API
-        if (data.projects && Array.isArray(data.projects)) {
-          for (const project of data.projects) {
-            await api.putProject(project);
-          }
-        }
-
-        // Push progress entries to API
-        if (data.progress && Array.isArray(data.progress)) {
-          for (const entry of data.progress) {
-            await api.putProgress(entry);
-          }
-        }
-
-        // Reload stores
-        await useProjectStore.getState().loadProjects();
-        await useProgressStore.getState().loadProgress();
-      } catch (err) {
-        console.error('Import failed:', err);
-        alert('导入失败，请检查文件格式是否正确。');
-      }
-    };
-    input.click();
-  };
-
   return (
     <header className="flex h-14 shrink-0 items-center border-b border-border-custom bg-bg-secondary/80 backdrop-blur-md px-4 md:px-6">
       {/* Left: Menu Toggle (mobile) */}
@@ -117,16 +81,6 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
           <i className="far fa-clock text-accent-cyan/60" />
           {formatDate(currentTime)}
         </span>
-
-        {/* Import Button */}
-        <button
-          onClick={handleImport}
-          className="flex h-8 items-center gap-1.5 rounded-md border border-border-custom bg-bg-tertiary/50 px-3 text-xs text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan transition-all"
-          title="导入数据"
-        >
-          <i className="fas fa-file-import text-[10px]" />
-          <span className="hidden sm:inline">导入</span>
-        </button>
 
         {/* Export Button */}
         <button

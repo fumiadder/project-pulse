@@ -642,27 +642,6 @@ app.post('/api/migrate/kv', (req, res) => {
   }
 });
 
-// Serve frontend static files (production)
-const DIST_PATH = process.env.DIST_PATH || path.join(__dirname, '..', 'dist');
-if (fs.existsSync(DIST_PATH)) {
-  app.use(express.static(DIST_PATH));
-  // SPA fallback - must be before 404 handler
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(DIST_PATH, 'index.html'));
-  });
-}
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ success: false, error: 'Not found' });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ success: false, error: err.message });
-});
-
 // ---------- Excel Export ----------
 app.get('/api/export/excel', (req, res) => {
   try {
@@ -800,6 +779,27 @@ app.get('/api/export/excel', (req, res) => {
     console.error('Excel export error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+// Serve frontend static files (production)
+const DIST_PATH = process.env.DIST_PATH || path.join(__dirname, '..', 'dist');
+if (fs.existsSync(DIST_PATH)) {
+  app.use(express.static(DIST_PATH));
+  // SPA fallback - must be before 404 handler
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(DIST_PATH, 'index.html'));
+  });
+}
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ success: false, error: 'Not found' });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ success: false, error: err.message });
 });
 
 app.listen(PORT, '0.0.0.0', () => {

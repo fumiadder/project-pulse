@@ -800,8 +800,8 @@ app.get('/api/export/excel', (req, res) => {
           : String(val);
         lineCount = text.split('\n').length;
       }
-      // Each line ~15pt, min 18pt, max 300pt
-      row.height = Math.min(Math.max(lineCount * 15 + 4, 18), 300);
+      // Each line ~15pt, min 18pt, max 500pt
+      row.height = Math.min(Math.max(lineCount * 15 + 4, 18), 500);
     }
 
     // Auto-fit column widths
@@ -822,7 +822,9 @@ app.get('/api/export/excel', (req, res) => {
       }
       // CJK characters are wider, account for that
       const cjkCount = (String(col.header || '') + ' ').split('').filter(c => /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(c)).length;
-      col.width = Math.min(Math.max(maxLen + 2 + Math.floor(cjkCount * 0.5), 8), 60);
+      // Last column (日别进度) max 200pt, others max 60pt
+      const maxW = i === 7 ? 200 : 60;
+      col.width = Math.min(Math.max(maxLen + 2 + Math.floor(cjkCount * 0.5), 8), maxW);
     });
 
     // Set buffer and send

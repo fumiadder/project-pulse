@@ -738,21 +738,29 @@ app.get('/api/export/excel', (req, res) => {
         row.getCell(6).value = collab;
         row.getCell(7).value = sub.status || '';
 
-        // Build daily progress text
+        // Build daily progress text with today highlighted in blue
         const progs = progressByProject[sub.id] || [];
         if (progs.length > 0) {
-          const progressText = progs.map(p => {
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const richText = { richText: [] };
+          progs.forEach((p, pi) => {
             let dateStr = '';
+            let isToday = false;
             if (p.date) {
               try {
                 const d = new Date(p.date);
                 dateStr = `${d.getMonth()+1}-${d.getDate()}`;
+                isToday = p.date.slice(0, 10) === todayStr;
               } catch(e) { dateStr = p.date; }
             }
             const content = p.content || p.plan || '';
-            return `${dateStr} ${content}`;
-          }).join('\n');
-          row.getCell(8).value = progressText;
+            const part = `${dateStr} ${content}`;
+            richText.richText.push({
+              text: part + (pi < progs.length - 1 ? '\n' : ''),
+              font: isToday ? { bold: true, color: { argb: 'FF0000FF' } } : {}
+            });
+          });
+          row.getCell(8).value = richText;
         }
 
         // Apply borders
@@ -779,6 +787,22 @@ app.get('/api/export/excel', (req, res) => {
         mainCell.border = thinBorder;
       }
     });
+
+    // Auto-fit row heights based on content
+    for (let r = 2; r < rowIdx; r++) {
+      const row = sheet.getRow(r);
+      // Count newlines in daily progress (col 8) to estimate height
+      const val = row.getCell(8).value;
+      let lineCount = 1;
+      if (val != null) {
+        const text = typeof val === 'object' && val.richText
+          ? val.richText.map(r => r.text).join('')
+          : String(val);
+        lineCount = text.split('\n').length;
+      }
+      // Each line ~15pt, min 18pt, max 300pt
+      row.height = Math.min(Math.max(lineCount * 15 + 4, 18), 300);
+    }
 
     // Auto-fit column widths
     sheet.columns.forEach((col, i) => {

@@ -32,6 +32,12 @@ export function Sidebar({ collapsed, onItemClick }: SidebarProps) {
     onItemClick?.();
   };
 
+  const handleLogout = () => {
+    if (window.confirm('确定要退出登录吗？')) {
+      logout();
+    }
+  };
+
   const handleSwitchUser = () => {
     const otherUsers = users.filter((u) => u.id !== currentUser?.id);
     if (otherUsers.length > 0) {
@@ -189,7 +195,7 @@ export function Sidebar({ collapsed, onItemClick }: SidebarProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
-                        onClick={logout}
+                        onClick={handleLogout}
                         className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-red transition-colors"
                         title="退出登录"
                       >
@@ -211,7 +217,7 @@ export function Sidebar({ collapsed, onItemClick }: SidebarProps) {
                     <i className="fas fa-exchange-alt text-xs" />
                   </button>
                   <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-red transition-colors"
                     title="退出登录"
                   >

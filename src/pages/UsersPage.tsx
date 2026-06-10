@@ -19,6 +19,9 @@ export function UsersPage() {
   const { projects } = useProjectStore();
   const { entries } = useProgressStore();
 
+  // 权限检查：只有管理员可以管理用户
+  const isAdmin = currentUser?.role === '管理员';
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState<string>('项目经理');
@@ -96,6 +99,7 @@ export function UsersPage() {
           <i className="fas fa-users mr-2 text-accent-cyan" />
           用户管理
         </h2>
+        {isAdmin && (
         <button
           onClick={() => {
             setShowAddForm(!showAddForm);
@@ -106,6 +110,7 @@ export function UsersPage() {
           <i className={`fas ${showAddForm ? 'fa-times' : 'fa-plus'}`} />
           添加用户
         </button>
+        )}
       </div>
 
       {/* Error */}
@@ -247,9 +252,9 @@ export function UsersPage() {
                 </span>
               </div>
 
-              {/* Delete button */}
+              {/* Delete button - admin only */}
               <div className="flex justify-end">
-                {isDeleting ? (
+                {isAdmin && (isDeleting ? (
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <span className="text-[10px] text-accent-red">确认删除？</span>
                     <button
@@ -283,6 +288,7 @@ export function UsersPage() {
                     <i className="fas fa-trash-alt" />
                     删除
                   </button>
+                ))}
                 )}
               </div>
             </div>

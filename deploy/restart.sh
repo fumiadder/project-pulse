@@ -18,14 +18,18 @@ echo "[3/5] 复制 dist..."
 rm -rf "$DEPLOY_DIR/dist"
 cp -r "$REPO_DIR/dist" "$DEPLOY_DIR/dist"
 
-# 4. 复制 API
+# 4. 复制 API（保留 data 目录）
 echo "[4/5] 复制 api..."
+# 备份数据库
+cp -r "$DEPLOY_DIR/api/data" /tmp/pp-data-backup 2>/dev/null || true
 rm -rf "$DEPLOY_DIR/api"
 mkdir -p "$DEPLOY_DIR/api"
 # 复制 server.js, package.json, Dockerfile, migrate.js 等（跳过嵌套的 api 子目录）
 for f in "$REPO_DIR"/deploy/api/*; do
   [ -f "$f" ] && cp "$f" "$DEPLOY_DIR/api/"
 done
+# 恢复数据库
+mv /tmp/pp-data-backup "$DEPLOY_DIR/api/data" 2>/dev/null || true
 
 # 5. 重启服务
 echo "[5/5] 重启服务..."

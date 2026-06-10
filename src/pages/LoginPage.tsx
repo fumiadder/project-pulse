@@ -17,7 +17,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function LoginPage() {
-  const { login } = useUserStore();
+  const { login, users, loadUsers } = useUserStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -43,13 +43,17 @@ export function LoginPage() {
 
     setLoading(true);
 
-    // Simulate a brief delay for UX
-    setTimeout(() => {
+    const tryLogin = async () => {
+      // Ensure users are loaded
+      if (users.length === 0) {
+        await loadUsers();
+      }
+      // Simulate a brief delay for UX
+      await new Promise(r => setTimeout(r, 300));
       const result = login(username.trim(), password);
       if (result !== 'ok') {
         setError(ERROR_MESSAGES[result] ?? '登录失败');
       } else {
-        // Save credentials if remember me is checked
         if (remember) {
           const creds: SavedCredentials = {
             username: username.trim(),
@@ -60,7 +64,9 @@ export function LoginPage() {
         }
       }
       setLoading(false);
-    }, 300);
+    };
+
+    tryLogin();
   };
 
   // On mount: check for saved credentials and auto-login
@@ -68,38 +74,47 @@ export function LoginPage() {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    try {
-      const raw = localStorage.getItem(REMEMBER_KEY);
-      if (!raw) return;
+    const tryAutoLogin = async () => {
+      try {
+        const raw = localStorage.getItem(REMEMBER_KEY);
+        if (!raw) return;
 
-      const creds: SavedCredentials = JSON.parse(raw);
-      if (!creds.username || !creds.password || !creds.expiry) return;
+        const creds: SavedCredentials = JSON.parse(raw);
+        if (!creds.username || !creds.password || !creds.expiry) return;
 
-      // Check expiry
-      if (Date.now() > creds.expiry) {
-        localStorage.removeItem(REMEMBER_KEY);
-        return;
-      }
-
-      // Auto-fill and auto-submit
-      setUsername(creds.username);
-      setPassword(creds.password);
-      setRemember(true);
-
-      // Auto-submit login
-      setLoading(true);
-      setTimeout(() => {
-        const result = login(creds.username, creds.password);
-        if (result !== 'ok') {
-          setError(ERROR_MESSAGES[result] ?? '登录失败');
+        // Check expiry
+        if (Date.now() > creds.expiry) {
           localStorage.removeItem(REMEMBER_KEY);
+          return;
         }
-        setLoading(false);
-      }, 300);
-    } catch {
-      localStorage.removeItem(REMEMBER_KEY);
-    }
-  }, []);
+
+        // Ensure users are loaded before attempting login
+        if (users.length === 0) {
+          await loadUsers();
+        }
+
+        // Auto-fill and auto-submit
+        setUsername(creds.username);
+        setPassword(creds.password);
+        setRemember(true);
+
+        // Auto-submit login
+        setLoading(true);
+        setTimeout(() => {
+          const result = login(creds.username, creds.password);
+          if (result !== 'ok') {
+            setError(ERROR_MESSAGES[result] ?? '登录失败');
+            localStorage.removeItem(REMEMBER_KEY);
+          }
+          setLoading(false);
+        }, 300);
+      } catch {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    };
+
+    tryAutoLogin();
+  }, [users.length, loadUsers]);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-bg-primary p-4">

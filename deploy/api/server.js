@@ -567,6 +567,24 @@ app.get('/hooks/status', (req, res) => {
 });
 
 // ---------- Data Migration from KV ----------
+// Sanitize row: convert non-primitive fields to JSON strings for SQLite
+function sanitizeRow(row) {
+  const out = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v === null || v === undefined) {
+      out[k] = null;
+    } else if (typeof v === 'number' || typeof v === 'string' || typeof v === 'bigint') {
+      out[k] = v;
+    } else if (Buffer.isBuffer(v)) {
+      out[k] = v;
+    } else {
+      // Arrays, objects, booleans → JSON string
+      out[k] = JSON.stringify(v);
+    }
+  }
+  return out;
+}
+
 app.post('/api/migrate/kv', (req, res) => {
   try {
     const data = req.body;
@@ -591,23 +609,23 @@ app.post('/api/migrate/kv', (req, res) => {
     const transaction = db.transaction(() => {
       // Projects
       (data.projects || []).forEach(item => {
-        try { insertProject.run(item); stats.projects++; } catch (e) { stats.errors.push(`project ${item.id}: ${e.message}`); }
+        try { insertProject.run(sanitizeRow(item)); stats.projects++; } catch (e) { stats.errors.push(`project ${item.id}: ${e.message}`); }
       });
       // Progress
       (data.progress || []).forEach(item => {
-        try { insertProgress.run(item); stats.progress++; } catch (e) { stats.errors.push(`progress ${item.id}: ${e.message}`); }
+        try { insertProgress.run(sanitizeRow(item)); stats.progress++; } catch (e) { stats.errors.push(`progress ${item.id}: ${e.message}`); }
       });
       // Users
       (data.users || []).forEach(item => {
-        try { insertUser.run(item); stats.users++; } catch (e) { stats.errors.push(`user ${item.id}: ${e.message}`); }
+        try { insertUser.run(sanitizeRow(item)); stats.users++; } catch (e) { stats.errors.push(`user ${item.id}: ${e.message}`); }
       });
       // Reports
       (data.reports || []).forEach(item => {
-        try { db.prepare(`INSERT OR REPLACE INTO reports (id, userId, type, date, entryCount, generatedAt) VALUES (@id, @userId, @type, @date, @entryCount, @generatedAt)`).run(item); stats.reports++; } catch (e) { stats.errors.push(`report ${item.id}: ${e.message}`); }
+        try { db.prepare(`INSERT OR REPLACE INTO reports (id, userId, type, date, entryCount, generatedAt) VALUES (@id, @userId, @type, @date, @entryCount, @generatedAt)`).run(sanitizeRow(item)); stats.reports++; } catch (e) { stats.errors.push(`report ${item.id}: ${e.message}`); }
       });
       // Daily tags
       (data.daily_tags || []).forEach(item => {
-        try { db.prepare(`INSERT OR REPLACE INTO daily_tags (id, userId, date, tag, content, majorProject, subProject, owner, createdAt) VALUES (@id, @userId, @date, @tag, @content, @majorProject, @subProject, @owner, @createdAt)`).run(item); stats.daily_tags++; } catch (e) { stats.errors.push(`tag ${item.id}: ${e.message}`); }
+        try { db.prepare(`INSERT OR REPLACE INTO daily_tags (id, userId, date, tag, content, majorProject, subProject, owner, createdAt) VALUES (@id, @userId, @date, @tag, @content, @majorProject, @subProject, @owner, @createdAt)`).run(sanitizeRow(item)); stats.daily_tags++; } catch (e) { stats.errors.push(`tag ${item.id}: ${e.message}`); }
       });
       // Settings
       if (data.settings && typeof data.settings === 'object') {

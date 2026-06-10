@@ -42,7 +42,9 @@ async function apiFetch<T>(
       };
     }
 
-    const data: T = await response.json();
+    const json = await response.json();
+    // API returns { success: true, data: ... } - unwrap the data field
+    const data: T = json?.data !== undefined ? json.data : json;
     return { success: true, data };
   } catch (err) {
     const message =

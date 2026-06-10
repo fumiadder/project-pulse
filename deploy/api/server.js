@@ -566,6 +566,64 @@ app.get('/hooks/status', (req, res) => {
   res.json({ status: 'ok', deploying: isDeploying, repo: REPO_DIR, deployDir: DEPLOY_DIR });
 });
 
+// ---------- Data Migration from KV ----------
+app.post('/api/migrate/kv', (req, res) => {
+  try {
+    const data = req.body;
+    let stats = { projects: 0, progress: 0, users: 0, reports: 0, daily_tags: 0, settings: 0, errors: [] };
+
+    const insertProject = db.prepare(`
+      INSERT OR REPLACE INTO projects (id, userId, parentId, name, desc, owner, color, priority, status, startDate, endDate, collaborators, notes, createdAt, updatedAt)
+      VALUES (@id, @userId, @parentId, @name, @desc, @owner, @color, @priority, @status, @startDate, @endDate, @collaborators, @notes, @createdAt, @updatedAt)
+    `);
+    const insertProgress = db.prepare(`
+      INSERT OR REPLACE INTO progress (id, userId, projectId, date, percent, status, content, plan, attachments, createdAt, updatedAt)
+      VALUES (@id, @userId, @projectId, @date, @percent, @status, @content, @plan, @attachments, @createdAt, @updatedAt)
+    `);
+    const insertUser = db.prepare(`
+      INSERT OR REPLACE INTO users (id, name, role, color, createdAt)
+      VALUES (@id, @name, @role, @color, @createdAt)
+    `);
+    const insertSetting = db.prepare(`
+      INSERT OR REPLACE INTO settings (key, value) VALUES (@key, @value)
+    `);
+
+    const transaction = db.transaction(() => {
+      // Projects
+      (data.projects || []).forEach(item => {
+        try { insertProject.run(item); stats.projects++; } catch (e) { stats.errors.push(`project ${item.id}: ${e.message}`); }
+      });
+      // Progress
+      (data.progress || []).forEach(item => {
+        try { insertProgress.run(item); stats.progress++; } catch (e) { stats.errors.push(`progress ${item.id}: ${e.message}`); }
+      });
+      // Users
+      (data.users || []).forEach(item => {
+        try { insertUser.run(item); stats.users++; } catch (e) { stats.errors.push(`user ${item.id}: ${e.message}`); }
+      });
+      // Reports
+      (data.reports || []).forEach(item => {
+        try { db.prepare(`INSERT OR REPLACE INTO reports (id, userId, type, date, entryCount, generatedAt) VALUES (@id, @userId, @type, @date, @entryCount, @generatedAt)`).run(item); stats.reports++; } catch (e) { stats.errors.push(`report ${item.id}: ${e.message}`); }
+      });
+      // Daily tags
+      (data.daily_tags || []).forEach(item => {
+        try { db.prepare(`INSERT OR REPLACE INTO daily_tags (id, userId, date, tag, content, majorProject, subProject, owner, createdAt) VALUES (@id, @userId, @date, @tag, @content, @majorProject, @subProject, @owner, @createdAt)`).run(item); stats.daily_tags++; } catch (e) { stats.errors.push(`tag ${item.id}: ${e.message}`); }
+      });
+      // Settings
+      if (data.settings && typeof data.settings === 'object') {
+        Object.entries(data.settings).forEach(([key, value]) => {
+          try { insertSetting.run({ key, value: typeof value === 'string' ? value : JSON.stringify(value) }); stats.settings++; } catch (e) { stats.errors.push(`setting ${key}: ${e.message}`); }
+        });
+      }
+    });
+
+    transaction();
+    res.json({ success: true, data: stats });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Not found' });

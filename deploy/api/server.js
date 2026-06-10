@@ -663,6 +663,145 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, error: err.message });
 });
 
+// ---------- Excel Export ----------
+app.get('/api/export/excel', (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('项目进度跟踪表');
+
+    // Fetch data
+    const projects = db.prepare('SELECT * FROM projects ORDER BY id').all();
+    const progress = db.prepare('SELECT * FROM progress ORDER BY projectId, date').all();
+
+    // Group projects by parent (parentId is null = main project)
+    const mainProjects = projects.filter(p => !p.parentId);
+    const subProjectsByParent = {};
+    projects.filter(p => p.parentId).forEach(p => {
+      if (!subProjectsByParent[p.parentId]) subProjectsByParent[p.parentId] = [];
+      subProjectsByParent[p.parentId].push(p);
+    });
+
+    // Group progress by projectId
+    const progressByProject = {};
+    progress.forEach(p => {
+      if (!progressByProject[p.projectId]) progressByProject[p.projectId] = [];
+      progressByProject[p.projectId].push(p);
+    });
+
+    // Styles
+    const headerFont = { bold: true, size: 11 };
+    const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
+    const thinBorder = {
+      top: { style: 'thin' }, left: { style: 'thin' },
+      bottom: { style: 'thin' }, right: { style: 'thin' }
+    };
+    const mainProjFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F4FD' } };
+
+    // Columns
+    sheet.columns = [
+      { header: '主项目', key: 'mainProject', width: 18 },
+      { header: '子项目', key: 'subProject', width: 35 },
+      { header: '开始日期', key: 'startDate', width: 12 },
+      { header: '结束日期', key: 'endDate', width: 12 },
+      { header: '责任人', key: 'owner', width: 10 },
+      { header: '协作人', key: 'collaborators', width: 18 },
+      { header: '项目状态', key: 'status', width: 10 },
+      { header: '日别进度', key: 'dailyProgress', width: 80 },
+    ];
+
+    // Apply header style
+    const headerRow = sheet.getRow(1);
+    headerRow.font = headerFont;
+    headerRow.fill = headerFill;
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.eachCell(cell => { cell.border = thinBorder; });
+
+    let rowIdx = 2;
+    mainProjects.forEach(main => {
+      const subs = subProjectsByParent[main.id] || [];
+      const startRow = rowIdx;
+      const endRow = rowIdx + Math.max(subs.length, 1) - 1;
+
+      subs.forEach((sub, i) => {
+        const row = sheet.getRow(rowIdx);
+        row.getCell(2).value = sub.name || sub.desc || '';
+        // Parse dates
+        if (sub.startDate) {
+          try {
+            const d = new Date(sub.startDate);
+            row.getCell(3).value = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+          } catch(e) { row.getCell(3).value = sub.startDate; }
+        }
+        if (sub.endDate) {
+          try {
+            const d = new Date(sub.endDate);
+            row.getCell(4).value = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+          } catch(e) { row.getCell(4).value = sub.endDate; }
+        }
+        row.getCell(5).value = sub.owner || '';
+        // Parse collaborators from JSON string if needed
+        let collab = sub.collaborators || '';
+        if (typeof collab === 'string' && collab.startsWith('[')) {
+          try { collab = JSON.parse(collab).join(', '); } catch(e) {}
+        }
+        row.getCell(6).value = collab;
+        row.getCell(7).value = sub.status || '';
+
+        // Build daily progress text
+        const progs = progressByProject[sub.id] || [];
+        if (progs.length > 0) {
+          const progressText = progs.map(p => {
+            let dateStr = '';
+            if (p.date) {
+              try {
+                const d = new Date(p.date);
+                dateStr = `${d.getMonth()+1}-${d.getDate()}`;
+              } catch(e) { dateStr = p.date; }
+            }
+            const content = p.content || p.plan || '';
+            return `${dateStr} ${content}`;
+          }).join('\n');
+          row.getCell(8).value = progressText;
+        }
+
+        // Apply borders
+        row.eachCell({ includeEmpty: true }, cell => { cell.border = thinBorder; });
+        row.alignment = { vertical: 'top', wrapText: true };
+        rowIdx++;
+      });
+
+      // If no sub-projects, add an empty row for the main project
+      if (subs.length === 0) {
+        const row = sheet.getRow(rowIdx);
+        row.eachCell({ includeEmpty: true }, cell => { cell.border = thinBorder; });
+        rowIdx++;
+      }
+
+      // Merge main project column
+      if (endRow >= startRow) {
+        sheet.mergeCells(startRow, 1, endRow, 1);
+        const mainCell = sheet.getCell(startRow, 1);
+        mainCell.value = main.name || main.desc || '';
+        mainCell.font = { bold: true, size: 11 };
+        mainCell.fill = mainProjFill;
+        mainCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        mainCell.border = thinBorder;
+      }
+    });
+
+    // Set buffer and send
+    workbook.xlsx.writeBuffer().then(buffer => {
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=project-pulse-${new Date().toISOString().slice(0,10)}.xlsx`);
+      res.send(buffer);
+    });
+  } catch (err) {
+    console.error('Excel export error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Project Pulse API listening on port ${PORT}`);
   console.log(`Database: ${DB_PATH}`);

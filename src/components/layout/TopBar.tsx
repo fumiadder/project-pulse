@@ -44,22 +44,19 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
   const title = pageTitles[activePage] || activePage;
 
   const handleExport = async () => {
-    const { projects } = useProjectStore.getState();
-    const { entries } = useProgressStore.getState();
-    const { users } = useUserStore.getState();
-    const data = {
-      projects,
-      progress: entries,
-      users,
-      exportedAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `project-pulse-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const response = await fetch('/api/export/excel');
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `project-pulse-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+    }
   };
 
   const handleImport = () => {

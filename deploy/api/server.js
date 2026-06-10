@@ -103,6 +103,23 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Helper: now ISO string
 const now = () => new Date().toISOString();
 
+// Helper: sanitize row for SQLite (convert non-primitives to JSON strings)
+function sanitizeRow(row) {
+  const out = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (v === null || v === undefined) {
+      out[k] = null;
+    } else if (typeof v === 'number' || typeof v === 'string' || typeof v === 'bigint') {
+      out[k] = v;
+    } else if (Buffer.isBuffer(v)) {
+      out[k] = v;
+    } else {
+      out[k] = JSON.stringify(v);
+    }
+  }
+  return out;
+}
+
 // ---------- Health ----------
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: now() });
@@ -139,7 +156,7 @@ app.put('/api/projects', (req, res) => {
       if (!r.id) r.id = uuidv4();
       if (!r.createdAt) r.createdAt = now();
       r.updatedAt = now();
-      insert.run(r);
+      insert.run(sanitizeRow(r));
     }
   });
   tx(items);
@@ -184,7 +201,7 @@ app.put('/api/progress', (req, res) => {
       if (!r.id) r.id = uuidv4();
       if (!r.createdAt) r.createdAt = now();
       r.updatedAt = now();
-      insert.run(r);
+      insert.run(sanitizeRow(r));
     }
   });
   tx(items);
@@ -222,7 +239,7 @@ app.put('/api/users', (req, res) => {
     for (const r of rows) {
       if (!r.id) r.id = uuidv4();
       if (!r.createdAt) r.createdAt = now();
-      insert.run(r);
+      insert.run(sanitizeRow(r));
     }
   });
   tx(items);
@@ -266,7 +283,7 @@ app.put('/api/reports', (req, res) => {
     for (const r of rows) {
       if (!r.id) r.id = uuidv4();
       if (!r.generatedAt) r.generatedAt = now();
-      insert.run(r);
+      insert.run(sanitizeRow(r));
     }
   });
   tx(items);
@@ -297,7 +314,7 @@ app.put('/api/daily_tags', (req, res) => {
     for (const r of rows) {
       if (!r.id) r.id = uuidv4();
       if (!r.createdAt) r.createdAt = now();
-      insert.run(r);
+      insert.run(sanitizeRow(r));
     }
   });
   tx(items);
@@ -568,23 +585,6 @@ app.get('/hooks/status', (req, res) => {
 
 // ---------- Data Migration from KV ----------
 // Sanitize row: convert non-primitive fields to JSON strings for SQLite
-function sanitizeRow(row) {
-  const out = {};
-  for (const [k, v] of Object.entries(row)) {
-    if (v === null || v === undefined) {
-      out[k] = null;
-    } else if (typeof v === 'number' || typeof v === 'string' || typeof v === 'bigint') {
-      out[k] = v;
-    } else if (Buffer.isBuffer(v)) {
-      out[k] = v;
-    } else {
-      // Arrays, objects, booleans → JSON string
-      out[k] = JSON.stringify(v);
-    }
-  }
-  return out;
-}
-
 app.post('/api/migrate/kv', (req, res) => {
   try {
     const data = req.body;

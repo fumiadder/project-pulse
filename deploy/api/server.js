@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -419,6 +420,79 @@ app.get('/api/debug', (req, res) => {
     counts[t.name] = db.prepare(`SELECT COUNT(*) as c FROM "${t.name}"`).get().c;
   }
   res.json({ success: true, tables: tables.map(t => t.name), counts, dbPath: DB_PATH });
+});
+
+// ---------- File Upload ----------
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dateDir = path.join(UPLOAD_DIR, new Date().toISOString().slice(0, 10));
+    if (!fs.existsSync(dateDir)) fs.mkdirSync(dateDir, { recursive: true });
+    cb(null, dateDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const id = uuidv4();
+    cb(null, `${id}${ext}`);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  fileFilter: (req, file, cb) => {
+    // Allow images, videos, documents
+    const allowed = /\.(jpg|jpeg|png|gif|webp|bmp|svg|mp4|mov|avi|mkv|webm|mp3|wav|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar|7z)$/i;
+    if (allowed.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error('File type not allowed'));
+    }
+  }
+});
+
+// Upload single file
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
+  const fileUrl = `/uploads/${new Date().toISOString().slice(0, 10)}/${req.file.filename}`;
+  const fileInfo = {
+    id: uuidv4(),
+    url: fileUrl,
+    name: req.file.originalname,
+    size: req.file.size,
+    type: req.file.mimetype,
+    uploadedAt: now()
+  };
+  res.json({ success: true, data: fileInfo });
+});
+
+// Upload multiple files
+app.post('/api/upload/multiple', upload.array('files', 10), (req, res) => {
+  if (!req.files || req.files.length === 0) return res.status(400).json({ success: false, error: 'No files uploaded' });
+  const files = req.files.map(f => ({
+    id: uuidv4(),
+    url: `/uploads/${new Date().toISOString().slice(0, 10)}/${f.filename}`,
+    name: f.originalname,
+    size: f.size,
+    type: f.mimetype,
+    uploadedAt: now()
+  }));
+  res.json({ success: true, data: files });
+});
+
+// Serve uploaded files
+app.use('/uploads', express.static(UPLOAD_DIR));
+
+// Delete uploaded file
+app.delete('/api/upload/:dateDir/:filename', (req, res) => {
+  const filePath = path.join(UPLOAD_DIR, req.params.dateDir, req.params.filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ success: false, error: 'File not found' });
+  }
 });
 
 // 404 handler

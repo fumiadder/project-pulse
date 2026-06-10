@@ -10,6 +10,7 @@ import type {
   SyncData,
   ApiResponse,
   HealthResponse,
+  UploadedFile,
 } from '@/types';
 
 // --------------------------------------------
@@ -152,3 +153,36 @@ export const api = {
 };
 
 export default api;
+
+// --------------------------------------------
+// File Upload
+// --------------------------------------------
+export async function uploadFile(file: File): Promise<ApiResponse<UploadedFile>> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const url = `${API_BASE}/upload`;
+  try {
+    const response = await fetch(url, { method: 'POST', body: formData });
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    return { success: false, error: 'Upload failed' };
+  }
+}
+
+export async function uploadFiles(files: File[]): Promise<ApiResponse<UploadedFile[]>> {
+  const formData = new FormData();
+  files.forEach(f => formData.append('files', f));
+  const url = `${API_BASE}/upload/multiple`;
+  try {
+    const response = await fetch(url, { method: 'POST', body: formData });
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    return { success: false, error: 'Upload failed' };
+  }
+}
+
+export function getFileUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}

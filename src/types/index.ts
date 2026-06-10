@@ -105,3 +105,13 @@ export interface HealthResponse {
   timestamp: string;
   version?: string;
 }
+
+/** Uploaded file metadata */
+export interface UploadedFile {
+  id: string;
+  url: string;
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
+}

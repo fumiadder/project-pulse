@@ -650,19 +650,26 @@ app.get('/api/export/excel', (req, res) => {
     const sheet = workbook.addWorksheet('项目进度跟踪表');
 
     // Fetch data
-    const projects = db.prepare('SELECT * FROM projects ORDER BY name ASC').all();
+    const projects = db.prepare('SELECT * FROM projects').all();
     const progress = db.prepare('SELECT * FROM progress ORDER BY projectId ASC, date ASC').all();
 
+    // Numeric sort helper: extract leading number from "1. xxx" or "1.1 xxx"
+    const numPrefix = (name) => {
+      const m = (name || '').match(/^(\d+(\.\d+)?)/);
+      return m ? parseFloat(m[1]) : Infinity;
+    };
+    const byNumPrefix = (a, b) => numPrefix(a.name) - numPrefix(b.name);
+
     // Group projects by parent (parentId is null = main project)
-    const mainProjects = projects.filter(p => !p.parentId);
+    const mainProjects = projects.filter(p => !p.parentId).sort(byNumPrefix);
     const subProjectsByParent = {};
     projects.filter(p => p.parentId).forEach(p => {
       if (!subProjectsByParent[p.parentId]) subProjectsByParent[p.parentId] = [];
       subProjectsByParent[p.parentId].push(p);
     });
-    // Sort sub-projects by name within each parent
+    // Sort sub-projects by numeric prefix within each parent
     for (const key of Object.keys(subProjectsByParent)) {
-      subProjectsByParent[key].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'zh-CN'));
+      subProjectsByParent[key].sort(byNumPrefix);
     }
 
     // Group progress by projectId
@@ -681,7 +688,7 @@ app.get('/api/export/excel', (req, res) => {
     };
     const mainProjFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F4FD' } };
 
-    // Columns
+    // Columns (initial widths, will auto-fit below)
     sheet.columns = [
       { header: '主项目', key: 'mainProject', width: 18 },
       { header: '子项目', key: 'subProject', width: 35 },
@@ -771,6 +778,27 @@ app.get('/api/export/excel', (req, res) => {
         mainCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         mainCell.border = thinBorder;
       }
+    });
+
+    // Auto-fit column widths
+    sheet.columns.forEach((col, i) => {
+      let maxLen = 0;
+      // Check header
+      const headerLen = (col.header || '').toString().length;
+      if (headerLen > maxLen) maxLen = headerLen;
+      // Check all data rows
+      for (let r = 2; r <= rowIdx; r++) {
+        const val = sheet.getRow(r).getCell(i + 1).value;
+        if (val != null) {
+          // For multiline content, use longest line
+          const lines = String(val).split('\n');
+          const longestLine = Math.max(...lines.map(l => l.length));
+          if (longestLine > maxLen) maxLen = longestLine;
+        }
+      }
+      // CJK characters are wider, account for that
+      const cjkCount = (String(col.header || '') + ' ').split('').filter(c => /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(c)).length;
+      col.width = Math.min(Math.max(maxLen + 2 + Math.floor(cjkCount * 0.5), 8), 60);
     });
 
     // Set buffer and send

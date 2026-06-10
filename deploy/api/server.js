@@ -9,7 +9,7 @@ const { execSync } = require('child_process');
 const multer = require('multer');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3080;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data', 'project-pulse.db');
 
 // Ensure data directory exists

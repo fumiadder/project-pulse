@@ -4,6 +4,8 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const { execSync } = require('child_process');
 const multer = require('multer');
 
 const app = express();
@@ -493,6 +495,75 @@ app.delete('/api/upload/:dateDir/:filename', (req, res) => {
   } else {
     res.status(404).json({ success: false, error: 'File not found' });
   }
+});
+
+// ---------- GitHub Webhook Auto-Deploy ----------
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'project-pulse-webhook-secret-2026';
+const REPO_DIR = process.env.REPO_DIR || '/opt/project-pulse-repo';
+const DEPLOY_DIR = process.env.DEPLOY_DIR || '/opt/project-pulse';
+let isDeploying = false;
+
+app.post('/hooks/github', (req, res) => {
+  // Verify GitHub signature
+  const sig = req.headers['x-hub-signature-256'];
+  if (!sig) return res.status(401).json({ error: 'No signature' });
+  const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET);
+  hmac.update(JSON.stringify(req.body));
+  const expected = `sha256=${hmac.digest('hex')}`;
+  if (sig !== expected) return res.status(401).json({ error: 'Invalid signature' });
+
+  // Only respond to push events on main branch
+  const event = req.headers['x-github-event'];
+  const ref = req.body?.ref;
+  if (event !== 'push' || ref !== 'refs/heads/main') {
+    return res.json({ status: 'ignored', event, ref });
+  }
+
+  res.json({ status: 'deploying' });
+
+  // Async deploy to not block the response
+  if (isDeploying) {
+    console.log('[Webhook] Deploy already in progress, skipping');
+    return;
+  }
+  isDeploying = true;
+  console.log(`[Webhook] Deploy triggered at ${new Date().toISOString()}`);
+
+  (async () => {
+    try {
+      // 1. Pull latest code
+      console.log('[Webhook] Pulling latest code...');
+      execSync(`cd ${REPO_DIR} && git pull origin main`, { stdio: 'inherit' });
+
+      // 2. Build frontend
+      console.log('[Webhook] Building frontend...');
+      execSync(`cd ${REPO_DIR} && npm run build`, { stdio: 'inherit', timeout: 120000 });
+
+      // 3. Copy dist
+      console.log('[Webhook] Copying dist...');
+      execSync(`rm -rf ${DEPLOY_DIR}/dist && cp -r ${REPO_DIR}/dist ${DEPLOY_DIR}/dist`);
+
+      // 4. Copy api
+      console.log('[Webhook] Copying api...');
+      execSync(`rm -rf ${DEPLOY_DIR}/api && mkdir -p ${DEPLOY_DIR}/api && cp -r ${REPO_DIR}/deploy/api/* ${DEPLOY_DIR}/api/`);
+
+      // 5. Restart this process
+      console.log('[Webhook] Restarting API server...');
+      // Kill self after response is sent
+      setTimeout(() => process.exit(0), 1000);
+
+      console.log('[Webhook] Deploy completed successfully');
+    } catch (err) {
+      console.error('[Webhook] Deploy failed:', err.message);
+    } finally {
+      isDeploying = false;
+    }
+  })();
+});
+
+// Webhook health check
+app.get('/hooks/status', (req, res) => {
+  res.json({ status: 'ok', deploying: isDeploying, repo: REPO_DIR, deployDir: DEPLOY_DIR });
 });
 
 // 404 handler

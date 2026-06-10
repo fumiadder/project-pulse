@@ -650,8 +650,8 @@ app.get('/api/export/excel', (req, res) => {
     const sheet = workbook.addWorksheet('项目进度跟踪表');
 
     // Fetch data
-    const projects = db.prepare('SELECT * FROM projects ORDER BY id').all();
-    const progress = db.prepare('SELECT * FROM progress ORDER BY projectId, date').all();
+    const projects = db.prepare('SELECT * FROM projects ORDER BY name ASC').all();
+    const progress = db.prepare('SELECT * FROM progress ORDER BY projectId ASC, date ASC').all();
 
     // Group projects by parent (parentId is null = main project)
     const mainProjects = projects.filter(p => !p.parentId);
@@ -660,6 +660,10 @@ app.get('/api/export/excel', (req, res) => {
       if (!subProjectsByParent[p.parentId]) subProjectsByParent[p.parentId] = [];
       subProjectsByParent[p.parentId].push(p);
     });
+    // Sort sub-projects by name within each parent
+    for (const key of Object.keys(subProjectsByParent)) {
+      subProjectsByParent[key].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'zh-CN'));
+    }
 
     // Group progress by projectId
     const progressByProject = {};

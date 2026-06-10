@@ -34,8 +34,9 @@ export const useUserStore = create<UserStore>()(
         const account = LOGIN_ACCOUNTS[username];
         if (!account) return 'username_not_found';
         if (password !== account.password) return 'password_wrong';
-        // Find user from current users list (may be empty if not loaded yet)
-        let user = get().users.find(u => u.id === account.id);
+        // Ensure users is always an array
+        const currentUsers = Array.isArray(get().users) ? get().users : [];
+        let user = currentUsers.find(u => u.id === account.id);
         // If users not loaded yet, create a temporary user object from account info
         if (!user) {
           user = {
@@ -45,10 +46,7 @@ export const useUserStore = create<UserStore>()(
             color: '#00d4ff',
             createdAt: new Date().toISOString()
           };
-          // Update users list with this user
-          if (!get().users.some(u => u.id === account.id)) {
-            set({ users: [...get().users, user] });
-          }
+          set({ users: [...currentUsers, user] });
         }
         set({ currentUser: user, isLoggedIn: true });
         localStorage.setItem('pp_current_user', account.id);
@@ -74,7 +72,7 @@ export const useUserStore = create<UserStore>()(
       loadUsers: async () => {
         try {
           const res = await api.listUsers();
-          const users = res.data?.users ?? (res.data as unknown as User[]) ?? [];
+          const users = res.data?.users ?? (Array.isArray(res.data) ? res.data : []) ?? [];
           set({ users });
           // Restore session
           const savedUserId = localStorage.getItem('pp_current_user');

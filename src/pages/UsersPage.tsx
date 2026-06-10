@@ -288,7 +288,6 @@ export function UsersPage() {
                     <i className="fas fa-trash-alt" />
                     删除
                   </button>
-                ))}
                 )}
               </div>
             </div>

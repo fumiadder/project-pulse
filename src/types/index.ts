@@ -38,6 +38,8 @@ export interface Attachment {
   size: number;
   data: string;
   isImage: boolean;
+  /** 服务器端文件 URL（通过 API 上传时使用） */
+  url?: string;
 }
 
 /** Progress / daily update entry */

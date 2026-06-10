@@ -5,6 +5,19 @@ import { StatusTag } from '@/components/shared/StatusTag';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import type { Progress, Project } from '@/types';
 
+/** 负责人颜色映射 - 用于醒目标识 */
+const ownerColorMap: Record<string, { bg: string; text: string; border: string }> = {
+  '唐宝': { bg: 'bg-amber-500/15', text: 'text-amber-400', border: 'border-amber-500/30' },
+  '周刚': { bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'border-purple-500/30' },
+  '杨利莉': { bg: 'bg-indigo-500/15', text: 'text-indigo-400', border: 'border-indigo-500/30' },
+  '常超': { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/30' },
+};
+
+/** 获取负责人样式 */
+function getOwnerStyle(owner: string): { bg: string; text: string; border: string } {
+  return ownerColorMap[owner] ?? { bg: 'bg-accent-cyan/15', text: 'text-accent-cyan', border: 'border-accent-cyan/30' };
+}
+
 function getProjectPath(projectId: string, projects: Project[]): string {
   const project = projects.find(p => p.id === projectId);
   if (!project) return '';
@@ -73,6 +86,8 @@ export function HistoryPage() {
           const project = projects.find(p => p.id === entry.projectId);
           const projectPath = getProjectPath(entry.projectId, projects);
           const isExpanded = expandedId === entry.id;
+          const owner = project?.owner ?? '';
+          const ownerStyle = getOwnerStyle(owner);
 
           return (
             <div
@@ -86,6 +101,21 @@ export function HistoryPage() {
               >
                 {/* Date */}
                 <span className="text-xs text-text-muted min-w-[80px] shrink-0">{entry.date}</span>
+
+                {/* 负责人 - 醒目显示：加粗、加大字号、颜色标识 */}
+                {owner && (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold border shrink-0 ${ownerStyle.bg} ${ownerStyle.text} ${ownerStyle.border}`}
+                  >
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{
+                        backgroundColor: ownerStyle.text.replace('text-', ''),
+                      }}
+                    />
+                    {owner}
+                  </span>
+                )}
 
                 {/* Project name */}
                 <span className="text-xs font-medium text-text-primary min-w-[120px] truncate">
@@ -141,9 +171,17 @@ export function HistoryPage() {
 
                   {/* Meta info */}
                   <div className="flex items-center gap-4 text-[10px] text-text-muted">
+                    {/* 负责人 - 醒目显示 */}
                     {project && (
-                      <span>
-                        <i className="fas fa-user mr-0.5" />
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold border ${ownerStyle.bg} ${ownerStyle.text} ${ownerStyle.border}`}
+                      >
+                        <span
+                          className="inline-block h-2 w-2 rounded-full"
+                          style={{
+                            backgroundColor: ownerStyle.text.replace('text-', ''),
+                          }}
+                        />
                         {project.owner}
                       </span>
                     )}

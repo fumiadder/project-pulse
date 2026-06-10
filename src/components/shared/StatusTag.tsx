@@ -29,7 +29,7 @@ const statusConfig: Record<
     bg: 'bg-accent-cyan/10',
     text: 'text-accent-cyan',
     dot: 'bg-accent-cyan',
-    defaultLabel: '信息',
+    defaultLabel: '未开始',
   },
 };
 

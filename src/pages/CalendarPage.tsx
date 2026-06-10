@@ -3,7 +3,15 @@ import { useProjectStore } from '@/stores/useProjectStore';
 import { useProgressStore } from '@/stores/useProgressStore';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { StatusTag } from '@/components/shared/StatusTag';
+import { ProgressEditorModal } from '@/components/modals/ProgressEditorModal';
 import type { Progress, Project, Attachment } from '@/types';
+import {
+  getWeekLabel,
+  getWeekColor,
+  getWeekBorderColor,
+  getWeekStart,
+  getWeekEnd,
+} from '@/utils/weekUtils';
 
 const ownerColorMap: Record<string, string> = {
   '唐宝': 'border-l-amber-500 bg-amber-500/10 text-amber-400',
@@ -15,11 +23,12 @@ const ownerColorMap: Record<string, string> = {
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const MAX_ITEMS_PER_DAY = 8;
 
+/** 状态选项：未开始、进行中、有风险、延期 */
 const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: 'normal', label: '正常' },
+  { value: 'info', label: '未开始' },
+  { value: 'normal', label: '进行中' },
   { value: 'warning', label: '有风险' },
   { value: 'danger', label: '延期' },
-  { value: 'info', label: '信息' },
 ];
 
 function getTodayStr(): string {
@@ -67,6 +76,13 @@ export function CalendarPage() {
   const { entries, updateEntry, deleteEntry } = useProgressStore();
   const todayStr = getTodayStr();
 
+  // 动作编辑弹窗状态（点击标签时打开 ProgressEditorModal）
+  const [progressModalOpen, setProgressModalOpen] = useState(false);
+  const [editingProgressId, setEditingProgressId] = useState<string | null>(null);
+
+  // 鼠标悬浮提示状态
+  const [tooltipInfo, setTooltipInfo] = useState<{ x: number; y: number; entry: Progress } | null>(null);
+
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
 
@@ -80,6 +96,41 @@ export function CalendarPage() {
     });
     return map;
   }, [entries]);
+
+  // 计算当前月份中每个日期对应的周别
+  const weekLabelByDate = useMemo(() => {
+    const map = new Map<string, string>();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = formatDateStr(currentYear, currentMonth, d);
+      map.set(dateStr, getWeekLabel(dateStr));
+    }
+    return map;
+  }, [currentYear, currentMonth, daysInMonth]);
+
+  // 按周别分组日期，用于渲染周别底色行
+  const weekRows = useMemo(() => {
+    const rows: { weekLabel: string; dates: string[] }[] = [];
+    let currentWeek = '';
+    let currentDates: string[] = [];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = formatDateStr(currentYear, currentMonth, d);
+      const wl = weekLabelByDate.get(dateStr) ?? '';
+      if (wl !== currentWeek) {
+        if (currentDates.length > 0) {
+          rows.push({ weekLabel: currentWeek, dates: currentDates });
+        }
+        currentWeek = wl;
+        currentDates = [dateStr];
+      } else {
+        currentDates.push(dateStr);
+      }
+    }
+    if (currentDates.length > 0) {
+      rows.push({ weekLabel: currentWeek, dates: currentDates });
+    }
+    return rows;
+  }, [currentYear, currentMonth, daysInMonth, weekLabelByDate]);
 
   const goToPrevMonth = () => {
     if (currentMonth === 0) {
@@ -188,12 +239,52 @@ export function CalendarPage() {
     }
   };
 
+  // 点击标签时打开动作编辑弹窗（ProgressEditorModal）
+  const handleTagClick = (entry: Progress) => {
+    setEditingProgressId(entry.id);
+    setProgressModalOpen(true);
+  };
+
+  const handleCloseProgressModal = () => {
+    setProgressModalOpen(false);
+    setEditingProgressId(null);
+  };
+
+  // 鼠标悬浮提示事件处理
+  const handleTagMouseEnter = (e: React.MouseEvent, entry: Progress) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipInfo({
+      x: rect.left + rect.width / 2,
+      y: rect.top - 8,
+      entry,
+    });
+  };
+
+  const handleTagMouseLeave = () => {
+    setTooltipInfo(null);
+  };
+
   const monthLabel = `${currentYear}年${currentMonth + 1}月`;
 
   // Build calendar cells
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  // 构建日期到周别的映射，用于快速查找
+  const dateToWeekMap = useMemo(() => {
+    const map = new Map<string, { weekLabel: string; bgColor: string; borderColor: string }>();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = formatDateStr(currentYear, currentMonth, d);
+      const wl = getWeekLabel(dateStr);
+      map.set(dateStr, {
+        weekLabel: wl,
+        bgColor: getWeekColor(wl),
+        borderColor: getWeekBorderColor(wl),
+      });
+    }
+    return map;
+  }, [currentYear, currentMonth, daysInMonth]);
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
@@ -228,7 +319,7 @@ export function CalendarPage() {
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-lg overflow-hidden">
+      <div className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-t-lg overflow-hidden">
         {WEEKDAYS.map((wd, i) => (
           <div
             key={i}
@@ -239,8 +330,36 @@ export function CalendarPage() {
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-lg overflow-hidden">
+      {/* 周别图例 */}
+      <div className="flex flex-wrap items-center gap-2 px-1">
+        <span className="text-[10px] text-text-muted">周别图例:</span>
+        {weekRows.map(row => (
+          <span
+            key={row.weekLabel}
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: getWeekColor(row.weekLabel),
+              border: `1px solid ${getWeekBorderColor(row.weekLabel)}`,
+              color: '#94a3b8',
+            }}
+          >
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ backgroundColor: getWeekBorderColor(row.weekLabel).replace('0.15', '0.6') }}
+            />
+            {row.weekLabel}
+            <span className="text-text-muted/60">
+              ({row.dates[0]?.slice(5)} ~ {row.dates[row.dates.length - 1]?.slice(5)})
+            </span>
+          </span>
+        ))}
+      </div>
+
+      {/* Calendar grid - 固定高度，超出部分内联滚动 */}
+      <div
+        className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-b-lg overflow-hidden overflow-y-auto scrollbar-thin"
+        style={{ maxHeight: 'calc(100vh - 260px)', minHeight: '400px' }}
+      >
         {cells.map((day, idx) => {
           if (day === null) {
             return (
@@ -254,26 +373,45 @@ export function CalendarPage() {
           const dateStr = formatDateStr(currentYear, currentMonth, day);
           const dayEntries = entriesByDate.get(dateStr) ?? [];
           const isToday = dateStr === todayStr;
+          const weekInfo = dateToWeekMap.get(dateStr);
+          const weekLabel = weekInfo?.weekLabel ?? '';
 
           return (
             <div
               key={day}
-              className={`min-h-[100px] bg-bg-secondary p-1.5 flex flex-col gap-0.5 ${
+              className={`min-h-[100px] bg-bg-secondary p-1.5 flex flex-col gap-0.5 relative ${
                 isToday ? 'ring-2 ring-accent-cyan' : ''
               }`}
+              style={{
+                backgroundColor: weekInfo?.bgColor,
+              }}
             >
-              {/* Day number */}
-              <div
-                className={`text-xs font-medium mb-0.5 ${
-                  isToday
-                    ? 'text-accent-cyan font-bold'
-                    : 'text-text-muted'
-                }`}
-              >
-                {day}
+              {/* Day number + 周别说明文字 */}
+              <div className="flex items-center justify-between mb-0.5">
+                <span
+                  className={`text-xs font-medium ${
+                    isToday
+                      ? 'text-accent-cyan font-bold'
+                      : 'text-text-muted'
+                  }`}
+                >
+                  {day}
+                </span>
+                {/* 周别说明文字 */}
+                {weekLabel && (
+                  <span
+                    className="text-[9px] font-medium px-1 py-px rounded"
+                    style={{
+                      backgroundColor: weekInfo?.borderColor,
+                      color: '#94a3b8',
+                    }}
+                  >
+                    {weekLabel}
+                  </span>
+                )}
               </div>
 
-              {/* Entries */}
+              {/* Entries - 支持点击打开动作编辑弹窗 + 悬浮提示 */}
               {dayEntries.slice(0, MAX_ITEMS_PER_DAY).map(entry => {
                 const project = projects.find(p => p.id === entry.projectId);
                 const owner = project?.owner ?? '';
@@ -283,7 +421,9 @@ export function CalendarPage() {
                 return (
                   <div
                     key={entry.id}
-                    onClick={() => setSelectedEntry(entry)}
+                    onClick={() => handleTagClick(entry)}
+                    onMouseEnter={(e) => handleTagMouseEnter(e, entry)}
+                    onMouseLeave={handleTagMouseLeave}
                     className={`border-l-2 ${colorClasses} rounded-r px-1.5 py-0.5 text-xs leading-tight cursor-pointer transition-colors hover:bg-white/5`}
                   >
                     <div className="font-medium truncate">{owner}</div>
@@ -307,7 +447,40 @@ export function CalendarPage() {
         })}
       </div>
 
-      {/* Selected Entry Detail Modal */}
+      {/* 鼠标悬浮提示（Tooltip） */}
+      {tooltipInfo && (
+        <div
+          className="fixed z-[100] pointer-events-none animate-fade-in-up"
+          style={{
+            left: tooltipInfo.x,
+            top: tooltipInfo.y,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          <div className="rounded-lg border border-border-primary/30 bg-bg-secondary shadow-xl px-3 py-2 max-w-[280px] text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <StatusTag status={tooltipInfo.entry.status} />
+              <span className="font-bold text-accent-cyan">{tooltipInfo.entry.percent}%</span>
+            </div>
+            <p className="text-text-primary leading-relaxed mb-1">
+              {tooltipInfo.entry.content || '暂无内容'}
+            </p>
+            {tooltipInfo.entry.plan && (
+              <p className="text-text-muted leading-relaxed">
+                <span className="text-text-muted/60">计划: </span>
+                {tooltipInfo.entry.plan}
+              </p>
+            )}
+            <div className="mt-1 pt-1 border-t border-border-primary/10 text-text-muted/60">
+              {getProjectPath(tooltipInfo.entry.projectId, projects)}
+              {' | '}
+              {tooltipInfo.entry.date}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Entry Detail Modal（保留原有详情弹窗） */}
       {selectedEntry && (() => {
         const project = projects.find(p => p.id === selectedEntry.projectId);
         const projectPath = getProjectPath(selectedEntry.projectId, projects);
@@ -577,6 +750,13 @@ export function CalendarPage() {
           </div>
         );
       })()}
+
+      {/* 动作编辑弹窗 - 点击标签时打开 */}
+      <ProgressEditorModal
+        open={progressModalOpen}
+        onClose={handleCloseProgressModal}
+        progressId={editingProgressId}
+      />
     </div>
   );
 }

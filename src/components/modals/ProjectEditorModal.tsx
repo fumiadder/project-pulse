@@ -25,10 +25,11 @@ const PRIORITY_OPTIONS = [
   { value: '低', label: '低' },
 ];
 
-/** Status options */
+/** 状态选项：未开始、进行中、有风险、延期 */
 const STATUS_OPTIONS = [
+  { value: '未开始', label: '未开始' },
   { value: '进行中', label: '进行中' },
-  { value: '已完成', label: '已完成' },
+  { value: '有风险', label: '有风险' },
   { value: '延期', label: '延期' },
 ];
 

@@ -34,14 +34,26 @@ export const useUserStore = create<UserStore>()(
         const account = LOGIN_ACCOUNTS[username];
         if (!account) return 'username_not_found';
         if (password !== account.password) return 'password_wrong';
-        const user = get().users.find(u => u.id === account.id);
-        if (user) {
-          set({ currentUser: user, isLoggedIn: true });
-          localStorage.setItem('pp_current_user', account.id);
-          localStorage.setItem('pp_logged_in', 'true');
-          return 'ok';
+        // Find user from current users list (may be empty if not loaded yet)
+        let user = get().users.find(u => u.id === account.id);
+        // If users not loaded yet, create a temporary user object from account info
+        if (!user) {
+          user = {
+            id: account.id,
+            name: username,
+            role: 'member',
+            color: '#00d4ff',
+            createdAt: new Date().toISOString()
+          };
+          // Update users list with this user
+          if (!get().users.some(u => u.id === account.id)) {
+            set({ users: [...get().users, user] });
+          }
         }
-        return 'user_not_loaded';
+        set({ currentUser: user, isLoggedIn: true });
+        localStorage.setItem('pp_current_user', account.id);
+        localStorage.setItem('pp_logged_in', 'true');
+        return 'ok';
       },
 
       logout: () => {

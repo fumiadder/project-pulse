@@ -542,10 +542,10 @@ export function DashboardPage() {
                     const tagStatus = latest?.status ?? mapStatusToTag(sub.status);
                     const allEntries = entries
                       .filter((e) => e.projectId === sub.id)
-                      .sort((a, b) => a.date.localeCompare(b.date)); // 按日期正序
+                      .sort((a, b) => b.date.localeCompare(a.date)); // 按日期倒序
 
-                    // 状态底色（不再使用周别底色，周别底色仅用于日别进度卡片）
-                    const statusStyle = getStatusBgStyle(sub.status, tagStatus);
+                    // 子项目卡片不使用底色
+                    // const statusStyle = getStatusBgStyle(sub.status, tagStatus);
                     const statusLabel = getStatusLabel(sub.status, tagStatus);
 
                     // 是否为滚动目标
@@ -559,7 +559,6 @@ export function DashboardPage() {
                           isScrollTarget ? 'ring-2 ring-accent-cyan/60 shadow-[0_0_20px_rgba(0,212,255,0.2)]' : ''
                         }`}
                         style={{
-                          ...statusStyle,
                         }}
                       >
                         {/* 子项目名称 + 操作按钮 */}

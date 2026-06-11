@@ -535,7 +535,7 @@ export function DashboardPage() {
 
               {/* 子项目卡片区域 - 每个主项目有独立的滚动区域，增加卡片间距 */}
               {!isCollapsed && (
-                <div className="flex gap-5 overflow-x-auto p-4 scrollbar-thin" style={{ maxHeight: '85vh' }}>
+                <div className="flex gap-5 overflow-x-auto p-4 scrollbar-thin" style={{ maxHeight: '70vh' }}>
                   {section.subProjects.map((sub) => {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;
@@ -602,7 +602,7 @@ export function DashboardPage() {
 
                         {/* 每日进度列表 - 按日期正序排列 */}
                         {allEntries.length > 0 && (
-                          <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto border-t border-border-custom/50 pt-2 scrollbar-thin">
+                          <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto border-t border-border-custom/50 pt-2 scrollbar-thin">
                             {allEntries.map((entry) => {
                               const isToday = entry.date === todayStr;
                               const entryWeek = getWeekLabel(entry.date);

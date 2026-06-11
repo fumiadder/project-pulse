@@ -85,8 +85,6 @@ export function CalendarPage() {
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [editingProgressId, setEditingProgressId] = useState<string | null>(null);
 
-  // 鼠标悬浮提示状态
-  const [tooltipInfo, setTooltipInfo] = useState<{ x: number; y: number; entry: Progress } | null>(null);
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
@@ -255,19 +253,6 @@ export function CalendarPage() {
     setEditingProgressId(null);
   };
 
-  // 鼠标悬浮提示事件处理
-  const handleTagMouseEnter = (e: React.MouseEvent, entry: Progress) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setTooltipInfo({
-      x: rect.left + rect.width / 2,
-      y: rect.top - 8,
-      entry,
-    });
-  };
-
-  const handleTagMouseLeave = () => {
-    setTooltipInfo(null);
-  };
 
   const monthLabel = `${currentYear}年${currentMonth + 1}月`;
 
@@ -431,8 +416,6 @@ export function CalendarPage() {
                   <div
                     key={entry.id}
                     onClick={() => handleTagClick(entry)}
-                    onMouseEnter={(e) => handleTagMouseEnter(e, entry)}
-                    onMouseLeave={handleTagMouseLeave}
                     className={`border-l-2 ${colorClasses} rounded-r px-1.5 py-0.5 text-xs leading-tight cursor-pointer transition-colors hover:bg-white/5`}
                   >
                     <div className="font-medium truncate">{owner}</div>
@@ -457,38 +440,6 @@ export function CalendarPage() {
         })}
       </div>
 
-      {/* 鼠标悬浮提示（Tooltip） */}
-      {tooltipInfo && (
-        <div
-          className="fixed z-[100] pointer-events-none animate-fade-in-up"
-          style={{
-            left: tooltipInfo.x,
-            top: tooltipInfo.y,
-            transform: 'translate(-50%, -100%)',
-          }}
-        >
-          <div className="rounded-lg border border-border-primary/30 bg-bg-secondary shadow-xl px-3 py-2 max-w-[280px] text-xs">
-            <div className="flex items-center gap-2 mb-1">
-              <StatusTag status={tooltipInfo.entry.status} />
-              <span className="font-bold text-accent-cyan">{tooltipInfo.entry.percent}%</span>
-            </div>
-            <p className="text-text-primary leading-relaxed mb-1">
-              {tooltipInfo.entry.content || '暂无内容'}
-            </p>
-            {tooltipInfo.entry.plan && (
-              <p className="text-text-muted leading-relaxed">
-                <span className="text-text-muted/60">计划: </span>
-                {tooltipInfo.entry.plan}
-              </p>
-            )}
-            <div className="mt-1 pt-1 border-t border-border-primary/10 text-text-muted/60">
-              {getProjectPath(tooltipInfo.entry.projectId, projects)}
-              {' | '}
-              {tooltipInfo.entry.date}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Selected Entry Detail Modal（保留原有详情弹窗） */}
       {selectedEntry && (() => {

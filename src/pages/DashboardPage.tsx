@@ -179,11 +179,19 @@ export function DashboardPage() {
           subs = subs.filter((sub) => sub.owner === effectiveOwner);
         }
 
-        // 搜索筛选
+        // 搜索筛选（支持项目名称和周别 wkXX 匹配）
         if (searchValue) {
-          subs = subs.filter((sub) =>
-            sub.name.toLowerCase().includes(searchValue.toLowerCase())
-          );
+          const q = searchValue.toLowerCase();
+          subs = subs.filter((sub) => {
+            // 匹配项目名称
+            if (sub.name.toLowerCase().includes(q)) return true;
+            // 匹配周别（如 wk23）
+            const subEntries = entries.filter((e) => e.projectId === sub.id);
+            return subEntries.some((e) => {
+              const week = getWeekLabel(e.date);
+              return week && week.toLowerCase().includes(q);
+            });
+          });
         }
 
         // 优先级筛选
@@ -361,7 +369,7 @@ export function DashboardPage() {
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="搜索项目名称..."
+              placeholder="搜索项目名称或周别（如 wk23）"
               className="w-full rounded-lg border border-border-custom bg-bg-tertiary pl-8 pr-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-cyan/50 focus:outline-none focus:ring-1 focus:ring-accent-cyan/20"
             />
           </div>

@@ -2,6 +2,17 @@ import { create } from 'zustand';
 import type { Progress } from '@/types';
 import { api } from '@/services/api';
 
+// 安全解析可能为 JSON 数组或逗号分隔文本的字段
+function safeParseArray(val: any): any[] {
+  if (Array.isArray(val)) return val;
+  if (!val) return [];
+  if (typeof val === 'string') {
+    try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : [val]; }
+    catch { return val.split(',').map((s: string) => s.trim()).filter(Boolean); }
+  }
+  return [];
+}
+
 interface ProgressStore {
   entries: Progress[];
   isLoading: boolean;
@@ -31,8 +42,8 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
       // Parse JSON string fields from SQLite
       const entries = raw.map((e: any) => ({
         ...e,
-        attachments: typeof e.attachments === 'string' ? JSON.parse(e.attachments || '[]') : (e.attachments || []),
-        collaborators: typeof e.collaborators === 'string' ? JSON.parse(e.collaborators || '[]') : (e.collaborators || []),
+        attachments: safeParseArray(e.attachments),
+        collaborators: safeParseArray(e.collaborators),
       }));
       set({ entries });
     } finally {

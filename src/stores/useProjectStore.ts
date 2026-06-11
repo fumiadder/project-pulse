@@ -2,6 +2,17 @@ import { create } from 'zustand';
 import type { Project } from '@/types';
 import { api } from '@/services/api';
 
+// 安全解析可能为 JSON 数组或逗号分隔文本的字段
+function safeParseArray(val: any): any[] {
+  if (Array.isArray(val)) return val;
+  if (!val) return [];
+  if (typeof val === 'string') {
+    try { const parsed = JSON.parse(val); return Array.isArray(parsed) ? parsed : [val]; }
+    catch { return val.split(',').map((s: string) => s.trim()).filter(Boolean); }
+  }
+  return [];
+}
+
 interface ProjectStore {
   projects: Project[];
   isLoading: boolean;
@@ -28,7 +39,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       const raw = res.data?.projects ?? (Array.isArray(res.data) ? res.data : []) ?? [];
       const projects = raw.map((p: any) => ({
         ...p,
-        collaborators: typeof p.collaborators === 'string' ? JSON.parse(p.collaborators || '[]') : (p.collaborators || []),
+        collaborators: safeParseArray(p.collaborators),
       }));
       set({ projects });
     } finally {

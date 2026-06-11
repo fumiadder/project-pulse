@@ -306,22 +306,6 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 animate-fade-in-up">
       {/* 页面标题 */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-cyan/10">
-          <i className="fas fa-th-large text-accent-cyan text-lg" />
-        </div>
-        <div>
-          <h1 className="text-xl font-display font-bold text-text-primary">控制台</h1>
-          <p className="text-xs text-text-muted">
-            {ownerFilter === 'all'
-              ? '全部项目总览'
-              : ownerFilter === '__me__'
-                ? `${currentUser?.name ?? ''} 的项目总览`
-                : `${ownerFilter} 的项目总览`}
-          </p>
-        </div>
-      </div>
-
       {/* 统计卡片行 - 增加间距 */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard title="项目总数" value={stats.total} icon="fa-th-large" color="cyan" />
@@ -503,7 +487,7 @@ export function DashboardPage() {
 
               {/* 子项目卡片区域 - 横向滚动条在上方 */}
               {!isCollapsed && (
-                <div className="flex gap-5 overflow-x-auto p-4 pt-0 scrollbar-thin" style={{ direction: 'rtl' }}>
+                <div className="flex gap-5 items-stretch overflow-x-auto p-4 pt-0 scrollbar-thin" style={{ direction: 'rtl' }}>
                   <div style={{ direction: 'ltr', display: 'contents' }}>
                   {section.subProjects.map((sub) => {
                     const latest = getLatestByProject(sub.id);
@@ -623,7 +607,7 @@ export function DashboardPage() {
                                     </span>
                                     <span className="text-[10px] font-medium text-text-muted">{entry.percent}%</span>
                                   </div>
-                                  <p className="text-xs text-text-muted leading-relaxed">
+                                  <p className="text-xs text-text-muted leading-relaxed line-clamp-2">
                                     {entry.content || '暂无更新内容'}
                                   </p>
                                   {sub.owner && (

@@ -494,7 +494,7 @@ export function DashboardPage() {
           return (
             <div
               key={section.parent.id}
-              className="flex flex-col gap-0 rounded-xl border border-border-custom/50 overflow-hidden"
+              className="flex flex-col gap-0 rounded-xl border border-border-custom/50"
             >
               {/* 主项目标题栏（含进度条） */}
               <div
@@ -535,7 +535,7 @@ export function DashboardPage() {
 
               {/* 子项目卡片区域 - 每个主项目有独立的滚动区域，增加卡片间距 */}
               {!isCollapsed && (
-                <div className="flex gap-5 overflow-x-auto p-4 scrollbar-thin" style={{ maxHeight: '85vh' }}>
+                <div className="flex gap-5 overflow-x-auto p-4 scrollbar-thin">
                   {section.subProjects.map((sub) => {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;

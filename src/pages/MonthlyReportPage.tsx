@@ -4,7 +4,7 @@ import { useProgressStore } from '@/stores/useProgressStore';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { StatusTag } from '@/components/shared/StatusTag';
 import { AiSummaryBox } from '@/components/shared/AiSummaryBox';
-import { getWeekLabel, getAvailableWeeks } from '@/utils/weekUtils';
+import { getWeekLabel, getWeekStart, getWeekEnd, getAvailableWeeks, getWeekColor, getWeekBorderColor } from '@/utils/weekUtils';
 import type { Progress, Project } from '@/types';
 
 /** 获取项目路径 */
@@ -100,6 +100,139 @@ function CollapsibleSection({
         </div>
       </button>
       {expanded && <div className="px-4 pb-4 pt-1">{children}</div>}
+    </div>
+  );
+}
+
+/** 月报中"其它月份"的周度折叠组件 - 展开后可查看该周的项目进度明细 */
+function MonthWeekCollapsible({
+  weekKey,
+  weekStart,
+  weekEnd,
+  entries,
+  avgProgress,
+  count,
+  projects,
+}: {
+  weekKey: string;
+  weekStart: string;
+  weekEnd: string;
+  entries: Progress[];
+  avgProgress: number;
+  count: number;
+  projects: Project[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // 按项目分组展示该周的进度
+  const projectGroups = useMemo(() => {
+    const projMap = new Map<string, Progress[]>();
+    entries.forEach(e => {
+      const list = projMap.get(e.projectId) ?? [];
+      list.push(e);
+      projMap.set(e.projectId, list);
+    });
+
+    return [...projMap.entries()].map(([projectId, projEntries]) => {
+      const sorted = [...projEntries].sort((a, b) => a.date.localeCompare(b.date));
+      const earliest = sorted[0];
+      const latest = sorted[sorted.length - 1];
+      const delta = latest.percent - earliest.percent;
+      const path = getProjectPath(projectId, projects);
+      const proj = projects.find(p => p.id === projectId);
+
+      return {
+        projectId,
+        projectPath: path,
+        owner: proj?.owner ?? '',
+        entries: sorted,
+        earliestPercent: earliest.percent,
+        latestPercent: latest.percent,
+        delta,
+      };
+    });
+  }, [entries, projects]);
+
+  return (
+    <div
+      className="rounded-lg border overflow-hidden"
+      style={{
+        borderColor: getWeekBorderColor(weekKey),
+        backgroundColor: getWeekColor(weekKey),
+      }}
+    >
+      {/* 周标题（可点击展开/折叠） */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-3 py-2 text-left transition-all hover:bg-bg-tertiary/30"
+      >
+        <div className="flex items-center gap-2">
+          <i
+            className={`fas fa-chevron-right text-[10px] text-text-muted transition-transform duration-200 ${
+              expanded ? 'rotate-90' : ''
+            }`}
+          />
+          <span className="text-xs font-semibold text-text-primary">{weekKey}</span>
+          <span className="text-[10px] text-text-muted">
+            {weekStart} ~ {weekEnd}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-text-muted">{count} 条</span>
+          <span className="text-xs font-bold text-accent-cyan">{avgProgress.toFixed(1)}%</span>
+        </div>
+      </button>
+
+      {/* 展开后显示该周的项目进度明细 */}
+      {expanded && (
+        <div className="px-2 pb-2 space-y-1.5">
+          {projectGroups.map(pg => (
+            <div
+              key={pg.projectId}
+              className="rounded-md border border-border-primary/10 bg-bg-primary/60 p-2"
+            >
+              {/* 项目汇总行 */}
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs font-medium text-text-primary truncate">{pg.projectPath}</span>
+                  {pg.owner && (
+                    <span className="text-[10px] text-text-muted flex-shrink-0">
+                      <i className="fas fa-user mr-0.5" />{pg.owner}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                  <span className="text-[10px] text-text-muted">{pg.earliestPercent}%</span>
+                  <i className="fas fa-arrow-right text-[8px] text-text-muted" />
+                  <span className="text-xs font-bold text-text-primary">{pg.latestPercent}%</span>
+                  <span className={`text-[10px] font-bold ${pg.delta > 0 ? 'text-accent-green' : pg.delta < 0 ? 'text-accent-red' : 'text-text-muted'}`}>
+                    {pg.delta > 0 ? '+' : ''}{pg.delta}%
+                  </span>
+                </div>
+              </div>
+              <ProgressBar percent={pg.latestPercent} size="sm" />
+
+              {/* 该项目在该周的日别明细 */}
+              <div className="mt-1 space-y-0.5">
+                {pg.entries.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center gap-2 text-xs px-1.5 py-0.5 rounded hover:bg-bg-tertiary/20"
+                  >
+                    <span className="text-text-muted min-w-[60px]">{entry.date.slice(5)}</span>
+                    <span className="text-accent-cyan font-bold min-w-[36px] text-right">{entry.percent}%</span>
+                    <StatusTag
+                      status={getStatusFromPercent(entry.percent)}
+                      label={getStatusLabel(entry.percent)}
+                    />
+                    <span className="text-text-secondary truncate flex-1">{entry.content}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -390,7 +523,7 @@ export function MonthlyReportPage() {
         ))}
       </div>
 
-      {/* 其它月的月报 - 折叠展示 */}
+      {/* 其它月的月报 - 折叠展示（含周度分解） */}
       {availableMonths.filter(m => m !== monthLabel).length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-text-primary">
@@ -407,7 +540,7 @@ export function MonthlyReportPage() {
             const mDisplay = `${y}年${parseInt(mo, 10)}月`;
             const isCurrent = m === currentMonthLabel;
 
-            // 该月的主项目汇总（直接计算，不使用 useMemo）
+            // 该月的主项目汇总
             const mMainProjects = (() => {
               const projMap = new Map<string, Progress[]>();
               mEntries.forEach(e => {
@@ -439,6 +572,29 @@ export function MonthlyReportPage() {
               }));
             })();
 
+            // 该月的周度分解
+            const mWeeklyBreakdown = (() => {
+              const weekMap = new Map<string, Progress[]>();
+              mEntries.forEach(e => {
+                const wn = getWeekLabel(e.date);
+                const list = weekMap.get(wn) ?? [];
+                list.push(e);
+                weekMap.set(wn, list);
+              });
+
+              return [...weekMap.entries()]
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([weekKey, weekEntries]) => {
+                  const avgProgress =
+                    weekEntries.reduce((sum, e) => sum + e.percent, 0) / weekEntries.length;
+                  // 获取该周的日期范围
+                  const sampleDate = weekEntries[0]?.date;
+                  const weekStart = sampleDate ? getWeekStart(sampleDate) : '--';
+                  const weekEnd = sampleDate ? getWeekEnd(sampleDate) : '--';
+                  return { weekKey, entries: weekEntries, avgProgress, count: weekEntries.length, weekStart, weekEnd };
+                });
+            })();
+
             return (
               <CollapsibleSection
                 key={m}
@@ -457,7 +613,7 @@ export function MonthlyReportPage() {
                 </div>
 
                 {/* 该月的主项目汇总 */}
-                <div className="space-y-2">
+                <div className="space-y-2 mb-3">
                   {mMainProjects.map(mp => (
                     <div
                       key={mp.name}
@@ -476,6 +632,28 @@ export function MonthlyReportPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* 该月的周度分解 */}
+                {mWeeklyBreakdown.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-semibold text-text-primary flex items-center gap-1">
+                      <i className="fas fa-calendar-week text-accent-cyan" />
+                      周度分解
+                    </h4>
+                    {mWeeklyBreakdown.map(wb => (
+                      <MonthWeekCollapsible
+                        key={wb.weekKey}
+                        weekKey={wb.weekKey}
+                        weekStart={wb.weekStart}
+                        weekEnd={wb.weekEnd}
+                        entries={wb.entries}
+                        avgProgress={wb.avgProgress}
+                        count={wb.count}
+                        projects={projects}
+                      />
+                    ))}
+                  </div>
+                )}
               </CollapsibleSection>
             );
           })}

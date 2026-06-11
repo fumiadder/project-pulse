@@ -259,14 +259,19 @@ export function DashboardPage() {
     return null;
   }, [projectSections, entries, todayStr]);
 
-  // 自动滚动到目标卡片
+  // 自动滚动到目标卡片（使用主项目滚动容器内滚动）
   useEffect(() => {
     if (hasScrolled.current || !scrollTargetSubId) return;
     // 等待 DOM 渲染完成
     const timer = setTimeout(() => {
       const el = document.getElementById(`sub-card-${scrollTargetSubId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const container = scrollContainerRef.current;
+      if (el && container) {
+        // 使用容器内滚动，而不是 scrollIntoView
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const offset = elRect.top - containerRect.top + container.scrollTop - container.clientHeight / 3;
+        container.scrollTo({ top: offset, behavior: 'smooth' });
         hasScrolled.current = true;
       }
     }, 300);
@@ -474,8 +479,8 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* 主内容区域：主项目区块 */}
-      <div ref={scrollContainerRef} className="flex flex-col gap-6">
+      {/* 主内容区域：主项目区块 - 独立滚动区域，滚动条在主项目下面 */}
+      <div ref={scrollContainerRef} className="flex flex-col gap-6 overflow-y-auto scrollbar-thin" style={{ maxHeight: 'calc(100vh - 340px)', minHeight: '300px' }}>
         {projectSections.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16">
             <i className="fas fa-inbox text-3xl text-text-muted/40 mb-3" />
@@ -539,12 +544,7 @@ export function DashboardPage() {
                       .filter((e) => e.projectId === sub.id)
                       .sort((a, b) => a.date.localeCompare(b.date)); // 按日期正序
 
-                    // 获取最新进度的周别
-                    const latestWeek = latest ? getWeekLabel(latest.date) : '';
-                    const weekBg = latestWeek ? getWeekColor(latestWeek) : '';
-                    const weekBorder = latestWeek ? getWeekBorderColor(latestWeek) : '';
-
-                    // 状态底色
+                    // 状态底色（不再使用周别底色，周别底色仅用于日别进度卡片）
                     const statusStyle = getStatusBgStyle(sub.status, tagStatus);
                     const statusLabel = getStatusLabel(sub.status, tagStatus);
 
@@ -560,9 +560,6 @@ export function DashboardPage() {
                         }`}
                         style={{
                           ...statusStyle,
-                          // 如果有周别底色且没有状态底色覆盖，使用周别底色
-                          backgroundColor: statusStyle.backgroundColor || weekBg,
-                          borderColor: statusStyle.borderColor || weekBorder,
                         }}
                       >
                         {/* 子项目名称 + 操作按钮 */}
@@ -572,18 +569,6 @@ export function DashboardPage() {
                               {sub.name}
                             </h3>
                             <div className="flex items-center gap-2">
-                              {/* 周别标签 */}
-                              {latestWeek && (
-                                <span
-                                  className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                                  style={{
-                                    backgroundColor: weekBorder,
-                                    color: '#f1f5f9',
-                                  }}
-                                >
-                                  {latestWeek}
-                                </span>
-                              )}
                               {/* 状态标签 */}
                               <StatusTag status={tagStatus as 'normal' | 'warning' | 'danger' | 'info'} label={statusLabel} />
                             </div>
@@ -621,20 +606,38 @@ export function DashboardPage() {
                             {allEntries.map((entry) => {
                               const isToday = entry.date === todayStr;
                               const entryWeek = getWeekLabel(entry.date);
+                              // 日别进度卡片的周别底色
+                              const entryWeekBg = getWeekColor(entryWeek);
+                              const entryWeekBorder = getWeekBorderColor(entryWeek);
                               return (
                                 <div
                                   key={entry.id}
                                   className={`flex flex-col gap-1 rounded-lg px-3 py-2 transition-all ${
                                     isToday
-                                      ? 'border-l-[3px] border-l-accent-cyan bg-accent-cyan/10 ring-1 ring-accent-cyan/20 shadow-[0_0_8px_rgba(0,212,255,0.15)]'
-                                      : 'bg-bg-primary/40'
+                                      ? 'border-l-[3px] border-l-accent-cyan ring-1 ring-accent-cyan/20 shadow-[0_0_8px_rgba(0,212,255,0.15)]'
+                                      : ''
                                   }`}
+                                  style={{
+                                    backgroundColor: isToday ? 'rgba(0, 212, 255, 0.10)' : entryWeekBg,
+                                    borderLeft: isToday ? '3px solid rgba(0, 212, 255, 0.8)' : `3px solid ${entryWeekBorder}`,
+                                  }}
                                 >
                                   <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-text-secondary">
                                       <i className="far fa-calendar mr-1" />
                                       {entry.date}
-                                      <span className="ml-1.5 text-[10px] text-text-muted/60">{entryWeek}</span>
+                                      {/* 周别标签 - 在日别进度记录上醒目显示 */}
+                                      {entryWeek && (
+                                        <span
+                                                                          className="ml-1.5 inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-bold"
+                                                                          style={{
+                                                                            backgroundColor: entryWeekBorder,
+                                                                            color: '#f1f5f9',
+                                                                          }}
+                                                                        >
+                                                                          {entryWeek}
+                                                                        </span>
+                                                                      )}
                                       {isToday && (
                                         <span className="ml-1.5 inline-flex items-center rounded-full bg-accent-cyan/20 px-2 py-0.5 text-[10px] font-bold text-accent-cyan shadow-[0_0_6px_rgba(0,212,255,0.3)]">
                                           今天

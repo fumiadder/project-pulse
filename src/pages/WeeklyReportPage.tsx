@@ -4,7 +4,7 @@ import { useProgressStore } from '@/stores/useProgressStore';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { StatusTag } from '@/components/shared/StatusTag';
 import { AiSummaryBox } from '@/components/shared/AiSummaryBox';
-import { getWeekLabel, getWeekStart, getWeekEnd, getAvailableWeeks } from '@/utils/weekUtils';
+import { getWeekLabel, getWeekStart, getWeekEnd, getAvailableWeeks, getWeekColor, getWeekBorderColor } from '@/utils/weekUtils';
 import type { Progress, Project } from '@/types';
 
 const DAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -118,6 +118,118 @@ function CollapsibleSection({
         </div>
       </button>
       {expanded && <div className="px-4 pb-4 pt-1">{children}</div>}
+    </div>
+  );
+}
+
+/** 子项目折叠组件 - 用于"其它周"中按主项目->子项目层级展示 */
+function SubProjectCollapsible({
+  mainProjectName,
+  subProjects,
+  weekColor,
+  weekBorderColor,
+}: {
+  mainProjectName: string;
+  subProjects: {
+    projectId: string;
+    projectPath: string;
+    owner: string;
+    entries: Progress[];
+    earliestPercent: number;
+    latestPercent: number;
+    delta: number;
+  }[];
+  weekColor: string;
+  weekBorderColor: string;
+}) {
+  const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
+
+  return (
+    <div
+      className="rounded-lg border overflow-hidden"
+      style={{
+        borderColor: weekBorderColor,
+        backgroundColor: weekColor,
+      }}
+    >
+      {/* 主项目标题 */}
+      <div className="px-3 py-2 flex items-center gap-2">
+        <i className="fas fa-folder text-xs text-accent-cyan" />
+        <span className="text-xs font-bold text-text-primary">{mainProjectName}</span>
+        <span className="text-[10px] text-text-muted">
+          {subProjects.length} 个子项目
+        </span>
+      </div>
+
+      {/* 子项目列表 */}
+      <div className="px-2 pb-2 space-y-1">
+        {subProjects.map(sp => {
+          const isExpanded = expandedSubId === sp.projectId;
+
+          return (
+            <div
+              key={sp.projectId}
+              className="rounded-md border border-border-primary/10 bg-bg-primary/60 overflow-hidden"
+            >
+              {/* 子项目头部（可点击展开/折叠） */}
+              <button
+                onClick={() => setExpandedSubId(isExpanded ? null : sp.projectId)}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 text-left transition-all hover:bg-bg-tertiary/30"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <i
+                    className={`fas fa-chevron-right text-[10px] text-text-muted transition-transform duration-200 ${
+                      isExpanded ? 'rotate-90' : ''
+                    }`}
+                  />
+                  <span className="text-xs font-medium text-text-primary truncate">{sp.projectPath}</span>
+                  {sp.owner && (
+                    <span className="text-[10px] text-text-muted flex-shrink-0">
+                      <i className="fas fa-user mr-0.5" />{sp.owner}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                  <span className="text-[10px] text-text-muted">{sp.earliestPercent}%</span>
+                  <i className="fas fa-arrow-right text-[8px] text-text-muted" />
+                  <span className="text-xs font-bold text-text-primary">{sp.latestPercent}%</span>
+                  <span className={`text-[10px] font-bold ${sp.delta > 0 ? 'text-accent-green' : sp.delta < 0 ? 'text-accent-red' : 'text-text-muted'}`}>
+                    {sp.delta > 0 ? '+' : ''}{sp.delta}%
+                  </span>
+                </div>
+              </button>
+
+              {/* 展开后显示该子项目在该周内的日别进度动作 */}
+              {isExpanded && (
+                <div className="px-2 pb-2 pt-0.5 space-y-1">
+                  <ProgressBar percent={sp.latestPercent} size="sm" />
+                  {sp.entries.map(entry => {
+                    const entryDate = new Date(entry.date + 'T00:00:00');
+                    const dayName = DAY_NAMES[entryDate.getDay()];
+                    return (
+                      <div
+                        key={entry.id}
+                        className="flex items-center gap-2 text-xs px-2 py-1 rounded hover:bg-bg-tertiary/20"
+                      >
+                        <span className="text-text-muted min-w-[60px]">{entry.date.slice(5)}</span>
+                        <span className="text-[10px] text-accent-cyan bg-accent-cyan/10 rounded px-1 py-0.5 flex-shrink-0">
+                          {dayName}
+                        </span>
+                        <span className="text-accent-cyan font-bold min-w-[36px] text-right flex-shrink-0">{entry.percent}%</span>
+                        <StatusTag
+                          status={getStatusFromPercent(entry.percent)}
+                          label={getStatusLabel(entry.percent)}
+                        />
+                        <span className="text-text-secondary truncate flex-1">{entry.content}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -421,7 +533,7 @@ export function WeeklyReportPage() {
         })}
       </div>
 
-      {/* 其它周的周报 - 折叠展示 */}
+      {/* 其它周的周报 - 折叠展示（按主项目->子项目层级，子项目下展开可看日别动作） */}
       {availableWeeks.filter(wk => wk !== weekLabel).length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-text-primary">
@@ -436,6 +548,62 @@ export function WeeklyReportPage() {
               ? wkEntries.reduce((s, e) => s + e.percent, 0) / wkEntries.length
               : 0;
             const isCurrent = wk === currentWeekLabel;
+
+            // 按主项目分组，每个主项目下按子项目分组，每个子项目下按日期列出日别动作
+            const mainProjectGroups = (() => {
+              // 先按 projectId 分组
+              const projMap = new Map<string, Progress[]>();
+              wkEntries.forEach(e => {
+                const list = projMap.get(e.projectId) ?? [];
+                list.push(e);
+                projMap.set(e.projectId, list);
+              });
+
+              // 再按主项目分组
+              const mainMap = new Map<string, {
+                mainProjectId: string;
+                mainProjectName: string;
+                subProjects: {
+                  projectId: string;
+                  projectPath: string;
+                  owner: string;
+                  entries: Progress[];
+                  earliestPercent: number;
+                  latestPercent: number;
+                  delta: number;
+                }[];
+              }>();
+
+              projMap.forEach((projEntries, projectId) => {
+                const proj = projects.find(p => p.id === projectId);
+                if (!proj) return;
+                // 判断主项目：如果有 parentId 则为子项目，否则为主项目本身
+                const mainProj = proj.parentId ? projects.find(p => p.id === proj.parentId) : proj;
+                const mainId = mainProj?.id ?? projectId;
+                const mainName = mainProj?.name ?? '未知项目';
+
+                if (!mainMap.has(mainId)) {
+                  mainMap.set(mainId, { mainProjectId: mainId, mainProjectName: mainName, subProjects: [] });
+                }
+
+                const sorted = [...projEntries].sort((a, b) => a.date.localeCompare(b.date));
+                const earliest = sorted[0];
+                const latest = sorted[sorted.length - 1];
+                const delta = latest.percent - earliest.percent;
+
+                mainMap.get(mainId)!.subProjects.push({
+                  projectId,
+                  projectPath: getProjectPath(projectId, projects),
+                  owner: proj.owner ?? '',
+                  entries: sorted,
+                  earliestPercent: earliest.percent,
+                  latestPercent: latest.percent,
+                  delta,
+                });
+              });
+
+              return [...mainMap.values()];
+            })();
 
             return (
               <CollapsibleSection
@@ -454,52 +622,17 @@ export function WeeklyReportPage() {
                   />
                 </div>
 
-                {/* 该周的项目进度汇总 */}
+                {/* 按主项目 -> 子项目层级展示，子项目下可展开查看日别动作 */}
                 <div className="space-y-2">
-                  {(() => {
-                    const projMap = new Map<string, Progress[]>();
-                    wkEntries.forEach(e => {
-                      const list = projMap.get(e.projectId) ?? [];
-                      list.push(e);
-                      projMap.set(e.projectId, list);
-                    });
-
-                    return [...projMap.entries()].map(([projectId, projEntries]) => {
-                      const sorted = [...projEntries].sort((a, b) => a.date.localeCompare(b.date));
-                      const earliest = sorted[0];
-                      const latest = sorted[sorted.length - 1];
-                      const delta = latest.percent - earliest.percent;
-                      const path = getProjectPath(projectId, projects);
-                      const proj = projects.find(p => p.id === projectId);
-
-                      return (
-                        <div
-                          key={projectId}
-                          className="rounded-lg border border-border-primary/10 bg-bg-primary/50 p-3"
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-text-primary">{path}</span>
-                              {proj?.owner && (
-                                <span className="text-[10px] text-text-muted">
-                                  <i className="fas fa-user mr-0.5" />{proj.owner}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-text-muted">{earliest.percent}%</span>
-                              <i className="fas fa-arrow-right text-[8px] text-text-muted" />
-                              <span className="text-xs font-bold text-text-primary">{latest.percent}%</span>
-                              <span className={`text-[10px] font-bold ${delta > 0 ? 'text-accent-green' : delta < 0 ? 'text-accent-red' : 'text-text-muted'}`}>
-                                {delta > 0 ? '+' : ''}{delta}%
-                              </span>
-                            </div>
-                          </div>
-                          <ProgressBar percent={latest.percent} size="sm" />
-                        </div>
-                      );
-                    });
-                  })()}
+                  {mainProjectGroups.map(mp => (
+                    <SubProjectCollapsible
+                      key={mp.mainProjectId}
+                      mainProjectName={mp.mainProjectName}
+                      subProjects={mp.subProjects}
+                      weekColor={getWeekColor(wk)}
+                      weekBorderColor={getWeekBorderColor(wk)}
+                    />
+                  ))}
                 </div>
               </CollapsibleSection>
             );

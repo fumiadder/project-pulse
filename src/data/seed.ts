@@ -3,7 +3,9 @@ import { api } from '@/services/api';
 export async function seedDemoDataIfNeeded() {
   try {
     const res = await api.fullSyncGet();
-    if (res.projects && res.projects.length > 0) {
+    // 修复：fullSyncGet 返回 ApiResponse<SyncData>，数据在 res.data 中
+    const syncData = res.data;
+    if (syncData && syncData.projects && syncData.projects.length > 0) {
       console.log('Seed data already exists, skipping.');
       return;
     }

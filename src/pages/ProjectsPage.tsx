@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/useUserStore';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { StatusTag } from '@/components/shared/StatusTag';
 import { ProgressEditorModal } from '@/components/modals/ProgressEditorModal';
+import { ProjectEditorModal } from '@/components/modals/ProjectEditorModal';
 import type { Project, Progress } from '@/types';
 import {
   getWeekLabel,

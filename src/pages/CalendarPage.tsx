@@ -357,7 +357,7 @@ export function CalendarPage() {
 
       {/* Calendar grid - 固定高度，超出部分内联滚动 */}
       <div
-        className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-b-lg overflow-hidden overflow-y-auto scrollbar-thin"
+        className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-b-lg overflow-hidden"
         style={{ maxHeight: 'calc(100vh - 260px)', minHeight: '400px' }}
       >
         {cells.map((day, idx) => {
@@ -365,7 +365,7 @@ export function CalendarPage() {
             return (
               <div
                 key={`empty-${idx}`}
-                className="min-h-[100px] bg-bg-primary/50"
+                className="h-[120px] bg-bg-primary/50"
               />
             );
           }
@@ -379,15 +379,12 @@ export function CalendarPage() {
           return (
             <div
               key={day}
-              className={`min-h-[100px] bg-bg-secondary p-1.5 flex flex-col gap-0.5 relative ${
+              className={`h-[120px] bg-bg-secondary p-1.5 flex flex-col gap-0.5 relative ${
                 isToday ? 'ring-2 ring-accent-cyan' : ''
               }`}
-              style={{
-                backgroundColor: weekInfo?.bgColor,
-              }}
             >
               {/* Day number + 周别说明文字 */}
-              <div className="flex items-center justify-between mb-0.5">
+              <div className="flex items-center justify-between mb-0.5 shrink-0">
                 <span
                   className={`text-xs font-medium ${
                     isToday
@@ -397,13 +394,14 @@ export function CalendarPage() {
                 >
                   {day}
                 </span>
-                {/* 周别说明文字 */}
+                {/* 周别小标签 - 用边框样式区分，不使用底色避免与负责人底色冲突 */}
                 {weekLabel && (
                   <span
                     className="text-[9px] font-medium px-1 py-px rounded"
                     style={{
-                      backgroundColor: weekInfo?.borderColor,
+                      border: `1px solid ${weekInfo?.borderColor}`,
                       color: '#94a3b8',
+                      backgroundColor: 'transparent',
                     }}
                   >
                     {weekLabel}
@@ -411,7 +409,8 @@ export function CalendarPage() {
                 )}
               </div>
 
-              {/* Entries - 支持点击打开动作编辑弹窗 + 悬浮提示 */}
+              {/* Entries - 支持点击打开动作编辑弹窗 + 悬浮提示，可纵向滚动 */}
+              <div className="flex-1 overflow-y-auto scrollbar-thin min-h-0">
               {dayEntries.slice(0, MAX_ITEMS_PER_DAY).map(entry => {
                 const project = projects.find(p => p.id === entry.projectId);
                 const owner = project?.owner ?? '';
@@ -442,6 +441,7 @@ export function CalendarPage() {
                   +{dayEntries.length - MAX_ITEMS_PER_DAY} 更多
                 </div>
               )}
+              </div>
             </div>
           );
         })}

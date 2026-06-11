@@ -152,7 +152,7 @@ export function getAvailableWeeks(dates: string[]): string[] {
   return Array.from(weekSet).sort((a, b) => {
     const numA = parseInt(a.replace('wk', ''), 10);
     const numB = parseInt(b.replace('wk', ''), 10);
-    return numA - numB;
+    return numB - numA; // 倒序排列：最新的周别在最前面
   });
 }
 
@@ -164,5 +164,5 @@ export function getAvailableDates(dates: string[]): string[] {
   dates.forEach((d) => {
     if (d) dateSet.add(d);
   });
-  return Array.from(dateSet).sort();
+  return Array.from(dateSet).sort().reverse(); // 倒序排列：最新的日期在最前面
 }

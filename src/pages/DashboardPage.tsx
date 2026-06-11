@@ -90,7 +90,6 @@ export function DashboardPage() {
   const { currentUser, users } = useUserStore();
 
   // 筛选状态
-  const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState<string>('__me__'); // 默认当前用户
   const [parentFilter, setParentFilter] = useState('all');
@@ -179,21 +178,6 @@ export function DashboardPage() {
           subs = subs.filter((sub) => sub.owner === effectiveOwner);
         }
 
-        // 搜索筛选（支持项目名称和周别 wkXX 匹配）
-        if (searchValue) {
-          const q = searchValue.toLowerCase();
-          subs = subs.filter((sub) => {
-            // 匹配项目名称
-            if (sub.name.toLowerCase().includes(q)) return true;
-            // 匹配周别（如 wk23）
-            const subEntries = entries.filter((e) => e.projectId === sub.id);
-            return subEntries.some((e) => {
-              const week = getWeekLabel(e.date);
-              return week && week.toLowerCase().includes(q);
-            });
-          });
-        }
-
         // 优先级筛选
         if (priorityFilter !== 'all') {
           subs = subs.filter((sub) => sub.priority === priorityFilter);
@@ -208,22 +192,10 @@ export function DashboardPage() {
           });
         }
 
-        // 周别筛选 - 基于子项目最新进度的日期
-        if (weekFilter !== 'all') {
-          subs = subs.filter((sub) => {
-            const subEntries = entries.filter((e) => e.projectId === sub.id);
-            if (subEntries.length === 0) return false;
-            return subEntries.some((e) => getWeekLabel(e.date) === weekFilter);
-          });
-        }
+        // 周别筛选 - 不再过滤子项目，而是在渲染时过滤日别条目
+        // （保留此处为空，实际过滤在子项目卡片内部的 allEntries 中处理）
 
-        // 日期筛选 - 基于子项目是否有该日期的进度
-        if (dateFilter !== 'all') {
-          subs = subs.filter((sub) => {
-            const subEntries = entries.filter((e) => e.projectId === sub.id);
-            return subEntries.some((e) => e.date === dateFilter);
-          });
-        }
+        // 日期筛选 - 同上
 
         // 按数字前缀排序
         subs = sortSubProjectsByName(subs);
@@ -244,7 +216,7 @@ export function DashboardPage() {
         };
       })
       .filter(Boolean) as { parent: Project; subProjects: Project[]; progress: number }[];
-  }, [projects, currentUser, searchValue, statusFilter, ownerFilter, parentFilter, weekFilter, dateFilter, priorityFilter, entries]);
+  }, [projects, currentUser, statusFilter, ownerFilter, parentFilter, weekFilter, dateFilter, priorityFilter, entries]);
 
   // 查找需要自动滚动到的目标卡片ID
   const scrollTargetSubId = useMemo(() => {
@@ -312,7 +284,6 @@ export function DashboardPage() {
 
   // 清除所有筛选
   const clearAllFilters = () => {
-    setSearchValue('');
     setStatusFilter('all');
     setOwnerFilter('__me__');
     setParentFilter('all');
@@ -321,7 +292,7 @@ export function DashboardPage() {
     setPriorityFilter('all');
   };
 
-  const hasFilter = searchValue !== '' || statusFilter !== 'all' || ownerFilter !== '__me__' ||
+  const hasFilter = statusFilter !== 'all' || ownerFilter !== '__me__' ||
     parentFilter !== 'all' || weekFilter !== 'all' || dateFilter !== 'all' || priorityFilter !== 'all';
 
   // 筛选栏通用样式
@@ -363,17 +334,6 @@ export function DashboardPage() {
       <div className="flex flex-col gap-3 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-4 border-b-2 border-b-border-custom/30">
         {/* 第一行：搜索 + 负责人 + 主项目 */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-xs" />
-            <input
-              type="text"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="搜索项目名称或周别（如 wk23）"
-              className="w-full rounded-lg border border-border-custom bg-bg-tertiary pl-8 pr-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-cyan/50 focus:outline-none focus:ring-1 focus:ring-accent-cyan/20"
-            />
-          </div>
-
           {/* 负责人筛选 */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-text-muted whitespace-nowrap">负责人:</span>
@@ -548,9 +508,18 @@ export function DashboardPage() {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;
                     const tagStatus = latest?.status ?? mapStatusToTag(sub.status);
-                    const allEntries = entries
+                    let allEntries = entries
                       .filter((e) => e.projectId === sub.id)
                       .sort((a, b) => b.date.localeCompare(a.date)); // 按日期倒序
+
+                    // 周别筛选：只显示匹配周别的日别动作卡片
+                    if (weekFilter !== 'all') {
+                      allEntries = allEntries.filter((e) => getWeekLabel(e.date) === weekFilter);
+                    }
+                    // 日期筛选：只显示匹配日期的日别动作卡片
+                    if (dateFilter !== 'all') {
+                      allEntries = allEntries.filter((e) => e.date === dateFilter);
+                    }
 
                     // 子项目卡片不使用底色
                     // const statusStyle = getStatusBgStyle(sub.status, tagStatus);

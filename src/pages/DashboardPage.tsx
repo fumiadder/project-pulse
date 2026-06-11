@@ -485,10 +485,10 @@ export function DashboardPage() {
                 <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'} text-text-muted text-xs ml-1`} />
               </div>
 
-              {/* 子项目卡片区域 - 横向滚动条在上方 */}
+              {/* 子项目卡片区域 - 横向滚动条在上方（通过翻转实现） */}
               {!isCollapsed && (
-                <div className="flex gap-5 items-stretch overflow-x-auto p-4 pt-0 scrollbar-thin" style={{ direction: 'rtl' }}>
-                  <div style={{ direction: 'ltr', display: 'contents' }}>
+                <div className="scrollbar-on-top-wrapper">
+                  <div className="flex gap-5 items-stretch overflow-x-auto p-4 pt-0 scrollbar-thin">
                   {section.subProjects.map((sub) => {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;

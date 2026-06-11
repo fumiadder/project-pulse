@@ -208,8 +208,8 @@ export function DailyReportPage() {
                   )}
                 </div>
                 {project && (
-                  <span className="text-xs text-text-muted">
-                    <i className="fas fa-user mr-1" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent-cyan/15 px-2 py-0.5 text-xs font-semibold text-accent-cyan">
+                    <i className="fas fa-user text-[10px]" />
                     {project.owner}
                   </span>
                 )}
@@ -336,8 +336,8 @@ export function DailyReportPage() {
                               />
                             </div>
                             {project && (
-                              <span className="text-[10px] text-text-muted">
-                                <i className="fas fa-user mr-0.5" />{project.owner}
+                              <span className="inline-flex items-center gap-1 rounded-full bg-accent-cyan/15 px-2 py-0.5 text-[10px] font-semibold text-accent-cyan">
+                                <i className="fas fa-user text-[9px]" />{project.owner}
                               </span>
                             )}
                           </div>

@@ -5,7 +5,6 @@ import { useUIStore } from '@/stores/useUIStore';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { ProgressEditorModal } from '@/components/modals/ProgressEditorModal';
-import { seedDemoDataIfNeeded } from '@/data/seed';
 
 // Lazy-loaded page components
 const DashboardPage = lazy(() =>
@@ -68,15 +67,9 @@ function App() {
   // Global ProgressEditorModal state for Ctrl+N shortcut
   const [globalProgressOpen, setGlobalProgressOpen] = useState(false);
 
-  // On mount: load users and seed demo data
+  // On mount: load users
   useEffect(() => {
-    const init = async () => {
-      await loadUsers();
-      seedDemoDataIfNeeded().catch((err) => {
-        console.warn('Seed data check failed:', err);
-      });
-    };
-    init();
+    loadUsers();
   }, []);
 
   // Ctrl+N (or Cmd+N on Mac) keyboard shortcut to open ProgressEditorModal

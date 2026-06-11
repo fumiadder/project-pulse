@@ -37,8 +37,13 @@ export function StatCard({ title, value, icon, color }: StatCardProps) {
 
   return (
     <div
-      className={`card-glass flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] ${c.glow}`}
+      className={`card-glass relative overflow-hidden flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] ${c.glow}`}
     >
+      {/* 背景装饰图标 - 半透明大字号 */}
+      <i
+        className={`fas ${icon} absolute -right-2 -bottom-2 text-6xl opacity-[0.06] ${c.icon}`}
+        aria-hidden="true"
+      />
       <div
         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-bg-tertiary ${c.icon}`}
       >

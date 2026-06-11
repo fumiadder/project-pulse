@@ -109,16 +109,16 @@ export function getTodayStr(): string {
 export function getWeekColor(weekLabel: string): string {
   // 从周标签中提取数字
   const num = parseInt(weekLabel.replace('wk', ''), 10);
-  // 使用一组预定义的柔和底色
+  // 使用一组预定义的柔和底色（opacity 0.05，非常淡，可与负责人底色叠加）
   const colors = [
-    'rgba(0, 212, 255, 0.06)',   // 青色
-    'rgba(0, 255, 136, 0.06)',   // 绿色
-    'rgba(255, 140, 0, 0.06)',   // 橙色
-    'rgba(168, 85, 247, 0.06)',  // 紫色
-    'rgba(255, 51, 102, 0.06)',  // 红色
-    'rgba(255, 217, 61, 0.06)',  // 黄色
-    'rgba(59, 130, 246, 0.06)',  // 蓝色
-    'rgba(236, 72, 153, 0.06)',  // 粉色
+    'rgba(0, 212, 255, 0.05)',   // 青色
+    'rgba(0, 255, 136, 0.05)',   // 绿色
+    'rgba(255, 140, 0, 0.05)',   // 橙色
+    'rgba(168, 85, 247, 0.05)',  // 紫色
+    'rgba(255, 51, 102, 0.05)',  // 红色
+    'rgba(255, 217, 61, 0.05)',  // 黄色
+    'rgba(59, 130, 246, 0.05)',  // 蓝色
+    'rgba(236, 72, 153, 0.05)',  // 粉色
   ];
   return colors[num % colors.length];
 }

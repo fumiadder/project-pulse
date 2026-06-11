@@ -330,6 +330,19 @@ export function ProjectsPage() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
+  // Load data on mount
+  useEffect(() => {
+    loadProjects();
+    loadProgress();
+  }, []);
+
+  // 初始化时将所有项目（主项目+子项目）设为展开状态
+  useEffect(() => {
+    if (projects.length > 0 && expandedIds.size === 0) {
+      setExpandedIds(new Set(projects.map((p) => p.id)));
+    }
+  }, [projects]);
+
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -338,12 +351,6 @@ export function ProjectsPage() {
   // 进度编辑弹窗状态
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [editingProgressId, setEditingProgressId] = useState<string | null>(null);
-
-  // Load data on mount
-  useEffect(() => {
-    loadProjects();
-    loadProgress();
-  }, []);
 
   // 获取所有可用的筛选选项
   const filterOptions = useMemo(() => {

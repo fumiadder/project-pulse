@@ -73,8 +73,13 @@ export function CalendarPage() {
   const [editAttachments, setEditAttachments] = useState<Attachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { projects } = useProjectStore();
-  const { entries, updateEntry, deleteEntry } = useProgressStore();
+  const { entries, updateEntry, deleteEntry, loadProgress } = useProgressStore();
   const todayStr = getTodayStr();
+
+  // 页面加载时获取进度数据
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
 
   // 动作编辑弹窗状态（点击标签时打开 ProgressEditorModal）
   const [progressModalOpen, setProgressModalOpen] = useState(false);
@@ -365,7 +370,7 @@ export function CalendarPage() {
             return (
               <div
                 key={`empty-${idx}`}
-                className="h-[120px] bg-bg-primary/50"
+                className="h-[180px] bg-bg-primary/50"
               />
             );
           }
@@ -379,9 +384,13 @@ export function CalendarPage() {
           return (
             <div
               key={day}
-              className={`h-[120px] bg-bg-secondary p-1.5 flex flex-col gap-0.5 relative ${
+              className={`h-[180px] p-1.5 flex flex-col gap-0.5 relative ${
                 isToday ? 'ring-2 ring-accent-cyan' : ''
               }`}
+              style={{
+                // 周别底色：使用非常淡的颜色（opacity 0.05），与负责人底色可叠加
+                backgroundColor: weekInfo?.bgColor ?? undefined,
+              }}
             >
               {/* Day number + 周别说明文字 */}
               <div className="flex items-center justify-between mb-0.5 shrink-0">
@@ -394,14 +403,15 @@ export function CalendarPage() {
                 >
                   {day}
                 </span>
-                {/* 周别小标签 - 用边框样式区分，不使用底色避免与负责人底色冲突 */}
+                {/* 周别小标签 - 使用周别底色区分 */}
                 {weekLabel && (
                   <span
                     className="text-[9px] font-medium px-1 py-px rounded"
                     style={{
                       border: `1px solid ${weekInfo?.borderColor}`,
                       color: '#94a3b8',
-                      backgroundColor: 'transparent',
+                      // 周别标签底色：使用稍深一点的颜色以便可见
+                      backgroundColor: weekInfo?.borderColor ?? 'transparent',
                     }}
                   >
                     {weekLabel}

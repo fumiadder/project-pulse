@@ -343,16 +343,16 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* 统计卡片行 */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* 统计卡片行 - 增加间距 */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard title="项目总数" value={stats.total} icon="fa-th-large" color="cyan" />
         <StatCard title="进行中" value={stats.inProgress} icon="fa-spinner" color="green" />
         <StatCard title="已完成" value={stats.completed} icon="fa-check-circle" color="orange" />
         <StatCard title="今日更新" value={stats.todayUpdates} icon="fa-clock" color="purple" />
       </div>
 
-      {/* 筛选栏 */}
-      <div className="flex flex-col gap-3 rounded-xl border border-border-custom/50 bg-bg-secondary/30 p-4">
+      {/* 筛选栏 - 添加微妙背景色和底部边框，与项目列表视觉分隔 */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-4 border-b-2 border-b-border-custom/30">
         {/* 第一行：搜索 + 负责人 + 主项目 */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
@@ -506,12 +506,12 @@ export function DashboardPage() {
                   className="h-3 w-3 rounded-full shrink-0"
                   style={{ backgroundColor: section.parent.color || '#00d4ff' }}
                 />
-                <h2 className="text-base font-display font-bold text-text-primary flex-1">
+                <h2 className="text-lg font-display font-bold text-text-primary flex-1 pl-2 border-l-[3px]" style={{ borderLeftColor: section.parent.color || '#00d4ff' }}>
                   {section.parent.name}
                 </h2>
-                {/* 主项目进度条 */}
+                {/* 主项目进度条 - 加粗 */}
                 <div className="flex items-center gap-2 min-w-[160px] max-w-[240px]">
-                  <div className="flex-1 h-2 rounded-full bg-bg-primary overflow-hidden">
+                  <div className="flex-1 h-[6px] rounded-full bg-bg-primary overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
@@ -533,9 +533,9 @@ export function DashboardPage() {
                 <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'} text-text-muted text-xs ml-1`} />
               </div>
 
-              {/* 子项目卡片区域 - 每个主项目有独立的滚动区域 */}
+              {/* 子项目卡片区域 - 每个主项目有独立的滚动区域，增加卡片间距 */}
               {!isCollapsed && (
-                <div className="flex gap-4 overflow-x-auto p-4 scrollbar-thin" style={{ maxHeight: '70vh' }}>
+                <div className="flex gap-5 overflow-x-auto p-4 scrollbar-thin" style={{ maxHeight: '70vh' }}>
                   {section.subProjects.map((sub) => {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;
@@ -584,9 +584,9 @@ export function DashboardPage() {
                           </div>
                         </div>
 
-                        {/* 子项目进度条 */}
+                        {/* 子项目进度条 - 加粗 */}
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-bg-primary overflow-hidden">
+                          <div className="flex-1 h-[6px] rounded-full bg-bg-primary overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-300"
                               style={{

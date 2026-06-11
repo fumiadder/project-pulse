@@ -351,7 +351,7 @@ app.post('/api/sync/full', (req, res) => {
         startDate=excluded.startDate, endDate=excluded.endDate, collaborators=excluded.collaborators,
         notes=excluded.notes, updatedAt=excluded.updatedAt
     `);
-    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(r); });
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
     tx(pArr);
   }
   if (prArr && Array.isArray(prArr)) {
@@ -362,7 +362,7 @@ app.post('/api/sync/full', (req, res) => {
         userId=excluded.userId, projectId=excluded.projectId, date=excluded.date, percent=excluded.percent,
         status=excluded.status, content=excluded.content, plan=excluded.plan, attachments=excluded.attachments, updatedAt=excluded.updatedAt
     `);
-    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(r); });
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
     tx(prArr);
   }
   if (uArr && Array.isArray(uArr)) {
@@ -371,7 +371,7 @@ app.post('/api/sync/full', (req, res) => {
       VALUES (@id, @name, @role, @color, @createdAt)
       ON CONFLICT(id) DO UPDATE SET name=excluded.name, role=excluded.role, color=excluded.color
     `);
-    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(r); });
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
     tx(uArr);
   }
   if (rArr && Array.isArray(rArr)) {
@@ -380,7 +380,7 @@ app.post('/api/sync/full', (req, res) => {
       VALUES (@id, @userId, @type, @date, @entryCount, @generatedAt)
       ON CONFLICT(id) DO UPDATE SET userId=excluded.userId, type=excluded.type, date=excluded.date, entryCount=excluded.entryCount, generatedAt=excluded.generatedAt
     `);
-    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(r); });
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
     tx(rArr);
   }
   if (dArr && Array.isArray(dArr)) {
@@ -391,7 +391,7 @@ app.post('/api/sync/full', (req, res) => {
         userId=excluded.userId, date=excluded.date, tag=excluded.tag, content=excluded.content,
         majorProject=excluded.majorProject, subProject=excluded.subProject, owner=excluded.owner
     `);
-    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(r); });
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
     tx(dArr);
   }
   if (sObj && typeof sObj === 'object') {

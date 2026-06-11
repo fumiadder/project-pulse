@@ -501,9 +501,10 @@ export function DashboardPage() {
                 <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'} text-text-muted text-xs ml-1`} />
               </div>
 
-              {/* 子项目卡片区域 - 每个主项目有独立的滚动区域，增加卡片间距 */}
+              {/* 子项目卡片区域 - 横向滚动条在上方 */}
               {!isCollapsed && (
-                <div className="flex gap-5 overflow-x-auto p-4 scrollbar-thin">
+                <div className="flex gap-5 overflow-x-auto p-4 pt-0 scrollbar-thin" style={{ direction: 'rtl' }}>
+                  <div style={{ direction: 'ltr', display: 'contents' }}>
                   {section.subProjects.map((sub) => {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;
@@ -645,6 +646,7 @@ export function DashboardPage() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </div>

@@ -25,7 +25,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await api.listProjects();
-      const projects = res.data?.projects ?? (Array.isArray(res.data) ? res.data : []) ?? [];
+      const raw = res.data?.projects ?? (Array.isArray(res.data) ? res.data : []) ?? [];
+      const projects = raw.map((p: any) => ({
+        ...p,
+        collaborators: typeof p.collaborators === 'string' ? JSON.parse(p.collaborators || '[]') : (p.collaborators || []),
+      }));
       set({ projects });
     } finally {
       set({ isLoading: false });

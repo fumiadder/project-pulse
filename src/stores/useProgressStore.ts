@@ -27,7 +27,13 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await api.listProgress(userId, projectId);
-      const entries = res.data?.progress ?? (Array.isArray(res.data) ? res.data : []) ?? [];
+      const raw = res.data?.progress ?? (Array.isArray(res.data) ? res.data : []) ?? [];
+      // Parse JSON string fields from SQLite
+      const entries = raw.map((e: any) => ({
+        ...e,
+        attachments: typeof e.attachments === 'string' ? JSON.parse(e.attachments || '[]') : (e.attachments || []),
+        collaborators: typeof e.collaborators === 'string' ? JSON.parse(e.collaborators || '[]') : (e.collaborators || []),
+      }));
       set({ entries });
     } finally {
       set({ isLoading: false });

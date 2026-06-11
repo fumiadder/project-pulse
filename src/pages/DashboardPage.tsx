@@ -511,7 +511,7 @@ export function DashboardPage() {
                 </h2>
                 {/* 主项目进度条 - 加粗 */}
                 <div className="flex items-center gap-2 min-w-[160px] max-w-[240px]">
-                  <div className="flex-1 h-[6px] rounded-full bg-bg-primary overflow-hidden">
+                  <div className="flex-1 h-[4px] rounded-full bg-bg-primary overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
@@ -586,7 +586,7 @@ export function DashboardPage() {
 
                         {/* 子项目进度条 - 加粗 */}
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-[6px] rounded-full bg-bg-primary overflow-hidden">
+                          <div className="flex-1 h-[4px] rounded-full bg-bg-primary overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-300"
                               style={{

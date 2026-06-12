@@ -529,7 +529,7 @@ export function DashboardPage() {
               {!isCollapsed && (
                 <div className="scrollbar-on-top-wrapper" data-section={section.parent.id}>
                   {/* 自定义顶部滚动条 */}
-                  <div className="scrollbar-track" onMouseDown={(e) => handleScrollbarTrackClick(e, section.parent.id)}>
+                  <div className="scrollbar-track mb-2" onMouseDown={(e) => handleScrollbarTrackClick(e, section.parent.id)}>
                     <div className="scrollbar-thumb" id={`thumb-${section.parent.id}`} />
                   </div>
                   <div

@@ -304,18 +304,16 @@ export function DashboardPage() {
     }`;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6 animate-fade-in-up">
-      {/* 页面标题 */}
-      {/* 统计卡片行 - 增加间距 */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard title="项目总数" value={stats.total} icon="fa-th-large" color="cyan" />
-        <StatCard title="进行中" value={stats.inProgress} icon="fa-spinner" color="green" />
-        <StatCard title="已完成" value={stats.completed} icon="fa-check-circle" color="orange" />
-        <StatCard title="今日更新" value={stats.todayUpdates} icon="fa-clock" color="purple" />
-      </div>
-
-      {/* 主内容区域：筛选栏 + 主项目区块一起滚动 */}
-      <div ref={scrollContainerRef} className="flex flex-col gap-6 overflow-y-auto scrollbar-thin" style={{ maxHeight: 'calc(100vh - 200px)', minHeight: '300px' }}>
+    <div className="flex flex-col p-4 md:p-6 animate-fade-in-up">
+      {/* 主内容区域：统计卡片 + 筛选栏 + 主项目区块一起滚动 */}
+      <div ref={scrollContainerRef} className="flex flex-col gap-6 overflow-y-auto scrollbar-thin" style={{ maxHeight: 'calc(100vh - 120px)', minHeight: '300px' }}>
+        {/* 统计卡片行 */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard title="项目总数" value={stats.total} icon="fa-th-large" color="cyan" />
+          <StatCard title="进行中" value={stats.inProgress} icon="fa-spinner" color="green" />
+          <StatCard title="已完成" value={stats.completed} icon="fa-check-circle" color="orange" />
+          <StatCard title="今日更新" value={stats.todayUpdates} icon="fa-clock" color="purple" />
+        </div>
         {/* 筛选栏 - 所有筛选项统一一行 */}
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-3">
         {/* 负责人 */}

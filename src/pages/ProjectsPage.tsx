@@ -115,7 +115,7 @@ function getStatusDisplayLabel(status: string, tagStatus: string): string {
   }
 }
 
-/** 折叠动画容器 - 使用 grid 技巧实现丝滑过渡 */
+/** 折叠动画容器 - 兼容性更好的 max-height 方案 */
 function CollapsibleSection({
   isExpanded,
   children,
@@ -123,16 +123,36 @@ function CollapsibleSection({
   isExpanded: boolean;
   children: React.ReactNode;
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [maxH, setMaxH] = useState<string>('0px');
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    if (isExpanded) {
+      // 展开：先测量内容高度，设置为具体值触发动画，然后切换到 none
+      const h = contentRef.current.scrollHeight;
+      setMaxH(`${h}px`);
+      const timer = setTimeout(() => setMaxH('none'), 300);
+      return () => clearTimeout(timer);
+    } else {
+      // 折叠：先设为当前高度（从 none 切换），然后下一帧设为 0
+      const h = contentRef.current.scrollHeight;
+      setMaxH(`${h}px`);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setMaxH('0px');
+        });
+      });
+    }
+  }, [isExpanded]);
+
   return (
     <div
-      className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-      style={{
-        gridTemplateRows: isExpanded ? '1fr' : '0fr',
-      }}
+      ref={contentRef}
+      className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
+      style={{ maxHeight: maxH }}
     >
-      <div className="overflow-hidden">
-        {children}
-      </div>
+      {children}
     </div>
   );
 }

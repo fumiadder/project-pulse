@@ -314,8 +314,10 @@ export function DashboardPage() {
         <StatCard title="今日更新" value={stats.todayUpdates} icon="fa-clock" color="purple" />
       </div>
 
-      {/* 筛选栏 - 所有筛选项统一一行 */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-3">
+      {/* 主内容区域：筛选栏 + 主项目区块一起滚动 */}
+      <div ref={scrollContainerRef} className="flex flex-col gap-6 overflow-y-auto scrollbar-thin" style={{ maxHeight: 'calc(100vh - 200px)', minHeight: '300px' }}>
+        {/* 筛选栏 - 所有筛选项统一一行 */}
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-3">
         {/* 负责人 */}
         <div className="flex items-center gap-1">
           <span className="text-[10px] text-text-muted whitespace-nowrap">负责人:</span>
@@ -429,8 +431,6 @@ export function DashboardPage() {
         )}
       </div>
 
-      {/* 主内容区域：主项目区块 - 独立滚动区域，滚动条在主项目下面 */}
-      <div ref={scrollContainerRef} className="flex flex-col gap-6 overflow-y-auto scrollbar-thin" style={{ maxHeight: 'calc(100vh - 200px)', minHeight: '300px' }}>
         {projectSections.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16">
             <i className="fas fa-inbox text-3xl text-text-muted/40 mb-3" />

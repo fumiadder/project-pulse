@@ -7,6 +7,7 @@ import { StatCard } from '@/components/shared/StatCard';
 import { ProgressEditorModal } from '@/components/modals/ProgressEditorModal';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { StatusTag } from '@/components/shared/StatusTag';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import type { Project, Progress } from '@/types';
 import {
   getWeekLabel,
@@ -573,59 +574,73 @@ export function DashboardPage() {
                               const entryWeekBg = getWeekColor(entryWeek);
                               const entryWeekBorder = getWeekBorderColor(entryWeek);
                               return (
-                                <div
-                                  key={entry.id}
-                                  className={`flex flex-col gap-1 rounded-lg px-3 py-2 transition-all ${
-                                    isToday
-                                      ? 'border-l-[3px] border-l-accent-cyan ring-1 ring-accent-cyan/20 shadow-[0_0_8px_rgba(0,212,255,0.15)]'
-                                      : ''
-                                  }`}
-                                  style={{
-                                    backgroundColor: isToday ? 'rgba(0, 212, 255, 0.10)' : entryWeekBg,
-                                    borderLeft: isToday ? '3px solid rgba(0, 212, 255, 0.8)' : `3px solid ${entryWeekBorder}`,
-                                  }}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-text-secondary">
-                                      <i className="far fa-calendar mr-1" />
-                                      {entry.date}
-                                      {/* 周别标签 - 在日别进度记录上醒目显示 */}
-                                      {entryWeek && (
-                                        <span
-                                                                          className="ml-1.5 inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-bold"
-                                                                          style={{
-                                                                            backgroundColor: entryWeekBorder,
-                                                                            color: '#f1f5f9',
-                                                                          }}
-                                                                        >
-                                                                          {entryWeek}
-                                                                        </span>
-                                                                      )}
-                                      {isToday && (
-                                        <span className="ml-1.5 inline-flex items-center rounded-full bg-accent-cyan/20 px-2 py-0.5 text-[10px] font-bold text-accent-cyan shadow-[0_0_6px_rgba(0,212,255,0.3)]">
-                                          今天
-                                        </span>
-                                      )}
-                                    </span>
-                                    {/* 编辑按钮 */}
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleEditProgress(entry.id); }}
-                                      className="text-text-muted/50 hover:text-accent-cyan transition-colors"
-                                      title="编辑进度"
+                                <TooltipProvider key={entry.id} delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div
+                                        className={`flex flex-col gap-1 rounded-lg px-3 py-2 transition-all cursor-default ${
+                                          isToday
+                                            ? 'border-l-[3px] border-l-accent-cyan ring-1 ring-accent-cyan/20 shadow-[0_0_8px_rgba(0,212,255,0.15)]'
+                                            : ''
+                                        }`}
+                                        style={{
+                                          backgroundColor: isToday ? 'rgba(0, 212, 255, 0.10)' : entryWeekBg,
+                                          borderLeft: isToday ? '3px solid rgba(0, 212, 255, 0.8)' : `3px solid ${entryWeekBorder}`,
+                                        }}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs font-medium text-text-secondary">
+                                            <i className="far fa-calendar mr-1" />
+                                            {entry.date}
+                                            {/* 周别标签 - 在日别进度记录上醒目显示 */}
+                                            {entryWeek && (
+                                              <span
+                                                                                className="ml-1.5 inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-bold"
+                                                                                style={{
+                                                                                  backgroundColor: entryWeekBorder,
+                                                                                  color: '#f1f5f9',
+                                                                                }}
+                                                                              >
+                                                                                {entryWeek}
+                                                                              </span>
+                                                                            )}
+                                            {isToday && (
+                                              <span className="ml-1.5 inline-flex items-center rounded-full bg-accent-cyan/20 px-2 py-0.5 text-[10px] font-bold text-accent-cyan shadow-[0_0_6px_rgba(0,212,255,0.3)]">
+                                                今天
+                                              </span>
+                                            )}
+                                          </span>
+                                          {/* 编辑按钮 */}
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); handleEditProgress(entry.id); }}
+                                            className="text-text-muted/50 hover:text-accent-cyan transition-colors"
+                                            title="编辑进度"
+                                          >
+                                            <i className="fas fa-pen text-[10px]" />
+                                          </button>
+                                        </div>
+                                        <p className="text-xs text-text-muted leading-relaxed line-clamp-2">
+                                          {entry.content || '暂无更新内容'}
+                                        </p>
+                                        {sub.owner && (
+                                          <span className="text-[10px] text-text-muted/60">
+                                            <i className="far fa-user mr-1" />
+                                            {sub.owner}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                      side="top"
+                                      align="start"
+                                      className="max-w-xs bg-bg-secondary border border-border-custom p-3 text-text-primary whitespace-pre-wrap"
                                     >
-                                      <i className="fas fa-pen text-[10px]" />
-                                    </button>
-                                  </div>
-                                  <p className="text-xs text-text-muted leading-relaxed line-clamp-2">
-                                    {entry.content || '暂无更新内容'}
-                                  </p>
-                                  {sub.owner && (
-                                    <span className="text-[10px] text-text-muted/60">
-                                      <i className="far fa-user mr-1" />
-                                      {sub.owner}
-                                    </span>
-                                  )}
-                                </div>
+                                      <div className="text-xs leading-relaxed">
+                                        {entry.content || '暂无更新内容'}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               );
                             })}
                           </div>

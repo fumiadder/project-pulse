@@ -12,6 +12,7 @@ import { useProgressStore } from '@/stores/useProgressStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useUserStore } from '@/stores/useUserStore';
 import { uploadFile, getFileUrl } from '@/services/api';
+import { AutoResizeTextarea } from '@/components/shared/AutoResizeTextarea';
 import type { Progress, Attachment } from '@/types';
 
 /** 状态选项：与进度百分比强绑定 */
@@ -239,6 +240,42 @@ export function ProgressEditorModal({
     });
   };
 
+  /** 处理粘贴上传的文件 */
+  const handlePasteFiles = async (files: FileList) => {
+    setIsUploading(true);
+    setUploadProgress(`正在上传 ${files.length} 个文件...`);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setUploadProgress(`正在上传 ${file.name} (${i + 1}/${files.length})...`);
+
+      try {
+        const result = await uploadFile(file);
+        if (result.success && result.data) {
+          const uploadedFile = result.data;
+          const isImage = file.type.startsWith('image/');
+          const newAttachment: Attachment = {
+            id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: uploadedFile.name,
+            type: uploadedFile.type,
+            size: uploadedFile.size,
+            data: uploadedFile.url,
+            isImage,
+            url: uploadedFile.url,
+          };
+          setAttachments((prev) => [...prev, newAttachment]);
+        } else {
+          await readFileAsDataURL(file);
+        }
+      } catch {
+        await readFileAsDataURL(file);
+      }
+    }
+
+    setIsUploading(false);
+    setUploadProgress('');
+  };
+
   /** 移除附件 */
   const removeAttachment = (id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
@@ -395,12 +432,12 @@ export function ProgressEditorModal({
             {/* Content */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-muted">内容 *</label>
-              <textarea
+              <AutoResizeTextarea
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="输入进度内容"
-                rows={4}
-                className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 resize-y focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                onChange={(v) => setContent(v)}
+                onPasteFiles={handlePasteFiles}
+                placeholder="输入进度内容，支持粘贴图片/文件"
+                minRows={4}
               />
             </div>
 

@@ -258,20 +258,6 @@ export function DashboardPage() {
     return () => clearTimeout(timer);
   }, [scrollTargetSubId]);
 
-  // 初始化所有自定义滚动条
-  useEffect(() => {
-    const initScrollbars = () => {
-      document.querySelectorAll('.scrollbar-on-top-wrapper').forEach((wrapper) => {
-        const sectionId = wrapper.getAttribute('data-section');
-        if (sectionId) updateCustomScrollbar(sectionId);
-      });
-    };
-    initScrollbars();
-    // 监听窗口 resize 重新计算
-    window.addEventListener('resize', initScrollbars);
-    return () => window.removeEventListener('resize', initScrollbars);
-  }, [projectSections]);
-
   // 切换主项目折叠状态
   const toggleCollapse = useCallback((parentId: string) => {
     setCollapsedParents((prev) => {
@@ -294,32 +280,6 @@ export function DashboardPage() {
   const handleCloseProgressModal = () => {
     setProgressModalOpen(false);
     setPreProjectId(undefined);
-  };
-
-  // 自定义滚动条：更新滚动条位置
-  const updateCustomScrollbar = (sectionId: string) => {
-    const scrollEl = document.getElementById(`scroll-${sectionId}`);
-    const thumbEl = document.getElementById(`thumb-${sectionId}`);
-    if (!scrollEl || !thumbEl) return;
-    const ratio = scrollEl.clientWidth / scrollEl.scrollWidth;
-    const thumbWidth = Math.max(ratio * 100, 10);
-    const scrollLeft = scrollEl.scrollLeft;
-    const maxScroll = scrollEl.scrollWidth - scrollEl.clientWidth;
-    const thumbLeft = maxScroll > 0 ? (scrollLeft / maxScroll) * (100 - thumbWidth) : 0;
-    thumbEl.style.width = `${thumbWidth}%`;
-    thumbEl.style.marginLeft = `${thumbLeft}%`;
-  };
-
-  // 自定义滚动条：点击轨道跳转
-  const handleScrollbarTrackClick = (e: React.MouseEvent, sectionId: string) => {
-    const track = e.currentTarget;
-    const scrollEl = document.getElementById(`scroll-${sectionId}`);
-    if (!scrollEl || !track) return;
-    const rect = track.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const ratio = x / rect.width;
-    const maxScroll = scrollEl.scrollWidth - scrollEl.clientWidth;
-    scrollEl.scrollLeft = ratio * maxScroll;
   };
 
   // 清除所有筛选
@@ -525,19 +485,9 @@ export function DashboardPage() {
                 <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'} text-text-muted text-xs ml-1`} />
               </div>
 
-              {/* 子项目卡片区域 - 横向滚动条在上方 */}
+              {/* 子项目卡片区域 */}
               {!isCollapsed && (
-                <div className="scrollbar-on-top-wrapper" data-section={section.parent.id}>
-                  {/* 自定义顶部滚动条 */}
-                  <div className="scrollbar-track mb-3" onMouseDown={(e) => handleScrollbarTrackClick(e, section.parent.id)}>
-                    <div className="scrollbar-thumb" id={`thumb-${section.parent.id}`} />
-                  </div>
-                  <div
-                    className="flex gap-5 items-stretch overflow-x-auto p-4 pt-0"
-                    id={`scroll-${section.parent.id}`}
-                    onScroll={(e) => updateCustomScrollbar(section.parent.id)}
-                    style={{ scrollbarWidth: 'none' }}
-                  >
+                <div className="flex gap-5 items-stretch overflow-x-auto p-4 scrollbar-thin">
                   {section.subProjects.map((sub) => {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;
@@ -679,7 +629,6 @@ export function DashboardPage() {
                       </div>
                     );
                   })}
-                  </div>
                 </div>
               )}
             </div>

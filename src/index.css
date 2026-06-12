@@ -124,34 +124,6 @@
   }
 }
 
-/* 横向滚动条在上方：通过自定义滚动条实现 */
-.scrollbar-on-top-wrapper {
-  position: relative;
-}
-.scrollbar-on-top-wrapper .scrollbar-track {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  height: 6px;
-  background: var(--bg-primary);
-  border-radius: 3px;
-  cursor: pointer;
-}
-.scrollbar-on-top-wrapper .scrollbar-thumb {
-  height: 6px;
-  background: var(--border-hover);
-  border-radius: 3px;
-  cursor: grab;
-  transition: background 0.2s;
-}
-.scrollbar-on-top-wrapper .scrollbar-thumb:hover {
-  background: var(--accent-cyan);
-}
-/* 隐藏内层原生滚动条 */
-.scrollbar-on-top-wrapper > div:last-child::-webkit-scrollbar {
-  display: none;
-}
-
 /* ============================================
    Custom Scrollbar
    ============================================ */

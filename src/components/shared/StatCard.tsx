@@ -2,7 +2,8 @@ interface StatCardProps {
   title: string;
   value: number | string;
   icon: string;
-  color: 'cyan' | 'green' | 'orange' | 'purple';
+  color: 'cyan' | 'green' | 'orange' | 'purple' | 'yellow';
+  onClick?: () => void;
 }
 
 const colorMap = {
@@ -30,14 +31,22 @@ const colorMap = {
     border: 'border-accent-purple/20',
     value: 'text-accent-purple',
   },
+  yellow: {
+    icon: 'text-yellow-400',
+    glow: 'shadow-[0_0_15px_rgba(255,217,61,0.15)]',
+    border: 'border-yellow-400/20',
+    value: 'text-yellow-400',
+  },
 };
 
-export function StatCard({ title, value, icon, color }: StatCardProps) {
+export function StatCard({ title, value, icon, color, onClick }: StatCardProps) {
   const c = colorMap[color];
+  const clickable = !!onClick;
 
   return (
     <div
-      className={`card-glass relative overflow-hidden flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] ${c.glow}`}
+      onClick={onClick}
+      className={`card-glass relative overflow-hidden flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] ${c.glow} ${clickable ? 'cursor-pointer hover:border-accent-cyan/30' : ''}`}
     >
       {/* 背景装饰图标 - 半透明大字号 */}
       <i

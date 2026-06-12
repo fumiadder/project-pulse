@@ -100,6 +100,8 @@ export function DashboardPage() {
 
   // 主项目折叠状态
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
+  // 今日更新筛选模式
+  const [todayFilterActive, setTodayFilterActive] = useState(false);
 
   // Progress modal state
   const [progressModalOpen, setProgressModalOpen] = useState(false);
@@ -318,9 +320,23 @@ export function DashboardPage() {
         {/* 统计卡片行 */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard title="项目总数" value={stats.total} icon="fa-th-large" color="cyan" />
-          <StatCard title="进行中" value={stats.inProgress} icon="fa-spinner" color="green" />
-          <StatCard title="已完成" value={stats.completed} icon="fa-check-circle" color="orange" />
-          <StatCard title="今日更新" value={stats.todayUpdates} icon="fa-clock" color="purple" />
+          <StatCard title="进行中" value={stats.inProgress} icon="fa-spinner" color="yellow" />
+          <StatCard title="已完成" value={stats.completed} icon="fa-check-circle" color="green" />
+          <StatCard
+            title="今日更新"
+            value={stats.todayUpdates}
+            icon="fa-clock"
+            color="purple"
+            onClick={() => {
+              const next = !todayFilterActive;
+              setTodayFilterActive(next);
+              if (next) {
+                setDateFilter(todayStr);
+              } else {
+                setDateFilter('all');
+              }
+            }}
+          />
         </div>
         {/* 筛选栏 - 所有筛选项统一一行 */}
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-3">

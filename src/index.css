@@ -127,7 +127,6 @@
 /* 横向滚动条移到上方：外层翻转，内层翻回 */
 .scrollbar-on-top-wrapper {
   transform: rotateX(180deg);
-  overflow: hidden;
 }
 .scrollbar-on-top-wrapper > div {
   transform: rotateX(180deg);

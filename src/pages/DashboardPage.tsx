@@ -314,12 +314,12 @@ export function DashboardPage() {
         <StatCard title="今日更新" value={stats.todayUpdates} icon="fa-clock" color="purple" />
       </div>
 
-      {/* 筛选栏 - 添加微妙背景色和底部边框，与项目列表视觉分隔 */}
-      <div className="flex flex-col gap-3 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-4 border-b-2 border-b-border-custom/30">
-        {/* 第一行：搜索 + 负责人 + 主项目 */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* 筛选栏 */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-4">
+        {/* 第一行：负责人 + 状态 + 主项目 */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* 负责人筛选 */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-text-muted whitespace-nowrap">负责人:</span>
             <select
               value={ownerFilter}
@@ -334,24 +334,8 @@ export function DashboardPage() {
             </select>
           </div>
 
-          {/* 主项目筛选 */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-text-muted whitespace-nowrap">主项目:</span>
-            <select
-              value={parentFilter}
-              onChange={(e) => setParentFilter(e.target.value)}
-              className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1.5 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
-            >
-              <option value="all">所有</option>
-              {filterOptions.allParents.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+          <div className="w-px h-4 bg-border-custom/50 mx-1" />
 
-        {/* 第二行：周别 + 日期 + 优先级 + 状态 */}
-        <div className="flex flex-wrap items-center gap-2">
           {/* 状态筛选 */}
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-text-muted">状态:</span>
@@ -373,6 +357,35 @@ export function DashboardPage() {
 
           <div className="w-px h-4 bg-border-custom/50 mx-1" />
 
+          {/* 主项目筛选 */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-text-muted whitespace-nowrap">主项目:</span>
+            <select
+              value={parentFilter}
+              onChange={(e) => setParentFilter(e.target.value)}
+              className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1.5 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+            >
+              <option value="all">所有</option>
+              {filterOptions.allParents.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 清除筛选按钮 */}
+          {hasFilter && (
+            <button
+              onClick={clearAllFilters}
+              className="flex items-center gap-1 rounded-lg border border-accent-red/20 bg-accent-red/5 px-2.5 py-1.5 text-xs text-accent-red transition-all duration-200 hover:bg-accent-red/10 hover:border-accent-red/30 animate-fade-in-up ml-auto"
+            >
+              <i className="fas fa-times text-[10px]" />
+              <span>清除筛选</span>
+            </button>
+          )}
+        </div>
+
+        {/* 第二行：周别 + 日期 + 优先级 */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* 周别筛选 */}
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-text-muted">周别:</span>
@@ -417,17 +430,6 @@ export function DashboardPage() {
               ))}
             </select>
           </div>
-
-          {/* 清除筛选按钮 */}
-          {hasFilter && (
-            <button
-              onClick={clearAllFilters}
-              className="flex items-center gap-1 rounded-lg border border-accent-red/20 bg-accent-red/5 px-2.5 py-1.5 text-xs text-accent-red transition-all duration-200 hover:bg-accent-red/10 hover:border-accent-red/30 animate-fade-in-up ml-auto"
-            >
-              <i className="fas fa-times text-[10px]" />
-              <span>清除筛选</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -604,7 +606,7 @@ export function DashboardPage() {
                                         </span>
                                       )}
                                     </span>
-                                    <span className="text-[10px] font-medium text-text-muted">{entry.percent}%</span>
+
                                   </div>
                                   <p className="text-xs text-text-muted leading-relaxed line-clamp-2">
                                     {entry.content || '暂无更新内容'}

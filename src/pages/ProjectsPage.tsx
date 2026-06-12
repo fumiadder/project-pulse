@@ -666,11 +666,31 @@ export function ProjectsPage() {
             </select>
           </div>
 
+          {/* 一键展开/折叠 */}
+          <div className="flex items-center gap-1 ml-auto">
+            <button
+              onClick={() => setExpandedIds(new Set(projects.map((p) => p.id)))}
+              className="flex items-center gap-1 rounded-lg border border-border-custom/50 bg-bg-tertiary px-2.5 py-1.5 text-xs text-text-muted transition-all hover:text-text-primary"
+              title="展开全部"
+            >
+              <i className="fas fa-expand-alt text-[10px]" />
+              <span>展开</span>
+            </button>
+            <button
+              onClick={() => setExpandedIds(new Set())}
+              className="flex items-center gap-1 rounded-lg border border-border-custom/50 bg-bg-tertiary px-2.5 py-1.5 text-xs text-text-muted transition-all hover:text-text-primary"
+              title="折叠全部"
+            >
+              <i className="fas fa-compress-alt text-[10px]" />
+              <span>折叠</span>
+            </button>
+          </div>
+
           {/* 清除筛选按钮 */}
           {hasFilter && (
             <button
               onClick={clearAllFilters}
-              className="flex items-center gap-1 rounded-lg border border-accent-red/20 bg-accent-red/5 px-2.5 py-1.5 text-xs text-accent-red transition-all duration-200 hover:bg-accent-red/10 hover:border-accent-red/30 animate-fade-in-up ml-auto"
+              className="flex items-center gap-1 rounded-lg border border-accent-red/20 bg-accent-red/5 px-2.5 py-1.5 text-xs text-accent-red transition-all duration-200 hover:bg-accent-red/10 hover:border-accent-red/30 animate-fade-in-up"
             >
               <i className="fas fa-times text-[10px]" />
               <span>清除筛选</span>

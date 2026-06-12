@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Progress, Project } from '@/types';
+import { api } from '@/services/api';
 
 interface AiSummaryBoxProps {
   type: 'daily' | 'weekly' | 'monthly';
@@ -282,8 +283,11 @@ function getWeekLabelFromEntries(entries: Progress[]): string {
 
 export function AiSummaryBox({ type, entries, projects, defaultVisible = false }: AiSummaryBoxProps) {
   const [visible, setVisible] = useState(defaultVisible);
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
-  const summaryText = useMemo(() => {
+  // 本地兜底总结
+  const localSummary = useMemo(() => {
     switch (type) {
       case 'daily': return generateDailySummary(entries, projects);
       case 'weekly': return generateWeeklySummary(entries, projects);
@@ -291,6 +295,25 @@ export function AiSummaryBox({ type, entries, projects, defaultVisible = false }
     }
   }, [type, entries, projects]);
 
+  // 尝试调用后端 AI 接口，失败则回退到本地生成
+  useEffect(() => {
+    if (!visible || entries.length === 0) return;
+    setLoading(true);
+    api.generateAiSummary(type, entries, projects)
+      .then((res) => {
+        if (res.success && res.data) {
+          setAiSummary(res.data);
+        } else {
+          setAiSummary(localSummary);
+        }
+      })
+      .catch(() => {
+        setAiSummary(localSummary);
+      })
+      .finally(() => setLoading(false));
+  }, [visible, type, entries, projects, localSummary]);
+
+  const summaryText = aiSummary || localSummary;
   const typeLabel = type === 'daily' ? '日报' : type === 'weekly' ? '周报' : '月报';
 
   return (
@@ -318,10 +341,20 @@ export function AiSummaryBox({ type, entries, projects, defaultVisible = false }
             </button>
           </div>
 
+          {/* 加载中 */}
+          {loading && (
+            <div className="flex items-center gap-2 text-xs text-text-muted">
+              <i className="fas fa-spinner fa-spin" />
+              <span>AI 正在分析中...</span>
+            </div>
+          )}
+
           {/* 格式化文本展示 */}
-          <div className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
-            {summaryText}
-          </div>
+          {!loading && (
+            <div className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">
+              {summaryText}
+            </div>
+          )}
 
           {entries.length === 0 && (
             <p className="text-xs text-text-muted">暂无分析结果</p>

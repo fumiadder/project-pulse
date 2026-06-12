@@ -21,7 +21,7 @@ const ownerColorMap: Record<string, string> = {
 };
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
-const MAX_ITEMS_PER_DAY = 8;
+const MAX_ITEMS_PER_DAY = 12;
 
 /** 状态选项：未开始、进行中、有风险、延期 */
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -416,12 +416,11 @@ export function CalendarPage() {
                   <div
                     key={entry.id}
                     onClick={() => handleTagClick(entry)}
-                    className={`border-l-2 ${colorClasses} rounded-r px-1.5 py-0.5 text-xs leading-tight cursor-pointer transition-colors hover:bg-white/5`}
-                  >
+                    className={`border-l-2 ${colorClasses} rounded-r px-1 py-px text-[10px] leading-tight cursor-pointer transition-colors hover:bg-white/5`}>
                     <div className="font-medium truncate">{owner}</div>
-                    <div className="text-text-muted truncate">{entry.content.slice(0, 20)}</div>
-                    <div className="text-text-muted/60 truncate text-[10px]">{projectPath}</div>
-                    <span className="inline-block mt-0.5 rounded bg-bg-primary/50 px-1 py-px text-[10px] font-medium">
+                    <div className="text-text-muted truncate">{entry.content.slice(0, 12)}</div>
+                    <div className="text-text-muted/60 truncate text-[8px]">{projectPath}</div>
+                    <span className="inline-block mt-px rounded bg-bg-primary/50 px-1 py-px text-[8px] font-medium">
                       {entry.percent}%
                     </span>
                   </div>

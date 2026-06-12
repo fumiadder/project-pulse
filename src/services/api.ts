@@ -152,6 +152,14 @@ export const api = {
       body: JSON.stringify({ value }),
     });
   },
+
+  // --- AI Summary ---
+  generateAiSummary(type: 'daily' | 'weekly' | 'monthly', entries: unknown[], projects: unknown[]): Promise<ApiResponse<string>> {
+    return apiFetch<string>('/ai-summary', {
+      method: 'POST',
+      body: JSON.stringify({ type, entries, projects }),
+    });
+  },
 };
 
 export default api;

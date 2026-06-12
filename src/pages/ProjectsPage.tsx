@@ -115,7 +115,7 @@ function getStatusDisplayLabel(status: string, tagStatus: string): string {
   }
 }
 
-/** 折叠动画容器 */
+/** 折叠动画容器 - 使用 grid 技巧实现丝滑过渡 */
 function CollapsibleSection({
   isExpanded,
   children,
@@ -123,37 +123,16 @@ function CollapsibleSection({
   isExpanded: boolean;
   children: React.ReactNode;
 }) {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number>(0);
-
-  useEffect(() => {
-    if (!contentRef.current) return;
-    if (isExpanded) {
-      const h = contentRef.current.scrollHeight;
-      setHeight(h);
-      // 动画完成后设置为 auto，允许内容动态变化
-      const timer = setTimeout(() => setHeight(0), 300);
-      return () => clearTimeout(timer);
-    } else {
-      // 先获取当前高度，然后设为 0
-      const h = contentRef.current.scrollHeight;
-      setHeight(h);
-      requestAnimationFrame(() => {
-        setHeight(0);
-      });
-    }
-  }, [isExpanded]);
-
   return (
     <div
-      className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
+      className="grid transition-[grid-template-rows] duration-300 ease-in-out"
       style={{
-        maxHeight: isExpanded && height === 0 ? '9999px' : `${height}px`,
-        opacity: isExpanded ? 1 : 0,
+        gridTemplateRows: isExpanded ? '1fr' : '0fr',
       }}
-      ref={contentRef}
     >
-      {children}
+      <div className="overflow-hidden">
+        {children}
+      </div>
     </div>
   );
 }
@@ -272,11 +251,6 @@ function ProjectRow({
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-accent-cyan">{entry.date}</span>
                   <StatusTag status={entry.status} />
-                  <span className="text-xs text-text-secondary">{entry.percent}%</span>
-                  {/* 进度100%自动显示"已完成" */}
-                  {entry.percent >= 100 && (
-                    <span className="text-xs font-bold text-green-400">已完成</span>
-                  )}
                 </div>
                 {/* 进度卡片编辑和删除按钮 */}
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -666,23 +640,48 @@ export function ProjectsPage() {
             </select>
           </div>
 
-          {/* 一键展开/折叠 */}
+          {/* 一键展开/折叠 - 区分主项目和子项目 */}
           <div className="flex items-center gap-1 ml-auto">
             <button
-              onClick={() => setExpandedIds(new Set(projects.map((p) => p.id)))}
-              className="flex items-center gap-1 rounded-lg border border-border-custom/50 bg-bg-tertiary px-2.5 py-1.5 text-xs text-text-muted transition-all hover:text-text-primary"
-              title="展开全部"
+              onClick={() => {
+                const parentIds = getParentProjects().map(p => p.id);
+                setExpandedIds(prev => {
+                  const next = new Set(prev);
+                  // 如果所有主项目都已展开，则折叠所有主项目
+                  const allParentsExpanded = parentIds.every(id => next.has(id));
+                  if (allParentsExpanded) {
+                    parentIds.forEach(id => next.delete(id));
+                  } else {
+                    parentIds.forEach(id => next.add(id));
+                  }
+                  return next;
+                });
+              }}
+              className="flex items-center gap-1 rounded-lg border border-border-custom/50 bg-bg-tertiary px-2 py-1 text-xs text-text-muted transition-all hover:text-text-primary"
+              title="展开/折叠主项目"
             >
-              <i className="fas fa-expand-alt text-[10px]" />
-              <span>展开</span>
+              <i className="fas fa-folder text-[10px]" />
+              <span>主项目</span>
             </button>
             <button
-              onClick={() => setExpandedIds(new Set())}
-              className="flex items-center gap-1 rounded-lg border border-border-custom/50 bg-bg-tertiary px-2.5 py-1.5 text-xs text-text-muted transition-all hover:text-text-primary"
-              title="折叠全部"
+              onClick={() => {
+                const subIds = projects.filter(p => p.parentId).map(p => p.id);
+                setExpandedIds(prev => {
+                  const next = new Set(prev);
+                  const allSubsExpanded = subIds.every(id => next.has(id));
+                  if (allSubsExpanded) {
+                    subIds.forEach(id => next.delete(id));
+                  } else {
+                    subIds.forEach(id => next.add(id));
+                  }
+                  return next;
+                });
+              }}
+              className="flex items-center gap-1 rounded-lg border border-border-custom/50 bg-bg-tertiary px-2 py-1 text-xs text-text-muted transition-all hover:text-text-primary"
+              title="展开/折叠子项目"
             >
-              <i className="fas fa-compress-alt text-[10px]" />
-              <span>折叠</span>
+              <i className="fas fa-file-alt text-[10px]" />
+              <span>子项目</span>
             </button>
           </div>
 

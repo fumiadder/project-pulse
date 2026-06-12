@@ -314,123 +314,119 @@ export function DashboardPage() {
         <StatCard title="今日更新" value={stats.todayUpdates} icon="fa-clock" color="purple" />
       </div>
 
-      {/* 筛选栏 */}
-      <div className="flex flex-col gap-3 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-4">
-        {/* 第一行：负责人 + 状态 + 主项目 */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* 负责人筛选 */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-text-muted whitespace-nowrap">负责人:</span>
-            <select
-              value={ownerFilter}
-              onChange={(e) => setOwnerFilter(e.target.value)}
-              className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1.5 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
-            >
-              <option value="__me__">{currentUser?.name ?? '我'}</option>
-              <option value="all">所有</option>
-              {filterOptions.allOwners.map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="w-px h-4 bg-border-custom/50 mx-1" />
-
-          {/* 状态筛选 */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-text-muted">状态:</span>
-            {[
-              { value: 'all', label: '全部' },
-              { value: 'normal', label: '进行中' },
-              { value: 'warning', label: '有风险' },
-              { value: 'danger', label: '延期' },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setStatusFilter(opt.value)}
-                className={filterBtnClass(statusFilter === opt.value)}
-              >
-                {opt.label}
-              </button>
+      {/* 筛选栏 - 所有筛选项统一一行 */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-3">
+        {/* 负责人 */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-text-muted whitespace-nowrap">负责人:</span>
+          <select
+            value={ownerFilter}
+            onChange={(e) => setOwnerFilter(e.target.value)}
+            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+          >
+            <option value="__me__">{currentUser?.name ?? '我'}</option>
+            <option value="all">所有</option>
+            {filterOptions.allOwners.map((name) => (
+              <option key={name} value={name}>{name}</option>
             ))}
-          </div>
+          </select>
+        </div>
 
-          <div className="w-px h-4 bg-border-custom/50 mx-1" />
+        <div className="w-px h-4 bg-border-custom/50" />
 
-          {/* 主项目筛选 */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-text-muted whitespace-nowrap">主项目:</span>
-            <select
-              value={parentFilter}
-              onChange={(e) => setParentFilter(e.target.value)}
-              className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1.5 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
-            >
-              <option value="all">所有</option>
-              {filterOptions.allParents.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 清除筛选按钮 */}
-          {hasFilter && (
+        {/* 状态 */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-text-muted">状态:</span>
+          {[
+            { value: 'all', label: '全部' },
+            { value: 'normal', label: '进行中' },
+            { value: 'warning', label: '有风险' },
+            { value: 'danger', label: '延期' },
+          ].map((opt) => (
             <button
-              onClick={clearAllFilters}
-              className="flex items-center gap-1 rounded-lg border border-accent-red/20 bg-accent-red/5 px-2.5 py-1.5 text-xs text-accent-red transition-all duration-200 hover:bg-accent-red/10 hover:border-accent-red/30 animate-fade-in-up ml-auto"
+              key={opt.value}
+              onClick={() => setStatusFilter(opt.value)}
+              className={filterBtnClass(statusFilter === opt.value)}
             >
-              <i className="fas fa-times text-[10px]" />
-              <span>清除筛选</span>
+              {opt.label}
             </button>
-          )}
+          ))}
         </div>
 
-        {/* 第二行：周别 + 日期 + 优先级 */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* 周别筛选 */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-text-muted">周别:</span>
-            <select
-              value={weekFilter}
-              onChange={(e) => setWeekFilter(e.target.value)}
-              className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1.5 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
-            >
-              <option value="all">所有</option>
-              {filterOptions.allWeeks.map((wk) => (
-                <option key={wk} value={wk}>{wk}</option>
-              ))}
-            </select>
-          </div>
+        <div className="w-px h-4 bg-border-custom/50" />
 
-          {/* 日期筛选 */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-text-muted">日期:</span>
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1.5 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
-            >
-              <option value="all">所有</option>
-              {filterOptions.allDates.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 优先级筛选 */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-text-muted">优先级:</span>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1.5 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
-            >
-              <option value="all">所有</option>
-              {filterOptions.allPriorities.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
+        {/* 主项目 */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-text-muted whitespace-nowrap">主项目:</span>
+          <select
+            value={parentFilter}
+            onChange={(e) => setParentFilter(e.target.value)}
+            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+          >
+            <option value="all">所有</option>
+            {filterOptions.allParents.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
         </div>
+
+        <div className="w-px h-4 bg-border-custom/50" />
+
+        {/* 周别 */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-text-muted">周别:</span>
+          <select
+            value={weekFilter}
+            onChange={(e) => setWeekFilter(e.target.value)}
+            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+          >
+            <option value="all">所有</option>
+            {filterOptions.allWeeks.map((wk) => (
+              <option key={wk} value={wk}>{wk}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 日期 */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-text-muted">日期:</span>
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+          >
+            <option value="all">所有</option>
+            {filterOptions.allDates.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 优先级 */}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-text-muted">优先级:</span>
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+          >
+            <option value="all">所有</option>
+            {filterOptions.allPriorities.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 清除筛选 */}
+        {hasFilter && (
+          <button
+            onClick={clearAllFilters}
+            className="flex items-center gap-1 rounded-lg border border-accent-red/20 bg-accent-red/5 px-2 py-1 text-xs text-accent-red transition-all hover:bg-accent-red/10 hover:border-accent-red/30 ml-auto"
+          >
+            <i className="fas fa-times text-[10px]" />
+            <span>清除</span>
+          </button>
+        )}
       </div>
 
       {/* 主内容区域：主项目区块 - 独立滚动区域，滚动条在主项目下面 */}

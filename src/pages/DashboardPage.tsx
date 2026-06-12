@@ -103,6 +103,7 @@ export function DashboardPage() {
   // Progress modal state
   const [progressModalOpen, setProgressModalOpen] = useState(false);
   const [preProjectId, setPreProjectId] = useState<string | undefined>(undefined);
+  const [editingProgressId, setEditingProgressId] = useState<string | null>(null);
 
   // 自动滚动引用
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -277,9 +278,15 @@ export function DashboardPage() {
     setProgressModalOpen(true);
   };
 
+  const handleEditProgress = (entryId: string) => {
+    setEditingProgressId(entryId);
+    setProgressModalOpen(true);
+  };
+
   const handleCloseProgressModal = () => {
     setProgressModalOpen(false);
     setPreProjectId(undefined);
+    setEditingProgressId(null);
   };
 
   // 清除所有筛选
@@ -600,7 +607,14 @@ export function DashboardPage() {
                                         </span>
                                       )}
                                     </span>
-
+                                    {/* 编辑按钮 */}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleEditProgress(entry.id); }}
+                                      className="text-text-muted/50 hover:text-accent-cyan transition-colors"
+                                      title="编辑进度"
+                                    >
+                                      <i className="fas fa-pen text-[10px]" />
+                                    </button>
                                   </div>
                                   <p className="text-xs text-text-muted leading-relaxed line-clamp-2">
                                     {entry.content || '暂无更新内容'}
@@ -636,6 +650,7 @@ export function DashboardPage() {
       <ProgressEditorModal
         open={progressModalOpen}
         onClose={handleCloseProgressModal}
+        progressId={editingProgressId}
         preProjectId={preProjectId}
         preDate={todayStr}
       />

@@ -21,6 +21,7 @@ const navItems = [
   { key: 'monthly-report', label: '月报', icon: 'fa-chart-line' },
   { key: 'history', label: '更新记录', icon: 'fa-history' },
   { key: 'users', label: '用户管理', icon: 'fa-users' },
+  { key: 'private-zone', label: '私密空间', icon: 'fa-lock' },
 ] as const;
 
 export function Sidebar({ collapsed, onItemClick }: SidebarProps) {

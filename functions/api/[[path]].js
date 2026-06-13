@@ -5,7 +5,7 @@ const API_BASE = 'pp';
 
 // ─── Store definitions & validators ───────────────────────────────────────────
 
-const STORES = ['projects', 'progress', 'users', 'reports', 'dailyTags'];
+const STORES = ['projects', 'progress', 'users', 'reports', 'dailyTags', 'ideas'];
 
 const VALIDATORS = {
   projects(item) {
@@ -39,6 +39,13 @@ const VALIDATORS = {
   dailyTags(item) {
     if (!item || typeof item !== 'object') return 'Item must be an object';
     if (!item.id || typeof item.id !== 'string') return 'Missing or invalid "id" (string required)';
+    return null;
+  },
+  ideas(item) {
+    if (!item || typeof item !== 'object') return 'Item must be an object';
+    if (!item.id || typeof item.id !== 'string') return 'Missing or invalid "id" (string required)';
+    if (!item.userId || typeof item.userId !== 'string') return 'Missing or invalid "userId" (string required)';
+    if (!item.title || typeof item.title !== 'string') return 'Missing or invalid "title" (string required)';
     return null;
   },
 };
@@ -203,12 +210,13 @@ async function healthCheck(env) {
 // ─── Full sync (safe upsert per item) ────────────────────────────────────────
 
 async function fullSyncGet(env) {
-  const [projects, progress, users, reports, dailyTags] = await Promise.all([
+  const [projects, progress, users, reports, dailyTags, ideas] = await Promise.all([
     loadAllItems(env, 'projects'),
     loadAllItems(env, 'progress'),
     loadAllItems(env, 'users'),
     loadAllItems(env, 'reports'),
     loadAllItems(env, 'dailyTags'),
+    loadAllItems(env, 'ideas'),
   ]);
 
   const settingsList = await env.DB.list({ prefix: `${API_BASE}:setting:` });
@@ -225,7 +233,7 @@ async function fullSyncGet(env) {
   }
 
   return jres({
-    projects, progress, users, reports, daily_tags: dailyTags,
+    projects, progress, users, reports, daily_tags: dailyTags, ideas,
     settings, versions, syncedAt: new Date().toISOString(),
   });
 }
@@ -249,6 +257,7 @@ async function fullSyncPost(env, body) {
     users: body.users || [],
     reports: body.reports || [],
     dailyTags: body.daily_tags || [],
+    ideas: body.ideas || [],
   };
 
   const counts = {};
@@ -541,6 +550,50 @@ async function migrateFromOldFormat(env) {
   });
 }
 
+// ─── Land Idea ───────────────────────────────────────────────────────────────
+
+async function landIdea(env, ideaId, projectData) {
+  const ideaRaw = await env.DB.get(itemKey('ideas', ideaId));
+  if (!ideaRaw) return jres({ error: 'Idea not found' }, 404);
+  const idea = JSON.parse(ideaRaw);
+
+  const now = new Date().toISOString();
+  const newProject = {
+    id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    userId: idea.userId,
+    parentId: projectData.parentId ?? null,
+    name: projectData.name || idea.title,
+    desc: projectData.desc || idea.content,
+    owner: projectData.owner || '',
+    color: projectData.color || '#00d4ff',
+    priority: projectData.priority || '中',
+    status: '未开始',
+    startDate: projectData.startDate || '',
+    endDate: projectData.endDate || '',
+    collaborators: '',
+    notes: `源自想法: ${idea.title}`,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // 保存新项目到 KV
+  await env.DB.put(itemKey('projects', newProject.id), JSON.stringify(newProject));
+  const projectIds = await getIndex(env, 'projects');
+  if (!projectIds.includes(newProject.id)) {
+    projectIds.push(newProject.id);
+    await putIndex(env, 'projects', projectIds);
+  }
+  await incrementVersion(env, 'projects');
+
+  // 更新 idea 状态
+  idea.status = 'landed';
+  idea.landedProjectId = newProject.id;
+  idea.updatedAt = now;
+  await env.DB.put(itemKey('ideas', idea.id), JSON.stringify(idea));
+
+  return jres({ projectId: newProject.id });
+}
+
 // ─── Cleanup old format keys after migration ─────────────────────────────────
 
 async function cleanupOldFormat(env) {
@@ -673,6 +726,35 @@ export async function onRequest(context) {
     }
     else if (path.match(/^\/api\/daily_tags\/.+$/) && method === 'DELETE') {
       res = await deleteItem(env, 'dailyTags', path.split('/').pop());
+    }
+
+    // ── Ideas ──
+    else if (path === '/api/ideas' && method === 'GET') {
+      res = await listStore(env, 'ideas', url);
+    }
+    else if (path === '/api/ideas' && method === 'PUT') {
+      res = await putItem(env, 'ideas', await request.json());
+    }
+    else if (path.match(/^\/api\/ideas\/.+$/) && method === 'GET') {
+      res = await getItem(env, 'ideas', path.split('/').pop());
+    }
+    else if (path.match(/^\/api\/ideas\/.+$/) && method === 'DELETE') {
+      res = await deleteItem(env, 'ideas', path.split('/').pop());
+    }
+    else if (path.match(/^\/api\/ideas\/.+\/land$/) && method === 'POST') {
+      res = await landIdea(env, path.split('/')[3], await request.json());
+    }
+
+    // ── Auth / Private Password ──
+    else if (path === '/api/auth/private-password' && method === 'POST') {
+      const { userId, password } = await request.json();
+      const userRaw = await env.DB.get(itemKey('users', userId));
+      if (!userRaw) {
+        res = jres({ valid: false }, 404);
+      } else {
+        const user = JSON.parse(userRaw);
+        res = jres({ valid: user.privatePassword === password });
+      }
     }
 
     // ── Settings ──

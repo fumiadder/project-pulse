@@ -8,3 +8,4 @@ export { MonthlyReportPage } from './MonthlyReportPage';
 export { HistoryPage } from './HistoryPage';
 export { ProfilePage } from './ProfilePage';
 export { UsersPage } from './UsersPage';
+export { PrivateZonePage } from './PrivateZonePage';

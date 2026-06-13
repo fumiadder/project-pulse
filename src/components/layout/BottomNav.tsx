@@ -5,7 +5,7 @@ const bottomNavItems = [
   { key: 'calendar', label: '日历', icon: 'fa-calendar-alt' },
   { key: 'projects', label: '项目', icon: 'fa-project-diagram' },
   { key: 'daily-report', label: '日报', icon: 'fa-file-alt' },
-  { key: 'more', label: '更多', icon: 'fa-ellipsis-h' },
+  { key: 'private-zone', label: '私密', icon: 'fa-lock' },
 ] as const;
 
 export function BottomNav() {

@@ -34,6 +34,9 @@ const UsersPage = lazy(() =>
 const ProfilePage = lazy(() =>
   import('@/pages').then((m) => ({ default: m.ProfilePage }))
 );
+const PrivateZonePage = lazy(() =>
+  import('@/pages').then((m) => ({ default: m.PrivateZonePage }))
+);
 
 /** Loading fallback shown during lazy load */
 function PageLoader() {
@@ -58,6 +61,7 @@ const pageComponents: Record<string, React.LazyExoticComponent<() => ReactNode>>
   history: HistoryPage,
   users: UsersPage,
   profile: ProfilePage,
+  'private-zone': PrivateZonePage,
 };
 
 function App() {

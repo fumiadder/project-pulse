@@ -1,12 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useProgressStore } from '@/stores/useProgressStore';
 import { useUserStore } from '@/stores/useUserStore';
+import { api } from '@/services/api';
 
 export function ProfilePage() {
   const { currentUser } = useUserStore();
   const { projects } = useProjectStore();
   const { entries } = useProgressStore();
+
+  const [privatePassword, setPrivatePassword] = useState('');
+  const [privatePasswordConfirm, setPrivatePasswordConfirm] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
 
   const stats = useMemo(() => {
     if (!currentUser) {
@@ -91,6 +97,31 @@ export function ProfilePage() {
     if (percent >= 50) return 'bg-accent-cyan';
     if (percent >= 30) return 'bg-accent-yellow';
     return 'bg-accent-red';
+  };
+
+  const handleSetPrivatePassword = async () => {
+    if (!currentUser) return;
+    if (privatePassword !== privatePasswordConfirm) {
+      setPwError('两次输入不一致');
+      setPwSuccess('');
+      return;
+    }
+    if (privatePassword.length < 4) {
+      setPwError('密码至少 4 位');
+      setPwSuccess('');
+      return;
+    }
+    const updated = { ...currentUser, privatePassword: privatePassword.trim() };
+    const res = await api.putUser(updated);
+    if (res.success) {
+      setPwError('');
+      setPwSuccess('私密密码已设置');
+      setPrivatePassword('');
+      setPrivatePasswordConfirm('');
+    } else {
+      setPwError(res.error || '设置失败');
+      setPwSuccess('');
+    }
   };
 
   if (!currentUser) {
@@ -181,6 +212,38 @@ export function ProfilePage() {
               <span className="text-text-primary font-mono text-[10px]">{currentUser.color}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Private Password Setting */}
+      <div className="rounded-lg border border-border-primary/20 bg-bg-secondary p-4 space-y-3">
+        <h4 className="text-sm font-semibold text-text-primary">
+          <i className="fas fa-lock mr-1 text-accent-cyan" />
+          私密密码设置
+        </h4>
+        <div className="flex flex-col gap-2">
+          <input
+            type="password"
+            value={privatePassword}
+            onChange={(e) => setPrivatePassword(e.target.value)}
+            placeholder="输入私密密码"
+            className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+          />
+          <input
+            type="password"
+            value={privatePasswordConfirm}
+            onChange={(e) => setPrivatePasswordConfirm(e.target.value)}
+            placeholder="确认密码"
+            className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+          />
+          {pwError && <p className="text-xs text-accent-red">{pwError}</p>}
+          {pwSuccess && <p className="text-xs text-accent-green">{pwSuccess}</p>}
+          <button
+            onClick={handleSetPrivatePassword}
+            className="w-full rounded-lg bg-accent-cyan px-4 py-2 text-sm font-medium text-white hover:bg-accent-cyan/80 transition-all"
+          >
+            设置密码
+          </button>
         </div>
       </div>
 

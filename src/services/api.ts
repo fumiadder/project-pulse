@@ -160,6 +160,39 @@ export const api = {
       body: JSON.stringify({ type, entries, projects }),
     });
   },
+
+  // --- Ideas ---
+  listIdeas(userId?: string): Promise<ApiResponse<Idea[]>> {
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    return apiFetch<Idea[]>(`/ideas${query}`);
+  },
+
+  putIdea(idea: Idea): Promise<ApiResponse<Idea>> {
+    return apiFetch<Idea>('/ideas', {
+      method: 'PUT',
+      body: JSON.stringify(idea),
+    });
+  },
+
+  deleteIdea(id: string): Promise<ApiResponse<void>> {
+    return apiFetch<void>(`/ideas/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  landIdea(ideaId: string, projectData: Partial<Project>): Promise<ApiResponse<{ projectId: string }>> {
+    return apiFetch<{ projectId: string }>(`/ideas/${encodeURIComponent(ideaId)}/land`, {
+      method: 'POST',
+      body: JSON.stringify(projectData),
+    });
+  },
+
+  verifyPrivatePassword(userId: string, password: string): Promise<ApiResponse<{ valid: boolean }>> {
+    return apiFetch<{ valid: boolean }>('/auth/private-password', {
+      method: 'POST',
+      body: JSON.stringify({ userId, password }),
+    });
+  },
 };
 
 export default api;

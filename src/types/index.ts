@@ -9,6 +9,7 @@ export interface User {
   role: string;
   color: string;
   createdAt: string;
+  privatePassword?: string; // 独立私密密码
 }
 
 /** Project entity */
@@ -80,6 +81,20 @@ export interface Report {
   generatedAt: string;
 }
 
+/** Idea / 想法实体 */
+export interface Idea {
+  id: string;
+  userId: string;          // 所属用户
+  title: string;           // 想法标题
+  content: string;         // 想法内容
+  tags: string[];          // 标签分类
+  status: 'pending' | 'landed';  // 待落地 | 已落地
+  landedProjectId: string | null; // 落地后关联的项目ID
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Full sync data payload */
 export interface SyncData {
   projects: Project[];
@@ -87,6 +102,7 @@ export interface SyncData {
   users: User[];
   reports: Report[];
   daily_tags: DailyTag[];
+  ideas: Idea[]; // 新增
   settings: Record<string, string>;
 }
 

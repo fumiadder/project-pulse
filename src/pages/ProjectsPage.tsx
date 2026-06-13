@@ -168,6 +168,7 @@ function ProjectRow({
   onDeleteProject,
   onEditProgress,
   onDeleteProgress,
+  canEdit = false,
 }: {
   project: Project;
   latestProgress: Progress | undefined;
@@ -178,6 +179,7 @@ function ProjectRow({
   onDeleteProject: () => void;
   onEditProgress: (entryId: string) => void;
   onDeleteProgress: (entryId: string) => void;
+  canEdit?: boolean;
 }) {
   const percent = latestProgress?.percent ?? 0;
   const tagStatus = latestProgress?.status ?? mapStatusToTag(project.status);
@@ -237,23 +239,25 @@ function ProjectRow({
           {formatDate(project.endDate)}
         </span>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={(e) => { e.stopPropagation(); onEditProject(); }}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:text-accent-cyan hover:bg-accent-cyan/10 transition-all"
-            title="编辑项目"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDeleteProject(); }}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:text-accent-red hover:bg-accent-red/10 transition-all"
-            title="删除项目"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        {/* Action Buttons - 仅负责人可见 */}
+        {canEdit && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEditProject(); }}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:text-accent-cyan hover:bg-accent-cyan/10 transition-all"
+              title="编辑项目"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDeleteProject(); }}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:text-accent-red hover:bg-accent-red/10 transition-all"
+              title="删除项目"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Expanded: Recent Progress Entries - 使用折叠动画 */}
@@ -272,23 +276,25 @@ function ProjectRow({
                   <span className="text-xs font-medium text-accent-cyan">{entry.date}</span>
                   <StatusTag status={entry.status} />
                 </div>
-                {/* 进度卡片编辑和删除按钮 */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => onEditProgress(entry.id)}
-                    className="flex h-6 w-6 items-center justify-center rounded-md text-text-muted hover:text-accent-cyan hover:bg-accent-cyan/10 transition-all"
-                    title="编辑进度"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => onDeleteProgress(entry.id)}
-                    className="flex h-6 w-6 items-center justify-center rounded-md text-text-muted hover:text-accent-red hover:bg-accent-red/10 transition-all"
-                    title="删除进度"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
+                {/* 进度卡片编辑和删除按钮 - 仅负责人可见 */}
+                {canEdit && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => onEditProgress(entry.id)}
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-text-muted hover:text-accent-cyan hover:bg-accent-cyan/10 transition-all"
+                      title="编辑进度"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => onDeleteProgress(entry.id)}
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-text-muted hover:text-accent-red hover:bg-accent-red/10 transition-all"
+                      title="删除进度"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
               </div>
               {entry.content && (
                 <p className="text-xs text-text-secondary leading-relaxed mb-1">
@@ -313,6 +319,11 @@ export function ProjectsPage() {
   const { projects, getParentProjects, getSubProjects, loadProjects, deleteProject, updateProject } = useProjectStore();
   const { entries, getByProject, loadProgress, getLatestByProject, updateEntry, deleteEntry } = useProgressStore();
   const { currentUser, users } = useUserStore();
+
+  // 权限判断：当前用户是否是项目负责人
+  const isOwner = (project: Project) => {
+    return currentUser && project.owner === currentUser.name;
+  };
 
   // 筛选状态（和控制台一样支持多维度筛选）
   const [searchValue, setSearchValue] = useState('');
@@ -761,29 +772,33 @@ export function ProjectsPage() {
                   </span>
                 </button>
 
-                {/* Parent project action buttons */}
-                <button
-                  onClick={() => handleCreateSub(group.parent.id)}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-accent-cyan/30 bg-accent-cyan/5 px-3 text-xs font-medium text-accent-cyan transition-all hover:bg-accent-cyan/10 shrink-0"
-                  title="添加子项目"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  添加子项目
-                </button>
-                <button
-                  onClick={() => handleEdit(group.parent.id)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-custom bg-bg-tertiary/50 text-text-muted hover:text-accent-cyan hover:border-accent-cyan/30 transition-all shrink-0"
-                  title="编辑大项目"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(group.parent)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-custom bg-bg-tertiary/50 text-text-muted hover:text-accent-red hover:border-accent-red/30 transition-all shrink-0"
-                  title="删除大项目"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                {/* Parent project action buttons - 仅负责人可操作 */}
+                {isOwner(group.parent) && (
+                  <>
+                    <button
+                      onClick={() => handleCreateSub(group.parent.id)}
+                      className="flex h-9 items-center gap-1.5 rounded-lg border border-accent-cyan/30 bg-accent-cyan/5 px-3 text-xs font-medium text-accent-cyan transition-all hover:bg-accent-cyan/10 shrink-0"
+                      title="添加子项目"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      添加子项目
+                    </button>
+                    <button
+                      onClick={() => handleEdit(group.parent.id)}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-custom bg-bg-tertiary/50 text-text-muted hover:text-accent-cyan hover:border-accent-cyan/30 transition-all shrink-0"
+                      title="编辑大项目"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(group.parent)}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-custom bg-bg-tertiary/50 text-text-muted hover:text-accent-red hover:border-accent-red/30 transition-all shrink-0"
+                      title="删除大项目"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Sub-projects list - 使用折叠动画 */}
@@ -809,6 +824,7 @@ export function ProjectsPage() {
                         onDeleteProject={() => handleDelete(sub)}
                         onEditProgress={handleEditProgress}
                         onDeleteProgress={handleDeleteProgress}
+                        canEdit={isOwner(sub)}
                       />
                     );
                   })}

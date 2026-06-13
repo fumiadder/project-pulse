@@ -152,6 +152,9 @@ export function ProjectEditorModal({
       }
 
       onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '保存失败，请重试';
+      alert(msg);
     } finally {
       setIsSaving(false);
     }

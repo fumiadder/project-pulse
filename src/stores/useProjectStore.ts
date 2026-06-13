@@ -48,8 +48,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   addProject: async (project) => {
-    await api.putProject(project);
-    set(state => ({ projects: [...safeProjects(state), project] }));
+    const res = await api.putProject(project);
+    if (!res.success) {
+      throw new Error(res.error || '创建项目失败');
+    }
+    // 使用后端返回的数据（可能包含生成的字段）
+    const saved = res.data ?? project;
+    set(state => ({ projects: [...safeProjects(state), saved] }));
   },
 
   updateProject: async (project) => {
@@ -66,5 +71,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   getByOwner: (ownerName) => safeProjects(get()).filter(p => p.owner === ownerName),
   getParentProjects: () => safeProjects(get()).filter(p => !p.parentId),
-  getSubProjects: (parentId) => safeProjects(get()).filter(p => p.parentId === parentId),
+  getSubProjects: (parentId) => safeProjects(get())
+    .filter(p => p.parentId === parentId)
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')),
 }));

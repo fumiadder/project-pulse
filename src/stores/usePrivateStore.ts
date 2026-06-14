@@ -42,14 +42,18 @@ export const usePrivateStore = create<PrivateStore>((set, get) => ({
   addIdea: async (idea) => {
     const res = await api.putIdea(idea);
     if (!res.success) throw new Error(res.error || '创建失败');
-    set(state => ({ ideas: [...state.ideas, res.data ?? idea] }));
+    // 后端返回 { data: [idea] }，需要取数组第一个元素
+    const returned = Array.isArray(res.data) ? res.data[0] : res.data;
+    set(state => ({ ideas: [returned ?? idea, ...state.ideas] }));
   },
 
   updateIdea: async (idea) => {
     const res = await api.putIdea(idea);
     if (!res.success) throw new Error(res.error || '更新失败');
+    // 后端返回 { data: [idea] }，需要取数组第一个元素
+    const returned = Array.isArray(res.data) ? res.data[0] : res.data;
     set(state => ({
-      ideas: state.ideas.map(i => i.id === idea.id ? (res.data ?? idea) : i),
+      ideas: state.ideas.map(i => i.id === idea.id ? (returned ?? idea) : i),
     }));
   },
 

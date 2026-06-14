@@ -19,17 +19,15 @@ interface LandIdeaModalProps {
 export function LandIdeaModal({ open, onClose, idea, onLand }: LandIdeaModalProps) {
   const { currentUser } = useUserStore();
   const [name, setName] = useState('');
-  const [owner, setOwner] = useState(currentUser?.name || '');
+  const [owner, setOwner] = useState('');
 
   useEffect(() => {
-    if (idea) {
+    if (open && idea) {
       setName(idea.title);
-      // 默认负责人为当前用户
-      if (!owner && currentUser?.name) {
-        setOwner(currentUser.name);
-      }
+      // 每次打开都重置负责人为当前用户，确保正确
+      setOwner(currentUser?.name || '');
     }
-  }, [idea, currentUser]);
+  }, [open, idea, currentUser]);
 
   const handleLand = () => {
     if (!name.trim()) return;

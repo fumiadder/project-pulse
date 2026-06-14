@@ -25,25 +25,20 @@ export function IdeaEditorModal({ open, onClose, idea, userId, onSave }: IdeaEdi
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState('中');
   const isEditing = !!idea;
-  const prevIdeaIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    const ideaId = idea?.id ?? null;
-    // 只在 idea 对象变化时重置表单（通过 id 判断）
-    if (ideaId !== prevIdeaIdRef.current) {
-      prevIdeaIdRef.current = ideaId;
-      if (idea) {
-        setTitle(idea.title || '');
-        setContent(idea.content || '');
-        setPriority(idea.priority || '中');
-      } else {
-        setTitle('');
-        setContent('');
-        setPriority('中');
-      }
+    // 每次打开 modal 都重置表单，确保数据最新
+    if (idea) {
+      setTitle(idea.title || '');
+      setContent(idea.content || '');
+      setPriority(idea.priority || '中');
+    } else {
+      setTitle('');
+      setContent('');
+      setPriority('中');
     }
-  }, [open, idea]);
+  }, [open]);
 
   const handleSave = () => {
     if (!title.trim()) return;

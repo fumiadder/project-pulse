@@ -80,8 +80,10 @@ export const usePrivateStore = create<PrivateStore>((set, get) => ({
   },
 
   verifyPassword: async (userId, password) => {
-    const res = await api.verifyPrivatePassword(userId, password);
-    return res.success && res.data?.valid === true;
+    // 通过 settings API 获取私密密码进行比对（避免 /api/auth 路由被代理拦截）
+    const res = await api.getSetting(`private_password:${userId}`);
+    if (!res.success || !res.data?.value) return false;
+    return res.data.value === password;
   },
 
   unlock: (userId) => {

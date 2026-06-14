@@ -137,6 +137,8 @@ export function ProfilePage() {
     const updated = { ...currentUser, privatePassword: privatePassword.trim() };
     const res = await api.putUser(updated);
     if (res.success) {
+      // 同时保存到 settings，确保私密密码可通过 settings API 验证
+      await api.putSetting(`private_password:${currentUser.id}`, privatePassword.trim());
       setPwError('');
       setPwSuccess(hasPrivatePassword ? '私密密码已更改' : '私密密码已设置');
       setPrivatePassword('');

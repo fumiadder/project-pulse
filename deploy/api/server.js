@@ -103,6 +103,10 @@ function initDb() {
       updatedAt TEXT
     );
   `);
+
+  // Migrate: add missing columns for existing tables
+  try { db.exec(`ALTER TABLE users ADD COLUMN privatePassword TEXT`); } catch(e) {}
+  try { db.exec(`ALTER TABLE ideas ADD COLUMN landedProjectId TEXT`); } catch(e) {}
 }
 
 initDb();

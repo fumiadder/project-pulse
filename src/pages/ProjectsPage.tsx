@@ -323,7 +323,8 @@ export function ProjectsPage() {
 
   // 权限判断：当前用户是否是项目负责人
   const isOwner = (project: Project) => {
-    return currentUser && project.owner === currentUser.name;
+    if (!currentUser) return false;
+    return project.owner === currentUser.name || project.owner === currentUser.id;
   };
 
   // 筛选状态（和控制台一样支持多维度筛选）

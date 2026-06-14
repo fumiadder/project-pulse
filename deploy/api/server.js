@@ -188,7 +188,11 @@ app.get('/api/projects/:id', (req, res) => {
 });
 
 app.delete('/api/projects/:id', (req, res) => {
-  db.prepare('DELETE FROM projects WHERE id = ?').run(req.params.id);
+  const projectId = req.params.id;
+  // 删除项目
+  db.prepare('DELETE FROM projects WHERE id = ?').run(projectId);
+  // 同步取消对应想法的落地状态
+  db.prepare(`UPDATE ideas SET status='pending', landedProjectId=NULL, updatedAt=? WHERE landedProjectId=?`).run(now(), projectId);
   res.json({ success: true });
 });
 

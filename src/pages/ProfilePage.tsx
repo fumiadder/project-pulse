@@ -11,8 +11,10 @@ export function ProfilePage() {
 
   const [privatePassword, setPrivatePassword] = useState('');
   const [privatePasswordConfirm, setPrivatePasswordConfirm] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
+  const hasPrivatePassword = !!currentUser?.privatePassword;
 
   // AI 设置
   const [aiApiKey, setAiApiKey] = useState('');
@@ -109,6 +111,19 @@ export function ProfilePage() {
 
   const handleSetPrivatePassword = async () => {
     if (!currentUser) return;
+    // 更改密码时需要验证旧密码
+    if (hasPrivatePassword) {
+      if (!oldPassword.trim()) {
+        setPwError('请输入原密码');
+        setPwSuccess('');
+        return;
+      }
+      if (oldPassword.trim() !== currentUser.privatePassword) {
+        setPwError('原密码不正确');
+        setPwSuccess('');
+        return;
+      }
+    }
     if (privatePassword !== privatePasswordConfirm) {
       setPwError('两次输入不一致');
       setPwSuccess('');
@@ -123,9 +138,10 @@ export function ProfilePage() {
     const res = await api.putUser(updated);
     if (res.success) {
       setPwError('');
-      setPwSuccess('私密密码已设置');
+      setPwSuccess(hasPrivatePassword ? '私密密码已更改' : '私密密码已设置');
       setPrivatePassword('');
       setPrivatePasswordConfirm('');
+      setOldPassword('');
     } else {
       setPwError(res.error || '设置失败');
       setPwSuccess('');
@@ -261,21 +277,30 @@ export function ProfilePage() {
       <div className="rounded-lg border border-border-primary/20 bg-bg-secondary p-4 space-y-3">
         <h4 className="text-sm font-semibold text-text-primary">
           <i className="fas fa-lock mr-1 text-accent-cyan" />
-          私密密码设置
+          {hasPrivatePassword ? '更改私密密码' : '私密密码设置'}
         </h4>
         <div className="flex flex-col gap-2">
+          {hasPrivatePassword && (
+            <input
+              type="password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              placeholder="输入原密码"
+              className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+            />
+          )}
           <input
             type="password"
             value={privatePassword}
             onChange={(e) => setPrivatePassword(e.target.value)}
-            placeholder="输入私密密码"
+            placeholder={hasPrivatePassword ? '输入新密码' : '输入私密密码'}
             className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
           />
           <input
             type="password"
             value={privatePasswordConfirm}
             onChange={(e) => setPrivatePasswordConfirm(e.target.value)}
-            placeholder="确认密码"
+            placeholder={hasPrivatePassword ? '确认新密码' : '确认密码'}
             className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
           />
           {pwError && <p className="text-xs text-accent-red">{pwError}</p>}
@@ -284,7 +309,7 @@ export function ProfilePage() {
             onClick={handleSetPrivatePassword}
             className="w-full rounded-lg bg-accent-cyan px-4 py-2 text-sm font-medium text-white hover:bg-accent-cyan/80 transition-all"
           >
-            设置密码
+            {hasPrivatePassword ? '更改密码' : '设置密码'}
           </button>
         </div>
       </div>

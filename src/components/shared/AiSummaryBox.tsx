@@ -8,6 +8,7 @@ interface AiSummaryBoxProps {
   projects: Project[];
   /** 可选：外部控制是否展开 */
   defaultVisible?: boolean;
+  style?: string;
 }
 
 /** 根据进度百分比获取状态文本 */
@@ -281,7 +282,7 @@ function getWeekLabelFromEntries(entries: Progress[]): string {
   return getWeekLabelFromDate(dates[Math.floor(dates.length / 2)]);
 }
 
-export function AiSummaryBox({ type, entries, projects, defaultVisible = false }: AiSummaryBoxProps) {
+export function AiSummaryBox({ type, entries, projects, defaultVisible = false, style }: AiSummaryBoxProps) {
   const [visible, setVisible] = useState(defaultVisible);
   const [aiSummary, setAiSummary] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -299,10 +300,10 @@ export function AiSummaryBox({ type, entries, projects, defaultVisible = false }
   useEffect(() => {
     if (!visible || entries.length === 0) return;
     setLoading(true);
-    api.generateAiSummary(type, entries, projects)
+    api.generateAiSummary(type, entries, projects, style)
       .then((res) => {
-        if (res.success && res.data) {
-          setAiSummary(res.data);
+        if (res.success && res.data?.summary) {
+          setAiSummary(res.data.summary);
         } else {
           setAiSummary(localSummary);
         }

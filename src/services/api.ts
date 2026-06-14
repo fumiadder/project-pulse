@@ -154,10 +154,10 @@ export const api = {
   },
 
   // --- AI Summary ---
-  generateAiSummary(type: 'daily' | 'weekly' | 'monthly', entries: unknown[], projects: unknown[]): Promise<ApiResponse<string>> {
-    return apiFetch<string>('/ai-summary', {
+  generateAiSummary(type: 'daily' | 'weekly' | 'monthly', entries: unknown[], projects: unknown[], style?: string): Promise<ApiResponse<{ summary: string; model?: string }>> {
+    return apiFetch<{ summary: string; model?: string }>('/ai-summary', {
       method: 'POST',
-      body: JSON.stringify({ type, entries, projects }),
+      body: JSON.stringify({ type, entries, projects, style }),
     });
   },
 

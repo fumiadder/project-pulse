@@ -4,6 +4,7 @@ import { useProgressStore } from '@/stores/useProgressStore';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { StatusTag } from '@/components/shared/StatusTag';
 import { AiSummaryBox } from '@/components/shared/AiSummaryBox';
+import { api } from '@/services/api';
 import type { Progress, Project } from '@/types';
 
 function getTodayStr(): string {
@@ -93,11 +94,15 @@ function CollapsibleSection({
 
 export function DailyReportPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
+  const [aiStyle, setAiStyle] = useState('');
   const { projects } = useProjectStore();
   const { entries, loadProgress } = useProgressStore();
 
   useEffect(() => {
     loadProgress();
+    api.getSetting('ai_style').then(res => {
+      if (res.success && res.data) setAiStyle(res.data.value || '');
+    });
   }, [loadProgress]);
 
   // 获取所有有记录的日期
@@ -178,6 +183,7 @@ export function DailyReportPage() {
         entries={dayEntries}
         projects={projects}
         defaultVisible={selectedDate === todayStr}
+        style={aiStyle}
       />
 
       {/* 当天日报详情 - 始终展开 */}
@@ -305,6 +311,7 @@ export function DailyReportPage() {
                     entries={dateEntries}
                     projects={projects}
                     defaultVisible={false}
+                    style={aiStyle}
                   />
                 </div>
 

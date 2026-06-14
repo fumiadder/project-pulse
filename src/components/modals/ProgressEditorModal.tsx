@@ -116,7 +116,7 @@ export function ProgressEditorModal({
   preDate,
   preProjectId,
 }: ProgressEditorModalProps) {
-  const { entries, addEntry, updateEntry } = useProgressStore();
+  const { entries, addEntry, updateEntry, getLatestByProject } = useProgressStore();
   const { projects } = useProjectStore();
   const { currentUser } = useUserStore();
 
@@ -162,8 +162,10 @@ export function ProgressEditorModal({
       setDate(preDate ?? getTodayStr());
       setPercent(0);
       setStatus('normal');
-      setContent('');
-      setPlan('');
+      // 新建时预填充该项目最新的进度内容，方便在之前的进度上追加
+      const latest = preProjectId ? getLatestByProject(preProjectId) : undefined;
+      setContent(latest?.content || '');
+      setPlan(latest?.plan || '');
       setAttachments([]);
     }
   }, [open, progressId, entries, preDate, preProjectId]);

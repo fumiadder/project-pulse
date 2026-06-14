@@ -594,6 +594,74 @@ async function landIdea(env, ideaId, projectData) {
   return jres({ projectId: newProject.id });
 }
 
+// ─── AI Summary ──────────────────────────────────────────────────────────────
+
+async function generateAiSummary(env, { type, entries, projects, style }) {
+  // 从 settings 读取 AI 配置
+  const apiKey = await env.DB.get(settingKey('ai_api_key'));
+  const apiUrl = await env.DB.get(settingKey('ai_api_url')) || 'https://api.openai.com/v1/chat/completions';
+  const model = await env.DB.get(settingKey('ai_model')) || 'gpt-4o-mini';
+
+  if (!apiKey) {
+    return jres({ error: '未配置 AI API Key，请在设置中配置' }, 400);
+  }
+
+  // 构建提示词
+  const typeLabel = type === 'daily' ? '日报' : type === 'weekly' ? '周报' : '月报';
+
+  let systemPrompt = `你是一位专业的项目进度分析助手。请根据提供的项目进度数据，生成一份简洁、专业的${typeLabel}总结。`;
+
+  if (style && style.trim()) {
+    systemPrompt += `\n\n【总结风格要求】\n${style}`;
+  } else {
+    systemPrompt += `\n\n总结要求：
+1. 概述整体项目进展态势
+2. 列出重点项目的状态和进展
+3. 指出存在的风险和问题
+4. 给出下一步计划建议
+5. 语言简洁专业，适合汇报使用`;
+  }
+
+  const userPrompt = `请根据以下数据生成${typeLabel}总结：
+
+【项目信息】
+${JSON.stringify(projects, null, 2)}
+
+【进度记录】
+${JSON.stringify(entries, null, 2)}`;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return jres({ error: `AI API 调用失败: ${error}` }, 502);
+    }
+
+    const data = await response.json();
+    const summary = data.choices?.[0]?.message?.content || '生成失败，请重试';
+
+    return jres({ summary, model });
+  } catch (err) {
+    return jres({ error: `AI 服务异常: ${err.message}` }, 500);
+  }
+}
+
 // ─── Cleanup old format keys after migration ─────────────────────────────────
 
 async function cleanupOldFormat(env) {
@@ -755,6 +823,11 @@ export async function onRequest(context) {
         const user = JSON.parse(userRaw);
         res = jres({ valid: user.privatePassword === password });
       }
+    }
+
+    // ── AI Summary ──
+    else if (path === '/api/ai-summary' && method === 'POST') {
+      res = await generateAiSummary(env, await request.json());
     }
 
     // ── Settings ──

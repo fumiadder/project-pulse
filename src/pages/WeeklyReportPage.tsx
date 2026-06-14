@@ -4,6 +4,7 @@ import { useProgressStore } from '@/stores/useProgressStore';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { StatusTag } from '@/components/shared/StatusTag';
 import { AiSummaryBox } from '@/components/shared/AiSummaryBox';
+import { api } from '@/services/api';
 import { getWeekLabel, getWeekStart, getWeekEnd, getAvailableWeeks, getWeekColor, getWeekBorderColor } from '@/utils/weekUtils';
 import type { Progress, Project } from '@/types';
 
@@ -236,11 +237,15 @@ function SubProjectCollapsible({
 
 export function WeeklyReportPage() {
   const [weekLabel, setWeekLabel] = useState(getCurrentWeekLabel());
+  const [aiStyle, setAiStyle] = useState('');
   const { projects } = useProjectStore();
   const { entries, loadProgress } = useProgressStore();
 
   useEffect(() => {
     loadProgress();
+    api.getSetting('ai_style').then(res => {
+      if (res.success && res.data) setAiStyle(res.data.value || '');
+    });
   }, [loadProgress]);
 
   // 获取所有可用周
@@ -365,6 +370,7 @@ export function WeeklyReportPage() {
         entries={weekEntries}
         projects={projects}
         defaultVisible={weekLabel === currentWeekLabel}
+        style={aiStyle}
       />
 
       {/* 本周所有负责人进度 */}
@@ -619,6 +625,7 @@ export function WeeklyReportPage() {
                     entries={wkEntries}
                     projects={projects}
                     defaultVisible={false}
+                    style={aiStyle}
                   />
                 </div>
 

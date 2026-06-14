@@ -4,6 +4,7 @@ import { useProgressStore } from '@/stores/useProgressStore';
 import { ProgressBar } from '@/components/shared/ProgressBar';
 import { StatusTag } from '@/components/shared/StatusTag';
 import { AiSummaryBox } from '@/components/shared/AiSummaryBox';
+import { api } from '@/services/api';
 import { getWeekLabel, getWeekStart, getWeekEnd, getAvailableWeeks, getWeekColor, getWeekBorderColor } from '@/utils/weekUtils';
 import type { Progress, Project } from '@/types';
 
@@ -239,11 +240,17 @@ function MonthWeekCollapsible({
 
 export function MonthlyReportPage() {
   const [monthLabel, setMonthLabel] = useState(getDefaultMonthLabel());
+  const [aiStyle, setAiStyle] = useState('');
   const { projects } = useProjectStore();
   const { entries, loadProgress } = useProgressStore();
 
   useEffect(() => {
     loadProgress();
+    api.getSetting('ai_style').then(res => {
+      if (res.success && res.data?.value) {
+        setAiStyle(res.data.value);
+      }
+    });
   }, [loadProgress]);
 
   // 获取所有可用月份
@@ -412,6 +419,7 @@ export function MonthlyReportPage() {
         entries={monthEntries}
         projects={projects}
         defaultVisible={monthLabel === currentMonthLabel}
+        style={aiStyle}
       />
 
       {/* 主项目综合总结 */}
@@ -609,6 +617,7 @@ export function MonthlyReportPage() {
                     entries={mEntries}
                     projects={projects}
                     defaultVisible={false}
+                    style={aiStyle}
                   />
                 </div>
 

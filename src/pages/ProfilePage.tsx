@@ -14,6 +14,14 @@ export function ProfilePage() {
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
 
+  // AI 设置
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiApiUrl, setAiApiUrl] = useState('https://api.openai.com/v1/chat/completions');
+  const [aiModel, setAiModel] = useState('gpt-4o-mini');
+  const [aiStyle, setAiStyle] = useState('');
+  const [aiError, setAiError] = useState('');
+  const [aiSuccess, setAiSuccess] = useState('');
+
   const stats = useMemo(() => {
     if (!currentUser) {
       return { totalProjects: 0, totalEntries: 0 };
@@ -121,6 +129,40 @@ export function ProfilePage() {
     } else {
       setPwError(res.error || '设置失败');
       setPwSuccess('');
+    }
+  };
+
+  // 加载 AI 设置
+  useEffect(() => {
+    const loadAiSettings = async () => {
+      const [keyRes, urlRes, modelRes, styleRes] = await Promise.all([
+        api.getSetting('ai_api_key'),
+        api.getSetting('ai_api_url'),
+        api.getSetting('ai_model'),
+        api.getSetting('ai_style'),
+      ]);
+      if (keyRes.success && keyRes.data) setAiApiKey(keyRes.data.value || '');
+      if (urlRes.success && urlRes.data) setAiApiUrl(urlRes.data.value || 'https://api.openai.com/v1/chat/completions');
+      if (modelRes.success && modelRes.data) setAiModel(modelRes.data.value || 'gpt-4o-mini');
+      if (styleRes.success && styleRes.data) setAiStyle(styleRes.data.value || '');
+    };
+    loadAiSettings();
+  }, []);
+
+  const handleSaveAiSettings = async () => {
+    setAiError('');
+    setAiSuccess('');
+    const results = await Promise.all([
+      api.putSetting('ai_api_key', { value: aiApiKey.trim() }),
+      api.putSetting('ai_api_url', { value: aiApiUrl.trim() }),
+      api.putSetting('ai_model', { value: aiModel.trim() }),
+      api.putSetting('ai_style', { value: aiStyle.trim() }),
+    ]);
+    const failed = results.filter(r => !r.success);
+    if (failed.length === 0) {
+      setAiSuccess('AI 设置已保存');
+    } else {
+      setAiError(failed[0].error || '保存失败');
     }
   };
 
@@ -243,6 +285,52 @@ export function ProfilePage() {
             className="w-full rounded-lg bg-accent-cyan px-4 py-2 text-sm font-medium text-white hover:bg-accent-cyan/80 transition-all"
           >
             设置密码
+          </button>
+        </div>
+      </div>
+
+      {/* AI 设置 */}
+      <div className="rounded-lg border border-border-primary/20 bg-bg-secondary p-4 space-y-3">
+        <h4 className="text-sm font-semibold text-text-primary">
+          <i className="fas fa-robot mr-1 text-accent-cyan" />
+          AI 分析配置
+        </h4>
+        <div className="flex flex-col gap-2">
+          <input
+            type="password"
+            value={aiApiKey}
+            onChange={(e) => setAiApiKey(e.target.value)}
+            placeholder="API Key"
+            className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+          />
+          <input
+            type="text"
+            value={aiApiUrl}
+            onChange={(e) => setAiApiUrl(e.target.value)}
+            placeholder="API 地址（默认 OpenAI）"
+            className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+          />
+          <input
+            type="text"
+            value={aiModel}
+            onChange={(e) => setAiModel(e.target.value)}
+            placeholder="模型名称（如 gpt-4o-mini）"
+            className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+          />
+          <textarea
+            value={aiStyle}
+            onChange={(e) => setAiStyle(e.target.value)}
+            placeholder="自定义总结风格（留空使用默认风格）"
+            rows={3}
+            className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 resize-y"
+          />
+          {aiError && <p className="text-xs text-accent-red">{aiError}</p>}
+          {aiSuccess && <p className="text-xs text-accent-green">{aiSuccess}</p>}
+          <button
+            onClick={handleSaveAiSettings}
+            className="w-full rounded-lg bg-accent-cyan px-4 py-2 text-sm font-medium text-white hover:bg-accent-cyan/80 transition-all"
+          >
+            保存 AI 配置
           </button>
         </div>
       </div>

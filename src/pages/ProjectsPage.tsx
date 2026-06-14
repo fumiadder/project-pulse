@@ -210,7 +210,7 @@ function ProjectRow({
         {/* Project Name */}
         <div className="flex-1 min-w-0">
           <span className="text-sm font-medium text-text-primary truncate block">
-            {project.name}
+            {project.name || '未命名项目'}
           </span>
         </div>
 
@@ -763,7 +763,7 @@ export function ProjectsPage() {
                     style={{ backgroundColor: group.parent.color || '#00d4ff' }}
                   />
                   <h2 className="text-base font-display font-bold text-text-primary">
-                    {group.parent.name}
+                    {group.parent.name || '未命名项目'}
                   </h2>
                   <span className="rounded-full bg-accent-cyan/10 px-2 py-0.5 text-xs font-medium text-accent-cyan">
                     {group.subProjects.length} 个子项目

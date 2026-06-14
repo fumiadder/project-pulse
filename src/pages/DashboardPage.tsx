@@ -102,6 +102,8 @@ export function DashboardPage() {
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
   // 今日更新筛选模式
   const [todayFilterActive, setTodayFilterActive] = useState(false);
+  // 图片预览
+  const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
 
   // Progress modal state
   const [progressModalOpen, setProgressModalOpen] = useState(false);
@@ -314,7 +316,16 @@ export function DashboardPage() {
     }`;
 
   return (
-    <div className="flex flex-col p-4 md:p-6 animate-fade-in-up">
+    <div
+      className="flex flex-col p-4 md:p-6 animate-fade-in-up"
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'IMG' && !target.closest('[contenteditable]')) {
+          e.stopPropagation();
+          setPreviewImage({ src: (target as HTMLImageElement).src, name: (target as HTMLImageElement).alt || (target as HTMLImageElement).title || '图片' });
+        }
+      }}
+    >
       {/* 主内容区域：统计卡片 + 筛选栏 + 主项目区块一起滚动 */}
       <div ref={scrollContainerRef} className="flex flex-col gap-6 overflow-y-auto scrollbar-thin" style={{ maxHeight: 'calc(100vh - 120px)', minHeight: '300px' }}>
         {/* 统计卡片行 */}
@@ -651,6 +662,7 @@ export function DashboardPage() {
                                       side="top"
                                       align="start"
                                       className="max-w-xs bg-bg-secondary border border-border-custom p-3 text-text-primary whitespace-pre-wrap"
+                                      onPointerDown={(e) => e.stopPropagation()}
                                     >
                                       <div
                                         className="text-xs leading-relaxed"
@@ -687,6 +699,29 @@ export function DashboardPage() {
         preProjectId={preProjectId}
         preDate={todayStr}
       />
+
+      {/* 全局图片预览 */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={previewImage.src}
+              alt={previewImage.name}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            />
+            <p className="text-center text-sm text-white/70 mt-2">{previewImage.name}</p>
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
+            >
+              <i className="fas fa-times text-sm" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useUserStore } from '@/stores/useUserStore';
 import type { Idea, Project } from '@/types';
 
 interface LandIdeaModalProps {
@@ -16,14 +17,19 @@ interface LandIdeaModalProps {
 }
 
 export function LandIdeaModal({ open, onClose, idea, onLand }: LandIdeaModalProps) {
+  const { currentUser } = useUserStore();
   const [name, setName] = useState('');
-  const [owner, setOwner] = useState('');
+  const [owner, setOwner] = useState(currentUser?.name || '');
 
   useEffect(() => {
     if (idea) {
       setName(idea.title);
+      // 默认负责人为当前用户
+      if (!owner && currentUser?.name) {
+        setOwner(currentUser.name);
+      }
     }
-  }, [idea]);
+  }, [idea, currentUser]);
 
   const handleLand = () => {
     if (!name.trim()) return;

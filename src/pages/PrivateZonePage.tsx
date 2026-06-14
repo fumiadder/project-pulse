@@ -124,29 +124,29 @@ export function PrivateZonePage() {
               <h3 className="text-sm font-semibold text-text-primary">{idea.title}</h3>
               <p className="text-xs text-text-muted line-clamp-3">{idea.content || '暂无描述'}</p>
               <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border-custom/30">
-                {idea.status === 'pending' ? (
-                  <>
-                    <button
-                      onClick={() => { setEditingIdea(idea); setIdeaModalOpen(true); }}
-                      className="text-xs text-text-muted hover:text-accent-cyan transition-colors"
-                    >
-                      编辑
-                    </button>
-                    <button
-                      onClick={() => { setLandingIdea(idea); setLandModalOpen(true); }}
-                      className="text-xs text-accent-cyan hover:text-accent-cyan/80 transition-colors"
-                    >
-                      落地
-                    </button>
-                  </>
-                ) : idea.landedProjectId ? (
+                {/* 编辑按钮：所有状态的想法都可以编辑 */}
+                <button
+                  onClick={() => { setEditingIdea(idea); setIdeaModalOpen(true); }}
+                  className="text-xs text-text-muted hover:text-accent-cyan transition-colors"
+                >
+                  编辑
+                </button>
+                {idea.status === 'pending' && (
+                  <button
+                    onClick={() => { setLandingIdea(idea); setLandModalOpen(true); }}
+                    className="text-xs text-accent-cyan hover:text-accent-cyan/80 transition-colors"
+                  >
+                    落地
+                  </button>
+                )}
+                {idea.status === 'landed' && idea.landedProjectId && (
                   <button
                     onClick={() => handleNavigateToProject(idea.landedProjectId!)}
                     className="text-xs text-accent-green hover:text-accent-green/80 transition-colors"
                   >
                     查看项目 →
                   </button>
-                ) : null}
+                )}
                 <button
                   onClick={() => deleteIdea(idea.id)}
                   className="text-xs text-text-muted hover:text-accent-red transition-colors ml-auto"

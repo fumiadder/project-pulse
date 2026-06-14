@@ -189,8 +189,22 @@ app.get('/api/projects/:id', (req, res) => {
 
 app.delete('/api/projects/:id', (req, res) => {
   const projectId = req.params.id;
-  // 删除项目
-  db.prepare('DELETE FROM projects WHERE id = ?').run(projectId);
+  // 收集该项目及所有子项目的 ID
+  const allIds = [projectId];
+  const children = db.prepare('SELECT id FROM projects WHERE parentId = ?').all(projectId);
+  const collectIds = (ids) => {
+    for (const id of ids) {
+      allIds.push(id.id);
+      const sub = db.prepare('SELECT id FROM projects WHERE parentId = ?').all(id.id);
+      if (sub.length) collectIds(sub);
+    }
+  };
+  collectIds(children);
+  // 删除所有相关进度记录
+  const placeholders = allIds.map(() => '?').join(',');
+  db.prepare(`DELETE FROM progress WHERE projectId IN (${placeholders})`).run(...allIds);
+  // 删除所有子项目和主项目
+  db.prepare(`DELETE FROM projects WHERE id IN (${placeholders})`).run(...allIds);
   // 同步取消对应想法的落地状态
   db.prepare(`UPDATE ideas SET status='pending', landedProjectId=NULL, updatedAt=? WHERE landedProjectId=?`).run(now(), projectId);
   res.json({ success: true });

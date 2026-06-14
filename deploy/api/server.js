@@ -62,6 +62,7 @@ function initDb() {
       name TEXT NOT NULL,
       role TEXT,
       color TEXT,
+      privatePassword TEXT,
       createdAt TEXT
     );
 
@@ -89,6 +90,17 @@ function initDb() {
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS ideas (
+      id TEXT PRIMARY KEY,
+      userId TEXT,
+      title TEXT,
+      content TEXT,
+      status TEXT,
+      landedProjectId TEXT,
+      createdAt TEXT,
+      updatedAt TEXT
     );
   `);
 }
@@ -228,12 +240,13 @@ app.get('/api/users', (req, res) => {
 app.put('/api/users', (req, res) => {
   const items = Array.isArray(req.body) ? req.body : [req.body];
   const insert = db.prepare(`
-    INSERT INTO users (id, name, role, color, createdAt)
-    VALUES (@id, @name, @role, @color, @createdAt)
+    INSERT INTO users (id, name, role, color, privatePassword, createdAt)
+    VALUES (@id, @name, @role, @color, @privatePassword, @createdAt)
     ON CONFLICT(id) DO UPDATE SET
       name=excluded.name,
       role=excluded.role,
-      color=excluded.color
+      color=excluded.color,
+      privatePassword=excluded.privatePassword
   `);
   const tx = db.transaction((rows) => {
     for (const r of rows) {
@@ -319,6 +332,91 @@ app.put('/api/daily_tags', (req, res) => {
   });
   tx(items);
   res.json({ success: true, data: items });
+});
+
+// ---------- Ideas ----------
+app.get('/api/ideas', (req, res) => {
+  const rows = db.prepare('SELECT * FROM ideas ORDER BY updatedAt DESC').all();
+  res.json({ success: true, data: rows });
+});
+
+app.put('/api/ideas', (req, res) => {
+  const items = Array.isArray(req.body) ? req.body : [req.body];
+  const insert = db.prepare(`
+    INSERT INTO ideas (id, userId, title, content, status, landedProjectId, createdAt, updatedAt)
+    VALUES (@id, @userId, @title, @content, @status, @landedProjectId, @createdAt, @updatedAt)
+    ON CONFLICT(id) DO UPDATE SET
+      userId=excluded.userId,
+      title=excluded.title,
+      content=excluded.content,
+      status=excluded.status,
+      landedProjectId=excluded.landedProjectId,
+      updatedAt=excluded.updatedAt
+  `);
+  const tx = db.transaction((rows) => {
+    for (const r of rows) {
+      if (!r.id) r.id = uuidv4();
+      if (!r.createdAt) r.createdAt = now();
+      r.updatedAt = now();
+      insert.run(sanitizeRow(r));
+    }
+  });
+  tx(items);
+  res.json({ success: true, data: items });
+});
+
+app.get('/api/ideas/:id', (req, res) => {
+  const row = db.prepare('SELECT * FROM ideas WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ success: false, error: 'Not found' });
+  res.json({ success: true, data: row });
+});
+
+app.delete('/api/ideas/:id', (req, res) => {
+  db.prepare('DELETE FROM ideas WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+app.post('/api/ideas/:id/land', (req, res) => {
+  const idea = db.prepare('SELECT * FROM ideas WHERE id = ?').get(req.params.id);
+  if (!idea) return res.status(404).json({ success: false, error: 'Idea not found' });
+
+  const { parentId, name, desc, owner } = req.body || {};
+  const projectId = uuidv4();
+  const project = {
+    id: projectId,
+    userId: idea.userId,
+    parentId: parentId || null,
+    name: name || idea.title,
+    desc: desc || idea.content || '',
+    owner: owner || '',
+    color: '#00d4ff',
+    priority: '中',
+    status: '未开始',
+    createdAt: now(),
+    updatedAt: now()
+  };
+
+  const insertProject = db.prepare(`
+    INSERT INTO projects (id, userId, parentId, name, desc, owner, color, priority, status, startDate, endDate, collaborators, notes, createdAt, updatedAt)
+    VALUES (@id, @userId, @parentId, @name, @desc, @owner, @color, @priority, @status, @startDate, @endDate, @collaborators, @notes, @createdAt, @updatedAt)
+    ON CONFLICT(id) DO UPDATE SET
+      userId=excluded.userId, parentId=excluded.parentId, name=excluded.name, desc=excluded.desc,
+      owner=excluded.owner, color=excluded.color, priority=excluded.priority, status=excluded.status,
+      startDate=excluded.startDate, endDate=excluded.endDate, collaborators=excluded.collaborators,
+      notes=excluded.notes, updatedAt=excluded.updatedAt
+  `);
+
+  const updateIdea = db.prepare(`
+    UPDATE ideas SET status='landed', landedProjectId=?, updatedAt=? WHERE id=?
+  `);
+
+  const tx = db.transaction(() => {
+    insertProject.run(sanitizeRow(project));
+    updateIdea.run(projectId, now(), req.params.id);
+  });
+  tx();
+
+  res.json({ success: true, data: { projectId } });
 });
 
 // ---------- Sync ----------

@@ -99,6 +99,7 @@ function initDb() {
       content TEXT,
       status TEXT,
       landedProjectId TEXT,
+      priority TEXT,
       createdAt TEXT,
       updatedAt TEXT
     );
@@ -107,6 +108,7 @@ function initDb() {
   // Migrate: add missing columns for existing tables
   try { db.exec(`ALTER TABLE users ADD COLUMN privatePassword TEXT`); } catch(e) {}
   try { db.exec(`ALTER TABLE ideas ADD COLUMN landedProjectId TEXT`); } catch(e) {}
+  try { db.exec(`ALTER TABLE ideas ADD COLUMN priority TEXT`); } catch(e) {}
 }
 
 initDb();
@@ -347,14 +349,15 @@ app.get('/api/ideas', (req, res) => {
 app.put('/api/ideas', (req, res) => {
   const items = Array.isArray(req.body) ? req.body : [req.body];
   const insert = db.prepare(`
-    INSERT INTO ideas (id, userId, title, content, status, landedProjectId, createdAt, updatedAt)
-    VALUES (@id, @userId, @title, @content, @status, @landedProjectId, @createdAt, @updatedAt)
+    INSERT INTO ideas (id, userId, title, content, status, landedProjectId, priority, createdAt, updatedAt)
+    VALUES (@id, @userId, @title, @content, @status, @landedProjectId, @priority, @createdAt, @updatedAt)
     ON CONFLICT(id) DO UPDATE SET
       userId=excluded.userId,
       title=excluded.title,
       content=excluded.content,
       status=excluded.status,
       landedProjectId=excluded.landedProjectId,
+      priority=excluded.priority,
       updatedAt=excluded.updatedAt
   `);
   const tx = db.transaction((rows) => {
@@ -396,6 +399,10 @@ app.post('/api/ideas/:id/land', (req, res) => {
     color: '#00d4ff',
     priority: '中',
     status: '未开始',
+    startDate: null,
+    endDate: null,
+    collaborators: '',
+    notes: '',
     createdAt: now(),
     updatedAt: now()
   };

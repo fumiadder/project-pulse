@@ -5,7 +5,7 @@ import { useUserStore } from '@/stores/useUserStore';
 import { api } from '@/services/api';
 
 export function ProfilePage() {
-  const { currentUser } = useUserStore();
+  const { currentUser, updateCurrentUser } = useUserStore();
   const { projects } = useProjectStore();
   const { entries } = useProgressStore();
 
@@ -142,6 +142,8 @@ export function ProfilePage() {
       setPrivatePassword('');
       setPrivatePasswordConfirm('');
       setOldPassword('');
+      // 更新内存中的 currentUser，让 UI 立即反映已设置密码状态
+      updateCurrentUser(updated);
     } else {
       setPwError(res.error || '设置失败');
       setPwSuccess('');

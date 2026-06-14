@@ -13,6 +13,7 @@ interface UserStore {
   loadUsers: () => Promise<void>;
   addUser: (user: User) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
+  updateCurrentUser: (user: User) => void;
 }
 
 // LOGIN_ACCOUNTS maps username -> { id, password }
@@ -97,6 +98,13 @@ export const useUserStore = create<UserStore>()(
           users: state.users.filter(u => u.id !== userId),
           currentUser: state.currentUser?.id === userId ? null : state.currentUser,
           isLoggedIn: state.currentUser?.id === userId ? false : state.isLoggedIn,
+        }));
+      },
+
+      updateCurrentUser: (user) => {
+        set(state => ({
+          currentUser: user,
+          users: state.users.map(u => u.id === user.id ? user : u),
         }));
       },
     }),

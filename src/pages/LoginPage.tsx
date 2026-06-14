@@ -50,7 +50,7 @@ export function LoginPage() {
       }
       // Simulate a brief delay for UX
       await new Promise(r => setTimeout(r, 300));
-      const result = login(username.trim(), password);
+      const result = await login(username.trim(), password);
       if (result !== 'ok') {
         setError(ERROR_MESSAGES[result] ?? '登录失败');
       } else {
@@ -100,8 +100,8 @@ export function LoginPage() {
 
         // Auto-submit login
         setLoading(true);
-        setTimeout(() => {
-          const result = login(creds.username, creds.password);
+        setTimeout(async () => {
+          const result = await login(creds.username, creds.password);
           if (result !== 'ok') {
             setError(ERROR_MESSAGES[result] ?? '登录失败');
             localStorage.removeItem(REMEMBER_KEY);

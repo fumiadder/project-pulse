@@ -31,14 +31,25 @@ export const useUserStore = create<UserStore>()(
       users: [],
       isLoggedIn: false,
 
-      login: (username, password) => {
+      login: async (username, password) => {
         const account = LOGIN_ACCOUNTS[username];
         if (!account) return 'username_not_found';
         if (password !== account.password) return 'password_wrong';
         // Ensure users is always an array
         const currentUsers = Array.isArray(get().users) ? get().users : [];
         let user = currentUsers.find(u => u.id === account.id);
-        // If users not loaded yet, create a temporary user object from account info
+        // If users not loaded yet, try to load from backend first
+        if (!user) {
+          try {
+            const res = await api.listUsers();
+            const users = res.data?.users ?? (Array.isArray(res.data) ? res.data : []) ?? [];
+            set({ users });
+            user = users.find((u: User) => u.id === account.id);
+          } catch (e) {
+            console.error('Failed to load users on login:', e);
+          }
+        }
+        // Fallback: create a temporary user object
         if (!user) {
           user = {
             id: account.id,
@@ -101,7 +112,9 @@ export const useUserStore = create<UserStore>()(
         }));
       },
 
-      updateCurrentUser: (user) => {
+      updateCurrentUser: async (user) => {
+        const res = await api.putUser(user);
+        if (!res.success) throw new Error(res.error || '保存失败');
         set(state => ({
           currentUser: user,
           users: state.users.map(u => u.id === user.id ? user : u),

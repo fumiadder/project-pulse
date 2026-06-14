@@ -436,6 +436,7 @@ export function ProgressEditorModal({
                 value={content}
                 onChange={(v) => setContent(v)}
                 onPasteFiles={handlePasteFiles}
+                onImageClick={(src, name) => setPreviewImage({ src, name })}
                 placeholder="输入进度内容，支持粘贴图片/文件"
                 minRows={4}
               />

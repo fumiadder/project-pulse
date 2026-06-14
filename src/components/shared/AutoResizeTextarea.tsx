@@ -4,6 +4,7 @@ interface AutoResizeTextareaProps {
   value: string;
   onChange: (value: string) => void;
   onPasteFiles?: (files: FileList) => void;
+  onImageClick?: (src: string, name: string) => void;
   placeholder?: string;
   minRows?: number;
   maxRows?: number;
@@ -14,6 +15,7 @@ export function AutoResizeTextarea({
   value,
   onChange,
   onPasteFiles,
+  onImageClick,
   placeholder,
   minRows = 4,
   maxRows = 20,
@@ -85,6 +87,15 @@ export function AutoResizeTextarea({
       editorRef.current?.appendChild(img);
     }
   }, []);
+
+  // 点击图片预览
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG' && onImageClick) {
+      const img = target as HTMLImageElement;
+      onImageClick(img.src, img.title || img.alt || '图片');
+    }
+  }, [onImageClick]);
 
   // 处理粘贴事件
   const handlePaste = useCallback(
@@ -179,6 +190,7 @@ export function AutoResizeTextarea({
       suppressContentEditableWarning
       onInput={handleInput}
       onPaste={handlePaste}
+      onClick={handleClick}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}
       onDrop={handleDrop}

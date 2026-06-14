@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useProgressStore } from '@/stores/useProgressStore';
 import { useUserStore } from '@/stores/useUserStore';

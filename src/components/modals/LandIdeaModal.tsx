@@ -32,7 +32,7 @@ export function LandIdeaModal({ open, onClose, idea, onLand }: LandIdeaModalProp
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg bg-bg-secondary border-border-primary/30 text-text-primary">
+      <DialogContent className="max-w-2xl bg-bg-secondary border-border-primary/30 text-text-primary">
         <DialogHeader>
           <DialogTitle>落地想法</DialogTitle>
         </DialogHeader>

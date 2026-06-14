@@ -62,7 +62,7 @@ export function IdeaEditorModal({ open, onClose, idea, userId, onSave }: IdeaEdi
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg bg-bg-secondary border-border-primary/30 text-text-primary">
+      <DialogContent className="max-w-2xl bg-bg-secondary border-border-primary/30 text-text-primary">
         <DialogHeader>
           <DialogTitle>{isEditing ? '编辑想法' : '新建想法'}</DialogTitle>
         </DialogHeader>

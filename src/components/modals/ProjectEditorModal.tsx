@@ -162,7 +162,7 @@ export function ProjectEditorModal({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-bg-secondary border-border-primary/30 text-text-primary">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-bg-secondary border-border-primary/30 text-text-primary">
         <DialogHeader>
           <DialogTitle className="text-text-primary">
             {isEditing ? '编辑项目' : (parentId ? '添加子项目' : '新建大项目')}

@@ -635,9 +635,10 @@ export function DashboardPage() {
                                             <i className="fas fa-pen text-[10px]" />
                                           </button>
                                         </div>
-                                        <p className="text-xs text-text-muted leading-relaxed line-clamp-2">
-                                          {entry.content || '暂无更新内容'}
-                                        </p>
+                                        <p
+                                          className="text-xs text-text-muted leading-relaxed line-clamp-2"
+                                          dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
+                                        />
                                         {sub.owner && (
                                           <span className="text-[10px] text-text-muted/60">
                                             <i className="far fa-user mr-1" />
@@ -651,9 +652,10 @@ export function DashboardPage() {
                                       align="start"
                                       className="max-w-xs bg-bg-secondary border border-border-custom p-3 text-text-primary whitespace-pre-wrap"
                                     >
-                                      <div className="text-xs leading-relaxed">
-                                        {entry.content || '暂无更新内容'}
-                                      </div>
+                                      <div
+                                        className="text-xs leading-relaxed"
+                                        dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
+                                      />
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>

@@ -297,9 +297,10 @@ function ProjectRow({
                 )}
               </div>
               {entry.content && (
-                <p className="text-xs text-text-secondary leading-relaxed mb-1">
-                  {entry.content}
-                </p>
+                <p
+                  className="text-xs text-text-secondary leading-relaxed mb-1"
+                  dangerouslySetInnerHTML={{ __html: entry.content }}
+                />
               )}
               {entry.plan && (
                 <p className="text-xs text-text-muted leading-relaxed">

@@ -160,10 +160,10 @@ export function ProgressEditorModal({
     } else {
       setProjectId(preProjectId ?? '');
       setDate(preDate ?? getTodayStr());
-      setPercent(0);
-      setStatus('normal');
-      // 新建时预填充该项目最新的进度内容，方便在之前的进度上追加
+      // 新建时继承该项目最新的进度百分比和内容，方便在之前的进度上追加
       const latest = preProjectId ? getLatestByProject(preProjectId) : undefined;
+      setPercent(latest?.percent ?? 0);
+      setStatus(getAutoStatus(latest?.percent ?? 0));
       setContent(latest?.content || '');
       setPlan(latest?.plan || '');
       setAttachments([]);

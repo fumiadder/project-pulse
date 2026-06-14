@@ -52,9 +52,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     if (!res.success) {
       throw new Error(res.error || '创建项目失败');
     }
-    // 使用后端返回的数据（可能包含生成的字段）
-    const saved = res.data ?? project;
-    set(state => ({ projects: [...safeProjects(state), saved] }));
+    // 后端返回 { id, saved: true }，使用本地 project 对象确保数据完整
+    set(state => ({ projects: [...safeProjects(state), project] }));
   },
 
   updateProject: async (project) => {

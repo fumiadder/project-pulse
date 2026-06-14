@@ -521,14 +521,12 @@ export function ProjectsPage() {
           });
         }
 
-        if (subs.length === 0) return null;
-
         return {
           parent,
           subProjects: subs,
         };
       })
-      .filter(Boolean) as { parent: Project; subProjects: Project[] }[];
+      .filter((g): g is { parent: Project; subProjects: Project[] } => g !== null);
   }, [projects, currentUser, searchValue, statusFilter, ownerFilter, parentFilter, weekFilter, dateFilter, priorityFilter, entries]);
 
   return (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -25,17 +25,23 @@ export function IdeaEditorModal({ open, onClose, idea, userId, onSave }: IdeaEdi
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState('中');
   const isEditing = !!idea;
+  const prevIdeaIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    if (idea) {
-      setTitle(idea.title);
-      setContent(idea.content);
-      setPriority(idea.priority);
-    } else {
-      setTitle('');
-      setContent('');
-      setPriority('中');
+    const ideaId = idea?.id ?? null;
+    // 只在 idea 对象变化时重置表单（通过 id 判断）
+    if (ideaId !== prevIdeaIdRef.current) {
+      prevIdeaIdRef.current = ideaId;
+      if (idea) {
+        setTitle(idea.title || '');
+        setContent(idea.content || '');
+        setPriority(idea.priority || '中');
+      } else {
+        setTitle('');
+        setContent('');
+        setPriority('中');
+      }
     }
   }, [open, idea]);
 

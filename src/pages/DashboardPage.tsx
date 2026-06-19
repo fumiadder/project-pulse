@@ -646,8 +646,8 @@ export function DashboardPage() {
                                             <i className="fas fa-pen text-[10px]" />
                                           </button>
                                         </div>
-                                        <p
-                                          className={`text-xs text-text-muted leading-relaxed ${isToday ? '' : 'line-clamp-2'}`}
+                                        <div
+                                          className={`text-xs text-text-muted leading-relaxed whitespace-pre-wrap ${isToday ? '' : 'line-clamp-2'}`}
                                           dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
                                         />
                                         {sub.owner && (

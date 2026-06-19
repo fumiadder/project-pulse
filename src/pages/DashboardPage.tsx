@@ -73,16 +73,11 @@ function getStatusLabel(status: string, tagStatus: string): string {
   }
 }
 
-/** 按数字前缀排序子项目名称 */
+/** 按数字前缀排序子项目名称（自然排序） */
 function sortSubProjectsByName(projects: Project[]): Project[] {
-  return [...projects].sort((a, b) => {
-    const numA = parseFloat(a.name);
-    const numB = parseFloat(b.name);
-    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-    if (!isNaN(numA)) return -1;
-    if (!isNaN(numB)) return 1;
-    return a.name.localeCompare(b.name, 'zh-CN');
-  });
+  return [...projects].sort((a, b) =>
+    a.name.localeCompare(b.name, 'zh-CN', { numeric: true, sensitivity: 'base' })
+  );
 }
 
 export function DashboardPage() {

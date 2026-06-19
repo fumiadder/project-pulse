@@ -473,6 +473,10 @@ export function ProjectsPage() {
     }`;
 
   // Group by parent project with full filtering
+  // 自然排序：按名称中的数字部分排序（如 1, 2, 10 而非 1, 10, 2）
+  const naturalSort = (a: string, b: string) =>
+    a.localeCompare(b, 'zh-CN', { numeric: true, sensitivity: 'base' });
+
   const projectGroups = useMemo(() => {
     const parents = getParentProjects();
     const effectiveOwner = ownerFilter === 'all' ? null : ownerFilter;
@@ -483,6 +487,7 @@ export function ProjectsPage() {
         if (parentFilter !== 'all' && parent.id !== parentFilter) return false;
         return true;
       })
+      .sort((a, b) => naturalSort(a.name, b.name))
       .map((parent) => {
         let subs = getSubProjects(parent.id);
 
@@ -530,7 +535,7 @@ export function ProjectsPage() {
 
         return {
           parent,
-          subProjects: subs,
+          subProjects: subs.sort((a, b) => naturalSort(a.name, b.name)),
         };
       })
       .filter((g): g is { parent: Project; subProjects: Project[] } => g !== null);

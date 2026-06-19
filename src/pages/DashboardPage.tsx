@@ -647,7 +647,7 @@ export function DashboardPage() {
                                           </button>
                                         </div>
                                         <p
-                                          className="text-xs text-text-muted leading-relaxed line-clamp-2"
+                                          className={`text-xs text-text-muted leading-relaxed ${isToday ? '' : 'line-clamp-2'}`}
                                           dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
                                         />
                                         {sub.owner && (

@@ -18,58 +18,38 @@ import {
   getAvailableDates,
 } from '@/utils/weekUtils';
 
-/** Map project status string to status tag type */
-function mapStatusToTag(status: string): 'normal' | 'warning' | 'danger' | 'info' {
-  switch (status) {
-    case '延期':
-    case 'delayed':
-      return 'danger';
-    case '有风险':
-    case 'at-risk':
-      return 'warning';
-    case '正常':
-    case '进行中':
-    case 'completed':
-    case '完成':
-      return 'normal';
-    default:
-      return 'info';
-  }
-}
-
-/** 根据状态获取卡片底色样式 */
-function getStatusBgStyle(status: string, tagStatus: string): React.CSSProperties {
-  // 优先使用 tagStatus（来自最新进度），其次使用项目 status
-  const s = tagStatus || status;
-  switch (s) {
-    case 'danger':
-      return { backgroundColor: 'rgba(255, 51, 102, 0.10)', borderColor: 'rgba(255, 51, 102, 0.25)' };
-    case 'warning':
-      return { backgroundColor: 'rgba(255, 140, 0, 0.10)', borderColor: 'rgba(255, 140, 0, 0.25)' };
-    case 'normal':
-      // 区分进行中和已完成
-      if (status === '完成' || status === 'completed') {
-        return { backgroundColor: 'rgba(0, 255, 136, 0.08)', borderColor: 'rgba(0, 255, 136, 0.20)' };
-      }
-      return { backgroundColor: 'rgba(255, 217, 61, 0.08)', borderColor: 'rgba(255, 217, 61, 0.20)' };
-    default:
-      return {};
-  }
+/** 根据进度百分比和项目状态，返回统一的状态类型 */
+function getProjectStatus(percent: number, projectStatus: string): 'completed' | 'in-progress' | 'not-started' | 'delayed' | 'at-risk' {
+  if (percent >= 100) return 'completed';
+  if (percent > 0) return 'in-progress';
+  if (projectStatus === '延期' || projectStatus === 'delayed') return 'delayed';
+  if (projectStatus === '有风险' || projectStatus === 'at-risk') return 'at-risk';
+  if (projectStatus === '完成' || projectStatus === 'completed') return 'completed';
+  if (projectStatus === '进行中' || projectStatus === 'in-progress') return 'in-progress';
+  return 'not-started';
 }
 
 /** 获取状态的中文标签 */
-function getStatusLabel(status: string, tagStatus: string): string {
-  const s = tagStatus || status;
-  switch (s) {
-    case 'danger':
-      return '延期';
-    case 'warning':
-      return '有风险';
-    case 'normal':
-      if (status === '完成' || status === 'completed') return '已完成';
-      return '进行中';
-    default:
-      return status || '未知';
+function getStatusLabel(status: 'completed' | 'in-progress' | 'not-started' | 'delayed' | 'at-risk'): string {
+  switch (status) {
+    case 'completed': return '已完成';
+    case 'in-progress': return '进行中';
+    case 'not-started': return '未开始';
+    case 'delayed': return '延期';
+    case 'at-risk': return '有风险';
+    default: return '未知';
+  }
+}
+
+/** 获取状态对应的 StatusTag status 值 */
+function getStatusTagType(status: 'completed' | 'in-progress' | 'not-started' | 'delayed' | 'at-risk'): 'success' | 'warning' | 'danger' | 'info' | 'default' {
+  switch (status) {
+    case 'completed': return 'success';
+    case 'in-progress': return 'warning';
+    case 'not-started': return 'info';
+    case 'delayed': return 'danger';
+    case 'at-risk': return 'warning';
+    default: return 'default';
   }
 }
 
@@ -141,13 +121,16 @@ export function DashboardPage() {
       ? projects.filter((p) => p.owner === effectiveOwner)
       : projects;
 
-    const inProgress = myProjects.filter(
-      (p) => p.status === '进行中' || p.status === 'in-progress'
-    ).length;
+    const inProgress = myProjects.filter((p) => {
+      const latest = getLatestByProject(p.id);
+      const percent = latest?.percent ?? 0;
+      return getProjectStatus(percent, p.status) === 'in-progress';
+    }).length;
 
     const completed = myProjects.filter((p) => {
       const latest = getLatestByProject(p.id);
-      return (latest && latest.percent >= 100) || p.status === '完成' || p.status === 'completed';
+      const percent = latest?.percent ?? 0;
+      return getProjectStatus(percent, p.status) === 'completed';
     }).length;
 
     const todayEntries = getByDate(todayStr).length;
@@ -188,8 +171,9 @@ export function DashboardPage() {
         if (statusFilter !== 'all') {
           subs = subs.filter((sub) => {
             const latest = getLatestByProject(sub.id);
-            const tag = latest?.status ?? mapStatusToTag(sub.status);
-            return tag === statusFilter;
+            const percent = latest?.percent ?? 0;
+            const status = getProjectStatus(percent, sub.status);
+            return status === statusFilter;
           });
         }
 
@@ -369,9 +353,11 @@ export function DashboardPage() {
           <span className="text-[10px] text-text-muted">状态:</span>
           {[
             { value: 'all', label: '全部' },
-            { value: 'normal', label: '进行中' },
-            { value: 'warning', label: '有风险' },
-            { value: 'danger', label: '延期' },
+            { value: 'in-progress', label: '进行中' },
+            { value: 'completed', label: '已完成' },
+            { value: 'not-started', label: '未开始' },
+            { value: 'delayed', label: '延期' },
+            { value: 'at-risk', label: '有风险' },
           ].map((opt) => (
             <button
               key={opt.value}
@@ -514,10 +500,12 @@ export function DashboardPage() {
               {/* 子项目卡片区域 */}
               {!isCollapsed && (
                 <div className="flex gap-5 items-stretch overflow-x-auto p-4 scrollbar-thin">
-                  {section.subProjects.map((sub) => {
+                  {section.subProjects.map((sub, subIndex) => {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;
-                    const tagStatus = latest?.status ?? mapStatusToTag(sub.status);
+                    const projectStatus = getProjectStatus(percent, sub.status);
+                    const statusLabel = getStatusLabel(projectStatus);
+                    const statusTagType = getStatusTagType(projectStatus);
                     let allEntries = entries
                       .filter((e) => e.projectId === sub.id)
                       .sort((a, b) => b.date.localeCompare(a.date)); // 按日期倒序
@@ -531,12 +519,13 @@ export function DashboardPage() {
                       allEntries = allEntries.filter((e) => e.date === dateFilter);
                     }
 
-                    // 子项目卡片不使用底色
-                    // const statusStyle = getStatusBgStyle(sub.status, tagStatus);
-                    const statusLabel = getStatusLabel(sub.status, tagStatus);
-
                     // 是否为滚动目标
                     const isScrollTarget = sub.id === scrollTargetSubId;
+                    // 是否为该主项目下第一个未完成的子项目
+                    const isFirstIncomplete = subIndex === section.subProjects.findIndex((s) => {
+                      const l = getLatestByProject(s.id);
+                      return (l?.percent ?? 0) < 100;
+                    });
 
                     return (
                       <div
@@ -544,6 +533,8 @@ export function DashboardPage() {
                         id={`sub-card-${sub.id}`}
                         className={`flex min-w-[300px] max-w-[340px] flex-1 flex-col gap-3 p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] ${
                           isScrollTarget ? 'ring-2 ring-accent-cyan/60 shadow-[0_0_20px_rgba(0,212,255,0.2)]' : ''
+                        } ${
+                          isFirstIncomplete ? 'border-accent-orange/60 shadow-[0_0_12px_rgba(255,140,0,0.15)]' : ''
                         }`}
                         style={{
                         }}
@@ -556,7 +547,7 @@ export function DashboardPage() {
                             </h3>
                             <div className="flex items-center gap-2">
                               {/* 状态标签 */}
-                              <StatusTag status={tagStatus as 'normal' | 'warning' | 'danger' | 'info'} label={statusLabel} />
+                              <StatusTag status={statusTagType} label={statusLabel} />
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">

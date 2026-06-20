@@ -11,6 +11,17 @@ interface AutoResizeTextareaProps {
   className?: string;
 }
 
+const TEXT_COLORS = [
+  { label: '红', value: '#ff3366' },
+  { label: '橙', value: '#ff8c00' },
+  { label: '黄', value: '#ffd93d' },
+  { label: '绿', value: '#00ff88' },
+  { label: '青', value: '#00d4ff' },
+  { label: '蓝', value: '#3b82f6' },
+  { label: '紫', value: '#a855f7' },
+  { label: '白', value: '#e2e8f0' },
+];
+
 export function AutoResizeTextarea({
   value,
   onChange,
@@ -61,6 +72,22 @@ export function AutoResizeTextarea({
       isInternalUpdate.current = false;
     });
   }, [onChange, adjustHeight, isComposing]);
+
+  // 设置文字颜色
+  const applyColor = useCallback((color: string) => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    document.execCommand('foreColor', false, color);
+    // 触发 input 同步
+    const el = editorRef.current;
+    if (el) {
+      isInternalUpdate.current = true;
+      onChange(el.innerHTML);
+      requestAnimationFrame(() => {
+        isInternalUpdate.current = false;
+      });
+    }
+  }, [onChange]);
 
   // 在光标位置插入图片元素
   const insertImageAtCursor = useCallback((src: string, name: string) => {
@@ -184,23 +211,39 @@ export function AutoResizeTextarea({
   }, []);
 
   return (
-    <div
-      ref={editorRef}
-      contentEditable
-      suppressContentEditableWarning
-      onInput={handleInput}
-      onPaste={handlePaste}
-      onClick={handleClick}
-      onCompositionStart={handleCompositionStart}
-      onCompositionEnd={handleCompositionEnd}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      data-placeholder={placeholder}
-      className={`w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary resize-none focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 overflow-y-auto whitespace-pre-wrap break-words empty:before:content-[attr(data-placeholder)] empty:before:text-text-muted/50 ${className}`}
-      style={{
-        minHeight: `${minRows * 20 + 16}px`,
-        transition: 'height 0.15s ease',
-      }}
-    />
+    <div className="flex flex-col gap-1.5">
+      {/* 颜色工具栏 */}
+      <div className="flex items-center gap-1 px-1">
+        <span className="text-[10px] text-text-muted mr-1">字体颜色:</span>
+        {TEXT_COLORS.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            onClick={() => applyColor(c.value)}
+            title={c.label}
+            className="w-5 h-5 rounded-full border border-white/10 hover:scale-110 transition-transform"
+            style={{ backgroundColor: c.value }}
+          />
+        ))}
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onPaste={handlePaste}
+        onClick={handleClick}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        data-placeholder={placeholder}
+        className={`w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary resize-none focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 overflow-y-auto whitespace-pre-wrap break-words empty:before:content-[attr(data-placeholder)] empty:before:text-text-muted/50 ${className}`}
+        style={{
+          minHeight: `${minRows * 20 + 16}px`,
+          transition: 'height 0.15s ease',
+        }}
+      />
+    </div>
   );
 }

@@ -635,16 +635,26 @@ export function DashboardPage() {
                                         {/* 内容 */}
                                         <div
                                           className={`text-xs text-text-muted leading-relaxed whitespace-pre-wrap ${isToday ? '' : 'line-clamp-2'}`}
-                                          dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
-                                        />
+                                          style={{ fontSize: '12px' }}
+                                        >
+                                          <div
+                                            className="[&_*]:!text-[12px] [&_*]:!leading-relaxed"
+                                            dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
+                                          />
+                                        </div>
                                         {/* 当天额外展示计划 */}
                                         {isToday && entry.plan && (
                                           <div className="mt-1 pt-1 border-t border-border-custom/30">
                                             <span className="text-[10px] font-medium text-accent-orange">计划:</span>
                                             <div
                                               className="text-xs text-text-muted/80 leading-relaxed whitespace-pre-wrap mt-0.5"
-                                              dangerouslySetInnerHTML={{ __html: entry.plan }}
-                                            />
+                                              style={{ fontSize: '12px' }}
+                                            >
+                                              <div
+                                                className="[&_*]:!text-[12px] [&_*]:!leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: entry.plan }}
+                                              />
+                                            </div>
                                           </div>
                                         )}
                                         {sub.owner && (
@@ -662,11 +672,11 @@ export function DashboardPage() {
                                       onPointerDown={(e) => e.stopPropagation()}
                                     >
                                       <div className="text-xs leading-relaxed">
-                                        <div dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }} />
+                                        <div className="[&_*]:!text-[12px] [&_*]:!leading-relaxed" dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }} />
                                         {entry.plan && (
                                           <div className="mt-2 pt-2 border-t border-border-custom/30">
                                             <span className="text-[10px] font-medium text-accent-orange">计划:</span>
-                                            <div className="mt-0.5" dangerouslySetInnerHTML={{ __html: entry.plan }} />
+                                            <div className="mt-0.5 [&_*]:!text-[12px] [&_*]:!leading-relaxed" dangerouslySetInnerHTML={{ __html: entry.plan }} />
                                           </div>
                                         )}
                                       </div>

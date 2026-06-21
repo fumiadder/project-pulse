@@ -647,11 +647,11 @@ export function DashboardPage() {
                                           <div className="mt-1 pt-1 border-t border-border-custom/30">
                                             <span className="text-[10px] font-medium text-accent-orange">计划:</span>
                                             <div
-                                              className="text-xs text-text-muted/80 leading-relaxed whitespace-pre-wrap mt-0.5"
+                                              className="text-xs text-accent-cyan leading-relaxed whitespace-pre-wrap mt-0.5"
                                               style={{ fontSize: '12px' }}
                                             >
                                               <div
-                                                className="[&_*]:!text-[12px] [&_*]:!leading-relaxed"
+                                                className="[&_*]:!text-[12px] [&_*]:!leading-relaxed [&_*]:!text-accent-cyan"
                                                 dangerouslySetInnerHTML={{ __html: entry.plan }}
                                               />
                                             </div>
@@ -676,7 +676,7 @@ export function DashboardPage() {
                                         {entry.plan && (
                                           <div className="mt-2 pt-2 border-t border-border-custom/30">
                                             <span className="text-[10px] font-medium text-accent-orange">计划:</span>
-                                            <div className="mt-0.5 [&_*]:!text-[12px] [&_*]:!leading-relaxed" dangerouslySetInnerHTML={{ __html: entry.plan }} />
+                                            <div className="mt-0.5 [&_*]:!text-[12px] [&_*]:!leading-relaxed [&_*]:!text-accent-cyan" dangerouslySetInnerHTML={{ __html: entry.plan }} />
                                           </div>
                                         )}
                                       </div>

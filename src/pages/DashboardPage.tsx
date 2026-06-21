@@ -632,10 +632,21 @@ export function DashboardPage() {
                                             <i className="fas fa-pen text-[10px]" />
                                           </button>
                                         </div>
+                                        {/* 内容 */}
                                         <div
                                           className={`text-xs text-text-muted leading-relaxed whitespace-pre-wrap ${isToday ? '' : 'line-clamp-2'}`}
                                           dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
                                         />
+                                        {/* 当天额外展示计划 */}
+                                        {isToday && entry.plan && (
+                                          <div className="mt-1 pt-1 border-t border-border-custom/30">
+                                            <span className="text-[10px] font-medium text-accent-orange">计划:</span>
+                                            <div
+                                              className="text-xs text-text-muted/80 leading-relaxed whitespace-pre-wrap mt-0.5"
+                                              dangerouslySetInnerHTML={{ __html: entry.plan }}
+                                            />
+                                          </div>
+                                        )}
                                         {sub.owner && (
                                           <span className="text-[10px] text-text-muted/60">
                                             <i className="far fa-user mr-1" />
@@ -650,10 +661,15 @@ export function DashboardPage() {
                                       className="max-w-xs bg-bg-secondary border border-border-custom p-3 text-text-primary whitespace-pre-wrap"
                                       onPointerDown={(e) => e.stopPropagation()}
                                     >
-                                      <div
-                                        className="text-xs leading-relaxed"
-                                        dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
-                                      />
+                                      <div className="text-xs leading-relaxed">
+                                        <div dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }} />
+                                        {entry.plan && (
+                                          <div className="mt-2 pt-2 border-t border-border-custom/30">
+                                            <span className="text-[10px] font-medium text-accent-orange">计划:</span>
+                                            <div className="mt-0.5" dangerouslySetInnerHTML={{ __html: entry.plan }} />
+                                          </div>
+                                        )}
+                                      </div>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>

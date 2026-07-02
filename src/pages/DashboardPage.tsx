@@ -87,7 +87,7 @@ export function DashboardPage() {
 
   const handlePreviewWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    setPreviewScale(prev => Math.min(Math.max(prev + (e.deltaY > 0 ? -0.15 : 0.15), 0.3), 5));
+    setPreviewScale(prev => Math.min(Math.max(prev + (e.deltaY > 0 ? -0.10 : 0.10), 0.3), 2));
   }, []);
 
   const handlePreviewMouseDown = useCallback((e: React.MouseEvent) => {
@@ -758,11 +758,11 @@ export function DashboardPage() {
           {/* 缩放工具栏 */}
           <div className="absolute top-4 right-4 flex items-center gap-2 z-10" onClick={(e) => e.stopPropagation()}>
             <span className="text-xs text-white/50">{Math.round(previewScale * 100)}%</span>
-            <button onClick={() => setPreviewScale(prev => Math.min(prev + 0.25, 5))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all text-sm">
-              <i className="fas fa-search-plus" />
-            </button>
-            <button onClick={() => setPreviewScale(prev => Math.max(prev - 0.25, 0.3))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all text-sm">
-              <i className="fas fa-search-minus" />
+            <button onClick={() => setPreviewScale(prev => Math.min(prev + 0.10, 2))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all text-sm">
+               <i className="fas fa-search-plus" />
+             </button>
+             <button onClick={() => setPreviewScale(prev => Math.max(prev - 0.10, 0.3))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all text-sm">
+               <i className="fas fa-search-minus" />
             </button>
             <button onClick={resetPreview} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all text-sm" title="重置">
               <i className="fas fa-expand" />

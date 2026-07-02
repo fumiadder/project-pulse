@@ -79,6 +79,43 @@ export function DashboardPage() {
   const [todayFilterActive, setTodayFilterActive] = useState(false);
   // 图片预览
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
+  // 图片预览缩放与拖拽
+  const [previewScale, setPreviewScale] = useState(1);
+  const [previewPos, setPreviewPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
+
+  const handlePreviewWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    setPreviewScale(prev => Math.min(Math.max(prev + (e.deltaY > 0 ? -0.15 : 0.15), 0.3), 5));
+  }, []);
+
+  const handlePreviewMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY, px: previewPos.x, py: previewPos.y };
+  }, [previewPos]);
+
+  const handlePreviewMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPreviewPos({
+      x: dragStart.current.px + (e.clientX - dragStart.current.x),
+      y: dragStart.current.py + (e.clientY - dragStart.current.y),
+    });
+  }, [isDragging]);
+
+  const handlePreviewMouseUp = useCallback(() => setIsDragging(false), []);
+
+  const resetPreview = useCallback(() => {
+    setPreviewScale(1);
+    setPreviewPos({ x: 0, y: 0 });
+  }, []);
+
+  const closePreview = useCallback(() => {
+    setPreviewImage(null);
+    setPreviewScale(1);
+    setPreviewPos({ x: 0, y: 0 });
+  }, []);
 
   // Progress modal state
   const [progressModalOpen, setProgressModalOpen] = useState(false);
@@ -712,26 +749,53 @@ export function DashboardPage() {
         preDate={todayStr}
       />
 
-      {/* 全局图片预览 */}
+      {/* 全局图片预览（支持缩放和拖拽） */}
       {previewImage && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setPreviewImage(null)}
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={closePreview}
         >
-          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={previewImage.src}
-              alt={previewImage.name}
-              className="max-w-full max-h-[85vh] object-contain rounded-lg"
-            />
-            <p className="text-center text-sm text-white/70 mt-2">{previewImage.name}</p>
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all"
-            >
+          {/* 缩放工具栏 */}
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-10" onClick={(e) => e.stopPropagation()}>
+            <span className="text-xs text-white/50">{Math.round(previewScale * 100)}%</span>
+            <button onClick={() => setPreviewScale(prev => Math.min(prev + 0.25, 5))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all text-sm">
+              <i className="fas fa-search-plus" />
+            </button>
+            <button onClick={() => setPreviewScale(prev => Math.max(prev - 0.25, 0.3))} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all text-sm">
+              <i className="fas fa-search-minus" />
+            </button>
+            <button onClick={resetPreview} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all text-sm" title="重置">
+              <i className="fas fa-expand" />
+            </button>
+            <button onClick={closePreview} className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all">
               <i className="fas fa-times text-sm" />
             </button>
           </div>
+          {/* 图片区域 */}
+          <div
+            className="relative overflow-hidden flex items-center justify-center"
+            style={{ width: '90vw', height: '85vh', cursor: isDragging ? 'grabbing' : 'grab' }}
+            onClick={(e) => e.stopPropagation()}
+            onWheel={handlePreviewWheel}
+            onMouseDown={handlePreviewMouseDown}
+            onMouseMove={handlePreviewMouseMove}
+            onMouseUp={handlePreviewMouseUp}
+            onMouseLeave={handlePreviewMouseUp}
+          >
+            <img
+              src={previewImage.src}
+              alt={previewImage.name}
+              draggable={false}
+              className="select-none rounded-lg"
+              style={{
+                transform: `translate(${previewPos.x}px, ${previewPos.y}px) scale(${previewScale})`,
+                transition: isDragging ? 'none' : 'transform 0.15s ease',
+                maxWidth: previewScale <= 1 ? '100%' : 'none',
+                maxHeight: previewScale <= 1 ? '100%' : 'none',
+              }}
+            />
+          </div>
+          <p className="text-center text-sm text-white/70 mt-2">{previewImage.name}</p>
         </div>
       )}
     </div>

@@ -12,7 +12,7 @@ import { useProgressStore } from '@/stores/useProgressStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useUserStore } from '@/stores/useUserStore';
 import { uploadFile, getFileUrl } from '@/services/api';
-import { AutoResizeTextarea } from '@/components/shared/AutoResizeTextarea';
+import { AutoResizeTextarea, type AutoResizeTextareaHandle } from '@/components/shared/AutoResizeTextarea';
 import type { Progress, Attachment } from '@/types';
 
 /** 状态选项：与进度百分比强绑定 */
@@ -134,6 +134,7 @@ export function ProgressEditorModal({
 
   // 图片预览状态
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
+  const contentRef = useRef<AutoResizeTextareaHandle>(null);
 
   const isEditing = !!progressId;
 
@@ -293,6 +294,8 @@ export function ProgressEditorModal({
   };
 
   const handleSave = async () => {
+    // 保存前强制同步编辑器内容（防止 IME composing 未完成导致内容丢失）
+    contentRef.current?.syncContent();
     if (!content.trim() || !projectId) return;
     setIsSaving(true);
 
@@ -435,6 +438,7 @@ export function ProgressEditorModal({
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-muted">内容 *</label>
               <AutoResizeTextarea
+                ref={contentRef}
                 value={content}
                 onChange={(v) => setContent(v)}
                 onPasteFiles={handlePasteFiles}

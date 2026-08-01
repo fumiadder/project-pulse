@@ -238,24 +238,51 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
             </div>
           </div>
 
-          {/* 状态 */}
+          {/* 进度状态 */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-text-muted">状态</label>
-            <div className="flex gap-2">
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setStatus(opt.value)}
-                  className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                    status === opt.value
-                      ? 'border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan'
-                      : 'border-border-primary/30 text-text-secondary hover:text-text-primary'
+            <label className="text-xs font-medium text-text-muted">进度</label>
+            {/* 进度可视化预览 */}
+            <div className="flex items-center gap-2 rounded-lg bg-bg-primary px-3 py-2">
+              <div className="h-2 flex-1 rounded-full bg-bg-tertiary overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    status === 'completed' ? 'bg-accent-green' : status === 'in-progress' ? 'bg-accent-orange' : 'bg-text-muted/30'
                   }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+                  style={{ width: `${status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0}%` }}
+                />
+              </div>
+              <span className={`text-xs font-bold ${
+                status === 'completed' ? 'text-accent-green' : status === 'in-progress' ? 'text-accent-orange' : 'text-text-muted'
+              }`}>
+                {status === 'completed' ? '100%' : status === 'in-progress' ? '50%' : '0%'}
+              </span>
+            </div>
+            {/* 状态选择按钮 */}
+            <div className="flex gap-2 mt-1">
+              {STATUS_OPTIONS.map((opt) => {
+                const isActive = status === opt.value;
+                const activeColor = opt.value === 'completed'
+                  ? 'border-accent-green/50 bg-accent-green/10 text-accent-green'
+                  : opt.value === 'in-progress'
+                  ? 'border-accent-orange/50 bg-accent-orange/10 text-accent-orange'
+                  : 'border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan';
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setStatus(opt.value)}
+                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+                      isActive ? activeColor : 'border-border-primary/30 text-text-secondary hover:text-text-primary hover:border-border-hover'
+                    }`}
+                  >
+                    <i className={`fas ${
+                      opt.value === 'completed' ? 'fa-check-circle' :
+                      opt.value === 'in-progress' ? 'fa-spinner' : 'fa-circle'
+                    } mr-1.5`} />
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

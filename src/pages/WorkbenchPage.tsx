@@ -147,7 +147,35 @@ function CategoryChart({ todos }: { todos: Todo[] }) {
   );
 }
 
-/** 任务卡片组件 */
+/** 优先级左侧色条 */
+function getPriorityBar(priority: string): string {
+  switch (priority) {
+    case 'high': return 'bg-accent-red';
+    case 'medium': return 'bg-accent-orange';
+    case 'low': return 'bg-accent-cyan';
+    default: return 'bg-text-muted';
+  }
+}
+
+/** 根据状态获取进度百分比 */
+function getProgressPercent(status: string): number {
+  switch (status) {
+    case 'completed': return 100;
+    case 'in-progress': return 50;
+    default: return 0;
+  }
+}
+
+/** 根据状态获取进度条颜色 */
+function getProgressColor(status: string): string {
+  switch (status) {
+    case 'completed': return 'bg-accent-green';
+    case 'in-progress': return 'bg-accent-orange';
+    default: return 'bg-text-muted/30';
+  }
+}
+
+/** 任务卡片组件 — 卡片式，点击打开编辑进度 */
 function TodoCard({
   todo,
   onToggle,
@@ -162,10 +190,14 @@ function TodoCard({
   const overdue = isOverdue(todo);
   const dueToday = isDueToday(todo);
   const prio = getPriorityStyle(todo.priority);
+  const barColor = getPriorityBar(todo.priority);
+  const progress = getProgressPercent(todo.status);
+  const progressColor = getProgressColor(todo.status);
 
   return (
     <div
-      className={`group rounded-lg border bg-bg-secondary px-4 py-3 transition-all hover:border-border-hover ${
+      onClick={onEdit}
+      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-bg-secondary transition-all hover:border-accent-cyan/40 hover:shadow-lg hover:shadow-accent-cyan/5 ${
         todo.status === 'completed'
           ? 'border-border-custom opacity-60'
           : overdue
@@ -173,96 +205,110 @@ function TodoCard({
           : 'border-border-custom'
       }`}
     >
-      <div className="flex items-start gap-3">
-        {/* 完成复选框 */}
-        <button
-          onClick={onToggle}
-          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${
-            todo.status === 'completed'
-              ? 'border-accent-green bg-accent-green/20 text-accent-green'
-              : 'border-border-hover text-transparent hover:border-accent-cyan hover:text-accent-cyan/50'
-          }`}
-        >
-          <i className="fas fa-check text-[10px]" />
-        </button>
+      {/* 优先级色条 */}
+      <div className={`absolute left-0 top-0 h-full w-1 ${barColor} ${todo.status === 'completed' ? 'opacity-30' : ''}`} />
 
-        {/* 内容区域 */}
-        <div className="flex flex-1 flex-col gap-1 overflow-hidden">
-          {/* 标题行 */}
-          <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 p-4 pl-5">
+        {/* 顶部：复选框 + 标题 + 删除按钮 */}
+        <div className="flex items-start gap-2.5">
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${
+              todo.status === 'completed'
+                ? 'border-accent-green bg-accent-green/20 text-accent-green'
+                : 'border-border-hover text-transparent hover:border-accent-cyan hover:text-accent-cyan/50'
+            }`}
+          >
+            <i className="fas fa-check text-[10px]" />
+          </button>
+
+          <span
+            className={`flex-1 text-sm font-medium leading-snug ${
+              todo.status === 'completed' ? 'line-through text-text-muted' : 'text-text-primary'
+            }`}
+          >
+            {todo.title}
+          </span>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100"
+            title="删除"
+          >
+            <i className="fas fa-trash text-xs" />
+          </button>
+        </div>
+
+        {/* 描述 */}
+        {todo.description && (
+          <p className={`text-xs text-text-secondary line-clamp-2 ${todo.status === 'completed' ? 'opacity-50' : ''}`}>
+            {todo.description}
+          </p>
+        )}
+
+        {/* 底部元信息 */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
+          {/* 优先级标签 */}
+          <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${prio.badge}`}>
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${prio.dot}`} />
+            {getPriorityLabel(todo.priority)}
+          </span>
+
+          {/* 状态 */}
+          <span className={`text-[10px] font-medium ${getStatusStyle(todo.status)}`}>
+            <i className={`fas ${todo.status === 'completed' ? 'fa-check-circle' : todo.status === 'in-progress' ? 'fa-spinner' : 'fa-circle'} mr-1`} />
+            {getStatusLabel(todo.status)}
+          </span>
+
+          {/* 分类 */}
+          <span className="rounded bg-bg-tertiary px-1.5 py-0.5 text-[10px] text-text-secondary">
+            <i className="fas fa-folder mr-1 text-text-muted" />
+            {todo.category || '未分类'}
+          </span>
+
+          {/* 截止日期 */}
+          {todo.dueDate && (
             <span
-              className={`text-sm font-medium ${
-                todo.status === 'completed' ? 'line-through text-text-muted' : 'text-text-primary'
-              } truncate`}
+              className={`flex items-center gap-1 text-[10px] ${
+                overdue ? 'text-accent-red font-medium' : dueToday ? 'text-accent-orange font-medium' : 'text-text-muted'
+              }`}
             >
-              {todo.title}
+              <i className="fas fa-clock" />
+              {formatDueDate(todo.dueDate)}
+              {overdue && '（逾期）'}
+              {dueToday && '（今天）'}
             </span>
-            <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${prio.badge}`}>
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${prio.dot}`} />
-              {getPriorityLabel(todo.priority)}
-            </span>
-          </div>
-
-          {/* 描述 */}
-          {todo.description && (
-            <p className={`text-xs text-text-secondary line-clamp-2 ${todo.status === 'completed' ? 'opacity-50' : ''}`}>
-              {todo.description}
-            </p>
           )}
+        </div>
 
-          {/* 元信息行 */}
-          <div className="flex flex-wrap items-center gap-2 mt-0.5">
-            {/* 状态 */}
-            <span className={`text-[10px] font-medium ${getStatusStyle(todo.status)}`}>
-              <i className={`fas ${todo.status === 'completed' ? 'fa-check-circle' : todo.status === 'in-progress' ? 'fa-spinner' : 'fa-circle'} mr-1`} />
-              {getStatusLabel(todo.status)}
-            </span>
-
-            {/* 分类 */}
-            <span className="rounded bg-bg-tertiary px-1.5 py-0.5 text-[10px] text-text-secondary">
-              <i className="fas fa-folder mr-1 text-text-muted" />
-              {todo.category || '未分类'}
-            </span>
-
-            {/* 标签 */}
+        {/* 标签行 */}
+        {todo.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
             {todo.tags.map((tag, i) => (
               <span key={i} className="rounded bg-accent-purple/10 px-1.5 py-0.5 text-[10px] text-accent-purple">
                 #{tag}
               </span>
             ))}
-
-            {/* 截止日期 */}
-            {todo.dueDate && (
-              <span
-                className={`flex items-center gap-1 text-[10px] ${
-                  overdue ? 'text-accent-red font-medium' : dueToday ? 'text-accent-orange font-medium' : 'text-text-muted'
-                }`}
-              >
-                <i className="fas fa-clock" />
-                {formatDueDate(todo.dueDate)}
-                {overdue && '（逾期）'}
-                {dueToday && '（今天）'}
-              </span>
-            )}
           </div>
+        )}
+
+        {/* 进度条 */}
+        <div className="flex items-center gap-2 pt-1">
+          <div className="h-1.5 flex-1 rounded-full bg-bg-tertiary overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className={`text-[10px] font-medium ${getStatusStyle(todo.status)}`}>
+            {progress}%
+          </span>
         </div>
 
-        {/* 操作按钮 */}
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            onClick={onEdit}
-            className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-cyan transition-colors"
-            title="编辑"
-          >
-            <i className="fas fa-pen text-xs" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-red transition-colors"
-            title="删除"
-          >
-            <i className="fas fa-trash text-xs" />
-          </button>
+        {/* 悬停提示：点击编辑 */}
+        <div className="flex items-center justify-center gap-1 rounded-md bg-accent-cyan/5 py-1 text-[10px] text-accent-cyan/0 transition-all group-hover:text-accent-cyan/70">
+          <i className="fas fa-pen text-[9px]" />
+          <span>点击编辑进度</span>
         </div>
       </div>
     </div>
@@ -535,8 +581,8 @@ export function WorkbenchPage() {
         </div>
       </div>
 
-      {/* 待办列表 */}
-      <div className="flex flex-col gap-2">
+      {/* 待办卡片网格 */}
+      <div className="flex flex-col gap-3">
         {isLoading ? (
           <div className="flex h-40 items-center justify-center">
             <i className="fas fa-spinner fa-spin text-2xl text-accent-cyan" />
@@ -577,16 +623,18 @@ export function WorkbenchPage() {
               )}
             </div>
 
-            {/* 任务卡片列表 */}
-            {filteredTodos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onToggle={() => toggleComplete(todo.id)}
-                onEdit={() => handleEdit(todo.id)}
-                onDelete={() => handleDelete(todo.id)}
-              />
-            ))}
+            {/* 卡片网格 */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredTodos.map((todo) => (
+                <TodoCard
+                  key={todo.id}
+                  todo={todo}
+                  onToggle={() => toggleComplete(todo.id)}
+                  onEdit={() => handleEdit(todo.id)}
+                  onDelete={() => handleDelete(todo.id)}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>

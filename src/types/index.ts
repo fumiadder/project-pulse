@@ -81,6 +81,22 @@ export interface Report {
   generatedAt: string;
 }
 
+/** Todo / 待办事项实体 */
+export interface Todo {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  category: string;                                  // 分类
+  tags: string[];                                    // 标签
+  priority: 'high' | 'medium' | 'low';              // 优先级
+  status: 'pending' | 'in-progress' | 'completed';  // 状态
+  dueDate: string | null;                           // 截止日期
+  completedAt: string | null;                       // 完成时间
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Idea / 想法实体 */
 export interface Idea {
   id: string;
@@ -102,7 +118,8 @@ export interface SyncData {
   users: User[];
   reports: Report[];
   daily_tags: DailyTag[];
-  ideas: Idea[]; // 新增
+  ideas: Idea[];
+  todos: Todo[]; // 个人工作台待办
   settings: Record<string, string>;
 }
 

@@ -16,6 +16,9 @@ const CalendarPage = lazy(() =>
 const ProjectsPage = lazy(() =>
   import('@/pages').then((m) => ({ default: m.ProjectsPage }))
 );
+const WorkbenchPage = lazy(() =>
+  import('@/pages').then((m) => ({ default: m.WorkbenchPage }))
+);
 const DailyReportPage = lazy(() =>
   import('@/pages').then((m) => ({ default: m.DailyReportPage }))
 );
@@ -55,6 +58,7 @@ const pageComponents: Record<string, React.LazyExoticComponent<() => ReactNode>>
   dashboard: DashboardPage,
   calendar: CalendarPage,
   projects: ProjectsPage,
+  workbench: WorkbenchPage,
   'daily-report': DailyReportPage,
   'weekly-report': WeeklyReportPage,
   'monthly-report': MonthlyReportPage,

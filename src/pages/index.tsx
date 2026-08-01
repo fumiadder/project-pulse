@@ -2,6 +2,7 @@
 export { DashboardPage } from './DashboardPage';
 export { ProjectsPage } from './ProjectsPage';
 export { CalendarPage } from './CalendarPage';
+export { WorkbenchPage } from './WorkbenchPage';
 export { DailyReportPage } from './DailyReportPage';
 export { WeeklyReportPage } from './WeeklyReportPage';
 export { MonthlyReportPage } from './MonthlyReportPage';

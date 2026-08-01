@@ -4,8 +4,8 @@ const bottomNavItems = [
   { key: 'dashboard', label: '控制台', icon: 'fa-th-large' },
   { key: 'calendar', label: '日历', icon: 'fa-calendar-alt' },
   { key: 'projects', label: '项目', icon: 'fa-project-diagram' },
+  { key: 'workbench', label: '工作台', icon: 'fa-tasks' },
   { key: 'daily-report', label: '日报', icon: 'fa-file-alt' },
-  { key: 'private-zone', label: '私密', icon: 'fa-lock' },
 ] as const;
 
 export function BottomNav() {
@@ -23,7 +23,7 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-border-custom bg-bg-secondary/95 backdrop-blur-md md:hidden">
       {bottomNavItems.map((item) => {
-        const isActive = activePage === item.key || (item.key === 'more' && !['dashboard', 'calendar', 'projects', 'daily-report'].includes(activePage));
+        const isActive = activePage === item.key || (item.key === 'more' && !['dashboard', 'calendar', 'projects', 'workbench', 'daily-report'].includes(activePage));
         return (
           <button
             key={item.key}

@@ -103,6 +103,21 @@ function initDb() {
       createdAt TEXT,
       updatedAt TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS todos (
+      id TEXT PRIMARY KEY,
+      userId TEXT,
+      title TEXT NOT NULL,
+      description TEXT,
+      category TEXT,
+      tags TEXT,
+      priority TEXT DEFAULT 'medium',
+      status TEXT DEFAULT 'pending',
+      dueDate TEXT,
+      completedAt TEXT,
+      createdAt TEXT,
+      updatedAt TEXT
+    );
   `);
 
   // Migrate: add missing columns for existing tables
@@ -448,6 +463,58 @@ app.post('/api/ideas/:id/land', (req, res) => {
   res.json({ success: true, data: { projectId } });
 });
 
+// ---------- Todos (个人工作台待办) ----------
+app.get('/api/todos', (req, res) => {
+  const { userId } = req.query;
+  let rows;
+  if (userId) {
+    rows = db.prepare('SELECT * FROM todos WHERE userId = ? ORDER BY updatedAt DESC').all(userId);
+  } else {
+    rows = db.prepare('SELECT * FROM todos ORDER BY updatedAt DESC').all();
+  }
+  res.json({ success: true, data: rows });
+});
+
+app.put('/api/todos', (req, res) => {
+  const items = Array.isArray(req.body) ? req.body : [req.body];
+  const insert = db.prepare(`
+    INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, completedAt, createdAt, updatedAt)
+    VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @completedAt, @createdAt, @updatedAt)
+    ON CONFLICT(id) DO UPDATE SET
+      userId=excluded.userId,
+      title=excluded.title,
+      description=excluded.description,
+      category=excluded.category,
+      tags=excluded.tags,
+      priority=excluded.priority,
+      status=excluded.status,
+      dueDate=excluded.dueDate,
+      completedAt=excluded.completedAt,
+      updatedAt=excluded.updatedAt
+  `);
+  const tx = db.transaction((rows) => {
+    for (const r of rows) {
+      if (!r.id) r.id = uuidv4();
+      if (!r.createdAt) r.createdAt = now();
+      r.updatedAt = now();
+      insert.run(sanitizeRow(r));
+    }
+  });
+  tx(items);
+  res.json({ success: true, data: items });
+});
+
+app.get('/api/todos/:id', (req, res) => {
+  const row = db.prepare('SELECT * FROM todos WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ success: false, error: 'Not found' });
+  res.json({ success: true, data: row });
+});
+
+app.delete('/api/todos/:id', (req, res) => {
+  db.prepare('DELETE FROM todos WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 // ---------- Sync ----------
 app.get('/api/sync/full', (req, res) => {
   const projects = db.prepare('SELECT * FROM projects').all();
@@ -455,6 +522,8 @@ app.get('/api/sync/full', (req, res) => {
   const users = db.prepare('SELECT * FROM users').all();
   const reports = db.prepare('SELECT * FROM reports').all();
   const dailyTags = db.prepare('SELECT * FROM daily_tags').all();
+  const ideas = db.prepare('SELECT * FROM ideas').all();
+  const todos = db.prepare('SELECT * FROM todos').all();
   const settingsRows = db.prepare('SELECT * FROM settings').all();
   const settings = {};
   for (const s of settingsRows) {
@@ -462,7 +531,7 @@ app.get('/api/sync/full', (req, res) => {
   }
   res.json({
     success: true,
-    data: { projects, progress, users, reports, daily_tags: dailyTags, settings }
+    data: { projects, progress, users, reports, daily_tags: dailyTags, ideas, todos, settings }
   });
 });
 
@@ -521,6 +590,19 @@ app.post('/api/sync/full', (req, res) => {
     const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
     tx(dArr);
   }
+  const { todos: tArr } = req.body || {};
+  if (tArr && Array.isArray(tArr)) {
+    const stmt = db.prepare(`
+      INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, completedAt, createdAt, updatedAt)
+      VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @completedAt, @createdAt, @updatedAt)
+      ON CONFLICT(id) DO UPDATE SET
+        userId=excluded.userId, title=excluded.title, description=excluded.description,
+        category=excluded.category, tags=excluded.tags, priority=excluded.priority,
+        status=excluded.status, dueDate=excluded.dueDate, completedAt=excluded.completedAt, updatedAt=excluded.updatedAt
+    `);
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
+    tx(tArr);
+  }
   if (sObj && typeof sObj === 'object') {
     const stmt = db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
     const tx = db.transaction((obj) => { for (const [k, v] of Object.entries(obj)) stmt.run(k, typeof v === 'object' ? JSON.stringify(v) : String(v)); });
@@ -536,6 +618,7 @@ app.get('/api/stats', (req, res) => {
   const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
   const reportCount = db.prepare('SELECT COUNT(*) as c FROM reports').get().c;
   const dailyTagCount = db.prepare('SELECT COUNT(*) as c FROM daily_tags').get().c;
+  const todoCount = db.prepare('SELECT COUNT(*) as c FROM todos').get().c;
   const latestProgress = db.prepare('SELECT MAX(date) as d FROM progress').get().d;
   res.json({
     success: true,
@@ -545,6 +628,7 @@ app.get('/api/stats', (req, res) => {
       userCount,
       reportCount,
       dailyTagCount,
+      todoCount,
       latestProgressDate: latestProgress
     }
   });

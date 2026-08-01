@@ -5,7 +5,7 @@ const API_BASE = 'pp';
 
 // ─── Store definitions & validators ───────────────────────────────────────────
 
-const STORES = ['projects', 'progress', 'users', 'reports', 'dailyTags', 'ideas'];
+const STORES = ['projects', 'progress', 'users', 'reports', 'dailyTags', 'ideas', 'todos'];
 
 const VALIDATORS = {
   projects(item) {
@@ -45,6 +45,12 @@ const VALIDATORS = {
     if (!item || typeof item !== 'object') return 'Item must be an object';
     if (!item.id || typeof item.id !== 'string') return 'Missing or invalid "id" (string required)';
     if (!item.userId || typeof item.userId !== 'string') return 'Missing or invalid "userId" (string required)';
+    if (!item.title || typeof item.title !== 'string') return 'Missing or invalid "title" (string required)';
+    return null;
+  },
+  todos(item) {
+    if (!item || typeof item !== 'object') return 'Item must be an object';
+    if (!item.id || typeof item.id !== 'string') return 'Missing or invalid "id" (string required)';
     if (!item.title || typeof item.title !== 'string') return 'Missing or invalid "title" (string required)';
     return null;
   },
@@ -210,13 +216,14 @@ async function healthCheck(env) {
 // ─── Full sync (safe upsert per item) ────────────────────────────────────────
 
 async function fullSyncGet(env) {
-  const [projects, progress, users, reports, dailyTags, ideas] = await Promise.all([
+  const [projects, progress, users, reports, dailyTags, ideas, todos] = await Promise.all([
     loadAllItems(env, 'projects'),
     loadAllItems(env, 'progress'),
     loadAllItems(env, 'users'),
     loadAllItems(env, 'reports'),
     loadAllItems(env, 'dailyTags'),
     loadAllItems(env, 'ideas'),
+    loadAllItems(env, 'todos'),
   ]);
 
   const settingsList = await env.DB.list({ prefix: `${API_BASE}:setting:` });
@@ -233,7 +240,7 @@ async function fullSyncGet(env) {
   }
 
   return jres({
-    projects, progress, users, reports, daily_tags: dailyTags, ideas,
+    projects, progress, users, reports, daily_tags: dailyTags, ideas, todos,
     settings, versions, syncedAt: new Date().toISOString(),
   });
 }
@@ -258,6 +265,7 @@ async function fullSyncPost(env, body) {
     reports: body.reports || [],
     dailyTags: body.daily_tags || [],
     ideas: body.ideas || [],
+    todos: body.todos || [],
   };
 
   const counts = {};
@@ -811,6 +819,20 @@ export async function onRequest(context) {
     }
     else if (path.match(/^\/api\/ideas\/.+\/land$/) && method === 'POST') {
       res = await landIdea(env, path.split('/')[3], await request.json());
+    }
+
+    // ── Todos (个人工作台待办) ──
+    else if (path === '/api/todos' && method === 'GET') {
+      res = await listStore(env, 'todos', url);
+    }
+    else if (path === '/api/todos' && method === 'PUT') {
+      res = await putItem(env, 'todos', await request.json());
+    }
+    else if (path.match(/^\/api\/todos\/.+$/) && method === 'GET') {
+      res = await getItem(env, 'todos', path.split('/').pop());
+    }
+    else if (path.match(/^\/api\/todos\/.+$/) && method === 'DELETE') {
+      res = await deleteItem(env, 'todos', path.split('/').pop());
     }
 
     // ── Auth / Private Password ──

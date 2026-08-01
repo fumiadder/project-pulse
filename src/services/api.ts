@@ -11,6 +11,8 @@ import type {
   ApiResponse,
   HealthResponse,
   UploadedFile,
+  Idea,
+  Todo,
 } from '@/types';
 
 // --------------------------------------------
@@ -191,6 +193,25 @@ export const api = {
     return apiFetch<{ valid: boolean }>('/auth/private-password', {
       method: 'POST',
       body: JSON.stringify({ userId, password }),
+    });
+  },
+
+  // --- Todos (个人工作台待办) ---
+  listTodos(userId?: string): Promise<ApiResponse<Todo[]>> {
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    return apiFetch<Todo[]>(`/todos${query}`);
+  },
+
+  putTodo(todo: Todo): Promise<ApiResponse<Todo>> {
+    return apiFetch<Todo>('/todos', {
+      method: 'PUT',
+      body: JSON.stringify(todo),
+    });
+  },
+
+  deleteTodo(id: string): Promise<ApiResponse<void>> {
+    return apiFetch<void>(`/todos/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
     });
   },
 };

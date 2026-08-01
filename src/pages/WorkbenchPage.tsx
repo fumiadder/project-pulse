@@ -303,6 +303,28 @@ function TodoCard({
           </div>
         )}
 
+        {/* 图片缩略图 */}
+        {todo.images && todo.images.length > 0 && (
+          <div className="flex gap-1.5">
+            {todo.images.slice(0, 4).map((img, i) => (
+              <div key={i} className="relative h-12 w-12 overflow-hidden rounded-md border border-border-custom">
+                <img src={img} alt={`图片${i + 1}`} className="h-full w-full object-cover" />
+                {i === 3 && todo.images.length > 4 && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-[10px] text-white font-medium">
+                    +{todo.images.length - 4}
+                  </div>
+                )}
+              </div>
+            ))}
+            {todo.images.length > 0 && (
+              <span className="flex items-center gap-0.5 text-[10px] text-text-muted">
+                <i className="fas fa-image" />
+                {todo.images.length}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* 时间信息区 */}
         <div className="flex flex-col gap-1 rounded-md bg-bg-primary/50 px-2.5 py-2 text-[10px]">
           {/* 创建时间 */}

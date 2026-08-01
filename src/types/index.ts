@@ -93,6 +93,7 @@ export interface Todo {
   status: 'pending' | 'in-progress' | 'completed';  // 状态
   dueDate: string | null;                           // 截止日期
   reminderTime: string | null;                      // 提醒时间（ISO 字符串）
+  images: string[];                                  // 图片列表（base64 data URL）
   completedAt: string | null;                       // 完成时间
   createdAt: string;
   updatedAt: string;

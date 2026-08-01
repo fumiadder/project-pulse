@@ -17,6 +17,21 @@ function safeParseTags(val: any): string[] {
   return [];
 }
 
+/** 安全解析 images 字段（JSON 数组字符串） */
+function safeParseImages(val: any): string[] {
+  if (Array.isArray(val)) return val;
+  if (!val) return [];
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 interface TodoStore {
   todos: Todo[];
   isLoading: boolean;
@@ -44,6 +59,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
         ...t,
         tags: safeParseTags(t.tags),
         reminderTime: t.reminderTime ?? null,
+        images: safeParseImages(t.images),
       }));
       set({ todos });
     } finally {

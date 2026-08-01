@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,46 @@ function localInputToIso(local: string): string | null {
   return d.toISOString();
 }
 
+/** 将 File 转为 base64 data URL */
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/** 压缩图片：如果超过 500KB 则缩小到 maxDim */
+function compressImage(dataUrl: string, maxDim = 1280, quality = 0.8): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width <= maxDim && height <= maxDim) {
+        resolve(dataUrl);
+        return;
+      }
+      if (width > height) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 interface TodoEditorModalProps {
   open: boolean;
   onClose: () => void;
@@ -70,7 +110,9 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [status, setStatus] = useState<Todo['status']>('pending');
   const [dueDate, setDueDate] = useState('');
   const [reminderTime, setReminderTime] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isEditing = !!todoId;
 
@@ -90,6 +132,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
         setStatus(existing.status);
         setDueDate(existing.dueDate ?? '');
         setReminderTime(isoToLocalInput(existing.reminderTime));
+        setImages(existing.images ?? []);
       }
     } else {
       setTitle('');
@@ -101,8 +144,72 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       setStatus('pending');
       setDueDate('');
       setReminderTime('');
+      setImages([]);
     }
   }, [open, todoId, todos]);
+
+  /** 处理粘贴图片 */
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+
+    if (imageFiles.length === 0) return;
+    e.preventDefault();
+
+    for (const file of imageFiles) {
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        const compressed = await compressImage(dataUrl);
+        setImages((prev) => [...prev, compressed]);
+      } catch {
+        // 忽略单个文件失败
+      }
+    }
+  }, []);
+
+  /** 处理文件选择上传 */
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        const compressed = await compressImage(dataUrl);
+        setImages((prev) => [...prev, compressed]);
+      } catch {
+        // 忽略单个文件失败
+      }
+    }
+
+    // 清空 input 以便重复选择同一文件
+    e.target.value = '';
+  }, []);
+
+  /** 删除图片 */
+  const removeImage = useCallback((index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  /** 预览图片（在新标签页打开） */
+  const previewImage = useCallback((dataUrl: string) => {
+    const w = window.open();
+    if (w) {
+      w.document.write(`<img src="${dataUrl}" style="max-width:100%;max-height:100vh;margin:auto;display:block;" />`);
+      w.document.title = '图片预览';
+    }
+  }, []);
 
   const handleSave = async () => {
     if (!title.trim()) return;
@@ -129,6 +236,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
             status,
             dueDate: dueDate || null,
             reminderTime: localInputToIso(reminderTime),
+            images,
             completedAt: status === 'completed' ? (existing.completedAt ?? now) : null,
             updatedAt: now,
           };
@@ -146,6 +254,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           status,
           dueDate: dueDate || null,
           reminderTime: localInputToIso(reminderTime),
+          images,
           completedAt: status === 'completed' ? now : null,
           createdAt: now,
           updatedAt: now,
@@ -161,7 +270,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-bg-secondary border-border-primary/30 text-text-primary">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-bg-secondary border-border-primary/30 text-text-primary" onPaste={handlePaste}>
         <DialogHeader>
           <DialogTitle className="text-text-primary">
             {isEditing ? '编辑待办' : '新建待办'}
@@ -195,6 +304,68 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
               rows={3}
               className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 resize-none"
             />
+          </div>
+
+          {/* 图片附件 */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-text-muted">
+                <i className="fas fa-image text-accent-cyan mr-1" />
+                图片
+                {images.length > 0 && <span className="text-text-muted ml-1">({images.length})</span>}
+              </label>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1 rounded-md bg-accent-cyan/10 px-2 py-1 text-[10px] text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
+              >
+                <i className="fas fa-upload" />
+                选择图片
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+            </div>
+
+            {/* 粘贴提示 */}
+            {images.length === 0 && (
+              <p className="text-[10px] text-text-muted">
+                <i className="fas fa-info-circle mr-1" />
+                可直接 Ctrl+V 粘贴截图，或点击"选择图片"上传
+              </p>
+            )}
+
+            {/* 图片预览网格 */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {images.map((img, i) => (
+                  <div
+                    key={i}
+                    className="group relative aspect-square overflow-hidden rounded-lg border border-border-custom bg-bg-primary"
+                  >
+                    <img
+                      src={img}
+                      alt={`图片 ${i + 1}`}
+                      className="h-full w-full cursor-pointer object-cover transition-transform hover:scale-105"
+                      onClick={() => previewImage(img)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity hover:bg-accent-red group-hover:opacity-100"
+                      title="删除图片"
+                    >
+                      <i className="fas fa-times text-[10px]" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 分类 */}

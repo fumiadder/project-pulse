@@ -115,6 +115,7 @@ function initDb() {
       status TEXT DEFAULT 'pending',
       dueDate TEXT,
       reminderTime TEXT,
+      images TEXT,
       completedAt TEXT,
       createdAt TEXT,
       updatedAt TEXT
@@ -126,6 +127,7 @@ function initDb() {
   try { db.exec(`ALTER TABLE ideas ADD COLUMN landedProjectId TEXT`); } catch(e) {}
   try { db.exec(`ALTER TABLE ideas ADD COLUMN priority TEXT`); } catch(e) {}
   try { db.exec(`ALTER TABLE todos ADD COLUMN reminderTime TEXT`); } catch(e) {}
+  try { db.exec(`ALTER TABLE todos ADD COLUMN images TEXT`); } catch(e) {}
 }
 
 initDb();
@@ -480,8 +482,8 @@ app.get('/api/todos', (req, res) => {
 app.put('/api/todos', (req, res) => {
   const items = Array.isArray(req.body) ? req.body : [req.body];
   const insert = db.prepare(`
-    INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, reminderTime, completedAt, createdAt, updatedAt)
-    VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @reminderTime, @completedAt, @createdAt, @updatedAt)
+    INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, reminderTime, images, completedAt, createdAt, updatedAt)
+    VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @reminderTime, @images, @completedAt, @createdAt, @updatedAt)
     ON CONFLICT(id) DO UPDATE SET
       userId=excluded.userId,
       title=excluded.title,
@@ -492,6 +494,7 @@ app.put('/api/todos', (req, res) => {
       status=excluded.status,
       dueDate=excluded.dueDate,
       reminderTime=excluded.reminderTime,
+      images=excluded.images,
       completedAt=excluded.completedAt,
       updatedAt=excluded.updatedAt
   `);
@@ -596,13 +599,13 @@ app.post('/api/sync/full', (req, res) => {
   const { todos: tArr } = req.body || {};
   if (tArr && Array.isArray(tArr)) {
     const stmt = db.prepare(`
-      INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, reminderTime, completedAt, createdAt, updatedAt)
-      VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @reminderTime, @completedAt, @createdAt, @updatedAt)
+      INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, reminderTime, images, completedAt, createdAt, updatedAt)
+      VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @reminderTime, @images, @completedAt, @createdAt, @updatedAt)
       ON CONFLICT(id) DO UPDATE SET
         userId=excluded.userId, title=excluded.title, description=excluded.description,
         category=excluded.category, tags=excluded.tags, priority=excluded.priority,
         status=excluded.status, dueDate=excluded.dueDate, reminderTime=excluded.reminderTime,
-        completedAt=excluded.completedAt, updatedAt=excluded.updatedAt
+        images=excluded.images, completedAt=excluded.completedAt, updatedAt=excluded.updatedAt
     `);
     const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
     tx(tArr);

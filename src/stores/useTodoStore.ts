@@ -32,6 +32,21 @@ function safeParseImages(val: any): string[] {
   return [];
 }
 
+/** 安全解析 subtasks 字段 */
+function safeParseSubtasks(val: any): import('@/types').SubTask[] {
+  if (Array.isArray(val)) return val;
+  if (!val) return [];
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 interface TodoStore {
   todos: Todo[];
   isLoading: boolean;
@@ -40,6 +55,8 @@ interface TodoStore {
   updateTodo: (todo: Todo) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleComplete: (id: string) => Promise<void>;
+  togglePin: (id: string) => Promise<void>;
+  toggleSubtask: (todoId: string, subtaskId: string) => Promise<void>;
   getByUserId: (userId: string) => Todo[];
 }
 
@@ -60,6 +77,8 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
         tags: safeParseTags(t.tags),
         reminderTime: t.reminderTime ?? null,
         images: safeParseImages(t.images),
+        pinned: t.pinned === true || t.pinned === 1,
+        subtasks: safeParseSubtasks(t.subtasks),
       }));
       set({ todos });
     } finally {
@@ -96,6 +115,30 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
       status: todo.status === 'completed' ? 'pending' : 'completed',
       completedAt: todo.status === 'completed' ? null : now,
       updatedAt: now,
+    };
+    await get().updateTodo(updated);
+  },
+
+  togglePin: async (id) => {
+    const todo = safeTodos(get()).find((t) => t.id === id);
+    if (!todo) return;
+    const updated: Todo = {
+      ...todo,
+      pinned: !todo.pinned,
+      updatedAt: new Date().toISOString(),
+    };
+    await get().updateTodo(updated);
+  },
+
+  toggleSubtask: async (todoId, subtaskId) => {
+    const todo = safeTodos(get()).find((t) => t.id === todoId);
+    if (!todo) return;
+    const updated: Todo = {
+      ...todo,
+      subtasks: todo.subtasks.map((st) =>
+        st.id === subtaskId ? { ...st, done: !st.done } : st,
+      ),
+      updatedAt: new Date().toISOString(),
     };
     await get().updateTodo(updated);
   },

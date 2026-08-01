@@ -86,8 +86,8 @@ export interface Todo {
   id: string;
   userId: string;
   title: string;
-  description: string;
-  category: string;                                  // 分类
+  description: string;                                  // 分类
+  category: string;                                  // 分类（艾森豪威尔矩阵）
   tags: string[];                                    // 标签
   priority: 'high' | 'medium' | 'low';              // 优先级
   status: 'pending' | 'in-progress' | 'completed';  // 状态
@@ -95,6 +95,29 @@ export interface Todo {
   reminderTime: string | null;                      // 提醒时间（ISO 字符串）
   images: string[];                                  // 图片列表（base64 data URL）
   completedAt: string | null;                       // 完成时间
+  pinned: boolean;                                   // 是否置顶（今日聚焦）
+  subtasks: SubTask[];                               // 子任务列表
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 子任务 */
+export interface SubTask {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+/** CheckIn / 每日打卡实体 */
+export interface CheckIn {
+  id: string;
+  userId: string;
+  name: string;                    // 打卡项名称
+  emoji: string;                   // 图标 emoji
+  color: string;                   // 颜色标识
+  streak: number;                  // 连续打卡天数
+  lastDoneDate: string | null;     // 最近打卡日期 (YYYY-MM-DD)
+  history: string[];               // 打卡历史日期列表
   createdAt: string;
   updatedAt: string;
 }
@@ -122,6 +145,7 @@ export interface SyncData {
   daily_tags: DailyTag[];
   ideas: Idea[];
   todos: Todo[]; // 个人工作台待办
+  checkins: CheckIn[]; // 每日打卡
   settings: Record<string, string>;
 }
 

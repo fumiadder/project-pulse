@@ -12,7 +12,7 @@ import { useTodoStore } from '@/stores/useTodoStore';
 import { useUserStore } from '@/stores/useUserStore';
 import { AutoResizeTextarea, type AutoResizeTextareaHandle } from '@/components/shared/AutoResizeTextarea';
 import { ImageEditorModal } from '@/components/modals/ImageEditorModal';
-import type { Todo } from '@/types';
+import type { Todo, SubTask } from '@/types';
 import {
   type ReminderType,
   type ReminderConfig,
@@ -105,11 +105,37 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [intervalValue, setIntervalValue] = useState(30);              // 数值
   const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours'>('minutes');
   const [images, setImages] = useState<string[]>([]);
+  const [subtasks, setSubtasks] = useState<SubTask[]>([]);
+  const [newSubtaskText, setNewSubtaskText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const descriptionRef = useRef<AutoResizeTextareaHandle>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const isEditing = !!todoId;
+
+  /** 添加子任务 */
+  const handleAddSubtask = useCallback(() => {
+    if (!newSubtaskText.trim()) return;
+    setSubtasks((prev) => [
+      ...prev,
+      {
+        id: `sub_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        title: newSubtaskText.trim(),
+        done: false,
+      },
+    ]);
+    setNewSubtaskText('');
+  }, [newSubtaskText]);
+
+  /** 切换子任务完成状态 */
+  const handleToggleSubtask = useCallback((id: string) => {
+    setSubtasks((prev) => prev.map((st) => (st.id === id ? { ...st, done: !st.done } : st)));
+  }, []);
+
+  /** 删除子任务 */
+  const handleDeleteSubtask = useCallback((id: string) => {
+    setSubtasks((prev) => prev.filter((st) => st.id !== id));
+  }, []);
 
   // 打开时初始化表单
   useEffect(() => {
@@ -145,6 +171,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           setIntervalUnit('minutes');
         }
         setImages(existing.images ?? []);
+        setSubtasks(existing.subtasks ?? []);
       }
     } else {
       setTitle('');
@@ -159,6 +186,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       setIntervalValue(30);
       setIntervalUnit('minutes');
       setImages([]);
+      setSubtasks([]);
     }
   }, [open, todoId, todos]);
 
@@ -260,6 +288,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
             dueDate: dueDate || null,
             reminderTime: serializedReminder,
             images,
+            subtasks,
             completedAt: status === 'completed' ? (existing.completedAt ?? now) : null,
             updatedAt: now,
           };
@@ -278,6 +307,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           dueDate: dueDate || null,
           reminderTime: serializedReminder,
           images,
+          subtasks,
           completedAt: status === 'completed' ? now : null,
           createdAt: now,
           updatedAt: now,
@@ -333,6 +363,87 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
               placeholder="输入详细描述，支持粘贴图片..."
               minRows={4}
             />
+          </div>
+
+          {/* 子任务 */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-text-muted">
+              <i className="fas fa-list-check text-accent-cyan mr-1" />
+              子任务
+              <span className="text-text-muted/60 ml-1">（细化步骤，自动计算进度）</span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newSubtaskText}
+                onChange={(e) => setNewSubtaskText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSubtask();
+                  }
+                }}
+                placeholder="添加子任务，回车确认..."
+                className="flex-1 rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              />
+              <Button
+                onClick={handleAddSubtask}
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                disabled={!newSubtaskText.trim()}
+              >
+                <i className="fas fa-plus text-xs" />
+              </Button>
+            </div>
+            {subtasks.length > 0 && (
+              <div className="mt-1.5 flex flex-col gap-1.5">
+                {subtasks.map((st) => (
+                  <div
+                    key={st.id}
+                    className="group flex items-center gap-2 rounded-lg bg-bg-primary/60 px-2.5 py-2"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSubtask(st.id)}
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[8px] transition-all ${
+                        st.done
+                          ? 'border-accent-green bg-accent-green/20 text-accent-green'
+                          : 'border-border-hover text-transparent hover:border-accent-cyan'
+                      }`}
+                    >
+                      {st.done && <i className="fas fa-check" />}
+                    </button>
+                    <span
+                      className={`flex-1 text-xs ${
+                        st.done ? 'line-through text-text-muted' : 'text-text-primary'
+                      }`}
+                    >
+                      {st.title}
+                    </span>
+                    <span className="text-[9px] text-text-muted shrink-0">
+                      {st.done ? '已完成' : '待完成'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSubtask(st.id)}
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100"
+                    >
+                      <i className="fas fa-times text-[10px]" />
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between text-[10px] text-text-muted px-1">
+                  <span>
+                    <i className="fas fa-chart-simple mr-1" />
+                    {subtasks.filter((s) => s.done).length}/{subtasks.length} 已完成
+                  </span>
+                  <span>
+                    进度 {Math.round((subtasks.filter((s) => s.done).length / subtasks.length) * 100)}%
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 艾森豪威尔分类（兼作优先级） */}

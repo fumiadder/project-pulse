@@ -116,9 +116,24 @@ function initDb() {
       dueDate TEXT,
       reminderTime TEXT,
       images TEXT,
+      pinned INTEGER DEFAULT 0,
+      subtasks TEXT DEFAULT '[]',
       completedAt TEXT,
       createdAt TEXT,
       updatedAt TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS checkins (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      emoji TEXT DEFAULT '✓',
+      color TEXT DEFAULT '#4a9a7a',
+      streak INTEGER DEFAULT 0,
+      lastDoneDate TEXT,
+      history TEXT DEFAULT '[]',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
     );
   `);
 
@@ -128,6 +143,8 @@ function initDb() {
   try { db.exec(`ALTER TABLE ideas ADD COLUMN priority TEXT`); } catch(e) {}
   try { db.exec(`ALTER TABLE todos ADD COLUMN reminderTime TEXT`); } catch(e) {}
   try { db.exec(`ALTER TABLE todos ADD COLUMN images TEXT`); } catch(e) {}
+  try { db.exec(`ALTER TABLE todos ADD COLUMN pinned INTEGER DEFAULT 0`); } catch(e) {}
+  try { db.exec(`ALTER TABLE todos ADD COLUMN subtasks TEXT DEFAULT '[]'`); } catch(e) {}
 }
 
 initDb();
@@ -482,8 +499,8 @@ app.get('/api/todos', (req, res) => {
 app.put('/api/todos', (req, res) => {
   const items = Array.isArray(req.body) ? req.body : [req.body];
   const insert = db.prepare(`
-    INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, reminderTime, images, completedAt, createdAt, updatedAt)
-    VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @reminderTime, @images, @completedAt, @createdAt, @updatedAt)
+    INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, reminderTime, images, pinned, subtasks, completedAt, createdAt, updatedAt)
+    VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @reminderTime, @images, @pinned, @subtasks, @completedAt, @createdAt, @updatedAt)
     ON CONFLICT(id) DO UPDATE SET
       userId=excluded.userId,
       title=excluded.title,
@@ -495,6 +512,8 @@ app.put('/api/todos', (req, res) => {
       dueDate=excluded.dueDate,
       reminderTime=excluded.reminderTime,
       images=excluded.images,
+      pinned=excluded.pinned,
+      subtasks=excluded.subtasks,
       completedAt=excluded.completedAt,
       updatedAt=excluded.updatedAt
   `);
@@ -521,6 +540,56 @@ app.delete('/api/todos/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// ---------- Checkins (打卡) ----------
+app.get('/api/checkins', (req, res) => {
+  const { userId } = req.query;
+  let rows;
+  if (userId) {
+    rows = db.prepare('SELECT * FROM checkins WHERE userId = ? ORDER BY updatedAt DESC').all(userId);
+  } else {
+    rows = db.prepare('SELECT * FROM checkins ORDER BY updatedAt DESC').all();
+  }
+  res.json({ success: true, data: rows });
+});
+
+app.put('/api/checkins', (req, res) => {
+  const items = Array.isArray(req.body) ? req.body : [req.body];
+  const insert = db.prepare(`
+    INSERT INTO checkins (id, userId, name, emoji, color, streak, lastDoneDate, history, createdAt, updatedAt)
+    VALUES (@id, @userId, @name, @emoji, @color, @streak, @lastDoneDate, @history, @createdAt, @updatedAt)
+    ON CONFLICT(id) DO UPDATE SET
+      userId=excluded.userId,
+      name=excluded.name,
+      emoji=excluded.emoji,
+      color=excluded.color,
+      streak=excluded.streak,
+      lastDoneDate=excluded.lastDoneDate,
+      history=excluded.history,
+      updatedAt=excluded.updatedAt
+  `);
+  const tx = db.transaction((rows) => {
+    for (const r of rows) {
+      if (!r.id) r.id = uuidv4();
+      if (!r.createdAt) r.createdAt = now();
+      r.updatedAt = now();
+      insert.run(sanitizeRow(r));
+    }
+  });
+  tx(items);
+  res.json({ success: true, data: items });
+});
+
+app.get('/api/checkins/:id', (req, res) => {
+  const row = db.prepare('SELECT * FROM checkins WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ success: false, error: 'Not found' });
+  res.json({ success: true, data: row });
+});
+
+app.delete('/api/checkins/:id', (req, res) => {
+  db.prepare('DELETE FROM checkins WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
 // ---------- Sync ----------
 app.get('/api/sync/full', (req, res) => {
   const projects = db.prepare('SELECT * FROM projects').all();
@@ -530,6 +599,7 @@ app.get('/api/sync/full', (req, res) => {
   const dailyTags = db.prepare('SELECT * FROM daily_tags').all();
   const ideas = db.prepare('SELECT * FROM ideas').all();
   const todos = db.prepare('SELECT * FROM todos').all();
+  const checkins = db.prepare('SELECT * FROM checkins').all();
   const settingsRows = db.prepare('SELECT * FROM settings').all();
   const settings = {};
   for (const s of settingsRows) {
@@ -537,7 +607,7 @@ app.get('/api/sync/full', (req, res) => {
   }
   res.json({
     success: true,
-    data: { projects, progress, users, reports, daily_tags: dailyTags, ideas, todos, settings }
+    data: { projects, progress, users, reports, daily_tags: dailyTags, ideas, todos, checkins, settings }
   });
 });
 
@@ -599,16 +669,29 @@ app.post('/api/sync/full', (req, res) => {
   const { todos: tArr } = req.body || {};
   if (tArr && Array.isArray(tArr)) {
     const stmt = db.prepare(`
-      INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, reminderTime, images, completedAt, createdAt, updatedAt)
-      VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @reminderTime, @images, @completedAt, @createdAt, @updatedAt)
+      INSERT INTO todos (id, userId, title, description, category, tags, priority, status, dueDate, reminderTime, images, pinned, subtasks, completedAt, createdAt, updatedAt)
+      VALUES (@id, @userId, @title, @description, @category, @tags, @priority, @status, @dueDate, @reminderTime, @images, @pinned, @subtasks, @completedAt, @createdAt, @updatedAt)
       ON CONFLICT(id) DO UPDATE SET
         userId=excluded.userId, title=excluded.title, description=excluded.description,
         category=excluded.category, tags=excluded.tags, priority=excluded.priority,
         status=excluded.status, dueDate=excluded.dueDate, reminderTime=excluded.reminderTime,
-        images=excluded.images, completedAt=excluded.completedAt, updatedAt=excluded.updatedAt
+        images=excluded.images, pinned=excluded.pinned, subtasks=excluded.subtasks,
+        completedAt=excluded.completedAt, updatedAt=excluded.updatedAt
     `);
     const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
     tx(tArr);
+  }
+  const { checkins: cArr } = req.body || {};
+  if (cArr && Array.isArray(cArr)) {
+    const stmt = db.prepare(`
+      INSERT INTO checkins (id, userId, name, emoji, color, streak, lastDoneDate, history, createdAt, updatedAt)
+      VALUES (@id, @userId, @name, @emoji, @color, @streak, @lastDoneDate, @history, @createdAt, @updatedAt)
+      ON CONFLICT(id) DO UPDATE SET
+        userId=excluded.userId, name=excluded.name, emoji=excluded.emoji, color=excluded.color,
+        streak=excluded.streak, lastDoneDate=excluded.lastDoneDate, history=excluded.history, updatedAt=excluded.updatedAt
+    `);
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
+    tx(cArr);
   }
   if (sObj && typeof sObj === 'object') {
     const stmt = db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
@@ -626,6 +709,7 @@ app.get('/api/stats', (req, res) => {
   const reportCount = db.prepare('SELECT COUNT(*) as c FROM reports').get().c;
   const dailyTagCount = db.prepare('SELECT COUNT(*) as c FROM daily_tags').get().c;
   const todoCount = db.prepare('SELECT COUNT(*) as c FROM todos').get().c;
+  const checkinCount = db.prepare('SELECT COUNT(*) as c FROM checkins').get().c;
   const latestProgress = db.prepare('SELECT MAX(date) as d FROM progress').get().d;
   res.json({
     success: true,
@@ -636,6 +720,7 @@ app.get('/api/stats', (req, res) => {
       reportCount,
       dailyTagCount,
       todoCount,
+      checkinCount,
       latestProgressDate: latestProgress
     }
   });

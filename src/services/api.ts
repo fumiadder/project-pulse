@@ -13,6 +13,7 @@ import type {
   UploadedFile,
   Idea,
   Todo,
+  CheckIn,
 } from '@/types';
 
 // --------------------------------------------
@@ -211,6 +212,25 @@ export const api = {
 
   deleteTodo(id: string): Promise<ApiResponse<void>> {
     return apiFetch<void>(`/todos/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // CheckIns / 每日打卡
+  listCheckIns: async (userId?: string): Promise<ApiResponse<CheckIn[]>> => {
+    const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    return apiFetch<CheckIn[]>(`/checkins${query}`);
+  },
+
+  putCheckIn: async (checkIn: CheckIn): Promise<ApiResponse<CheckIn>> => {
+    return apiFetch<CheckIn>('/checkins', {
+      method: 'PUT',
+      body: JSON.stringify(checkIn),
+    });
+  },
+
+  deleteCheckIn: async (id: string): Promise<ApiResponse<void>> => {
+    return apiFetch<void>(`/checkins/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
   },

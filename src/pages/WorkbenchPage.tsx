@@ -5,27 +5,25 @@ import { TodoEditorModal } from '@/components/modals/TodoEditorModal';
 import { getReminderLabel, parseReminderConfig } from '@/utils/reminder';
 import type { Todo } from '@/types';
 
-/** 优先级样式映射 */
-function getPriorityStyle(priority: string): { badge: string; dot: string } {
-  switch (priority) {
-    case 'high':
-      return { badge: 'bg-accent-red/10 text-accent-red', dot: 'bg-accent-red' };
-    case 'medium':
-      return { badge: 'bg-accent-orange/10 text-accent-orange', dot: 'bg-accent-orange' };
-    case 'low':
-      return { badge: 'bg-accent-cyan/10 text-accent-cyan', dot: 'bg-accent-cyan' };
-    default:
-      return { badge: 'bg-bg-tertiary text-text-muted', dot: 'bg-text-muted' };
-  }
+/** 从 HTML 描述中提取纯文本（用于卡片预览） */
+function stripHtml(html: string): string {
+  if (!html) return '';
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  return (temp.textContent || '').trim();
 }
 
-function getPriorityLabel(priority: string): string {
-  switch (priority) {
-    case 'high': return '高';
-    case 'medium': return '中';
-    case 'low': return '低';
-    default: return priority;
-  }
+/** 艾森豪威尔矩阵分类配置 */
+const EISENHOWER_CATEGORIES = [
+  { value: '紧急重要', label: '紧急重要', priority: 'high', color: 'bg-accent-red/10 text-accent-red', dot: 'bg-accent-red', bar: 'bg-accent-red', icon: 'fa-exclamation-circle' },
+  { value: '重要不紧急', label: '重要不紧急', priority: 'medium', color: 'bg-accent-orange/10 text-accent-orange', dot: 'bg-accent-orange', bar: 'bg-accent-orange', icon: 'fa-star' },
+  { value: '紧急不重要', label: '紧急不重要', priority: 'medium', color: 'bg-accent-cyan/10 text-accent-cyan', dot: 'bg-accent-cyan', bar: 'bg-accent-cyan', icon: 'fa-bolt' },
+  { value: '不重要不紧急', label: '不重要不紧急', priority: 'low', color: 'bg-bg-tertiary text-text-muted', dot: 'bg-text-muted', bar: 'bg-text-muted', icon: 'fa-minus-circle' },
+] as const;
+
+/** 根据分类获取配置 */
+function getCategoryConfig(category: string) {
+  return EISENHOWER_CATEGORIES.find(c => c.value === category) ?? EISENHOWER_CATEGORIES[1];
 }
 
 function getStatusLabel(status: string): string {
@@ -114,14 +112,9 @@ function StatCard({
   );
 }
 
-/** 优先级左侧色条 */
-function getPriorityBar(priority: string): string {
-  switch (priority) {
-    case 'high': return 'bg-accent-red';
-    case 'medium': return 'bg-accent-orange';
-    case 'low': return 'bg-accent-cyan';
-    default: return 'bg-text-muted';
-  }
+/** 根据分类获取左侧色条颜色 */
+function getCategoryBar(category: string): string {
+  return getCategoryConfig(category).bar;
 }
 
 /** 根据状态获取进度百分比 */
@@ -156,8 +149,8 @@ function TodoCard({
 }) {
   const overdue = isOverdue(todo);
   const dueToday = isDueToday(todo);
-  const prio = getPriorityStyle(todo.priority);
-  const barColor = getPriorityBar(todo.priority);
+  const catConfig = getCategoryConfig(todo.category);
+  const barColor = getCategoryBar(todo.category);
   const progress = getProgressPercent(todo.status);
   const progressColor = getProgressColor(todo.status);
 
@@ -206,31 +199,28 @@ function TodoCard({
           </button>
         </div>
 
-        {/* 描述 */}
-        {todo.description && (
-          <p className={`text-xs text-text-secondary line-clamp-2 ${todo.status === 'completed' ? 'opacity-50' : ''}`}>
-            {todo.description}
-          </p>
-        )}
+        {/* 描述（去除 HTML 标签，仅显示纯文本预览） */}
+        {(() => {
+          const descText = stripHtml(todo.description);
+          return descText ? (
+            <p className={`text-xs text-text-secondary line-clamp-2 ${todo.status === 'completed' ? 'opacity-50' : ''}`}>
+              {descText}
+            </p>
+          ) : null;
+        })()}
 
         {/* 底部元信息 */}
         <div className="flex flex-wrap items-center gap-1.5 mt-auto pt-1">
-          {/* 优先级标签 */}
-          <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${prio.badge}`}>
-            <span className={`inline-block h-1.5 w-1.5 rounded-full ${prio.dot}`} />
-            {getPriorityLabel(todo.priority)}
+          {/* 艾森豪威尔分类标签 */}
+          <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${catConfig.color}`}>
+            <i className={`fas ${catConfig.icon} text-[9px]`} />
+            {catConfig.label}
           </span>
 
           {/* 状态 */}
           <span className={`text-[10px] font-medium ${getStatusStyle(todo.status)}`}>
             <i className={`fas ${todo.status === 'completed' ? 'fa-check-circle' : todo.status === 'in-progress' ? 'fa-spinner' : 'fa-circle'} mr-1`} />
             {getStatusLabel(todo.status)}
-          </span>
-
-          {/* 分类 */}
-          <span className="rounded bg-bg-tertiary px-1.5 py-0.5 text-[10px] text-text-secondary">
-            <i className="fas fa-folder mr-1 text-text-muted" />
-            {todo.category || '未分类'}
           </span>
         </div>
 
@@ -341,21 +331,12 @@ export function WorkbenchPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [sortBy, setSortBy] = useState<'priority' | 'created' | 'dueDate'>('priority');
 
   // 加载数据
   useEffect(() => {
     loadTodos(currentUser?.id);
   }, [loadTodos, currentUser?.id]);
-
-  // 获取所有分类
-  const allCategories = useMemo(() => {
-    const set = new Set<string>();
-    todos.forEach((t) => { if (t.category) set.add(t.category); });
-    return Array.from(set);
-  }, [todos]);
 
   // 统计数据
   const stats = useMemo(() => {
@@ -376,17 +357,13 @@ export function WorkbenchPage() {
       result = result.filter(
         (t) =>
           t.title.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q) ||
+          stripHtml(t.description).toLowerCase().includes(q) ||
           t.tags.some((tag) => tag.toLowerCase().includes(q))
       );
     }
 
     if (filterCategory !== 'all') {
       result = result.filter((t) => t.category === filterCategory);
-    }
-
-    if (filterPriority !== 'all') {
-      result = result.filter((t) => t.priority === filterPriority);
     }
 
     if (filterStatus !== 'all') {
@@ -397,33 +374,21 @@ export function WorkbenchPage() {
       }
     }
 
-    // 排序：未完成在前，按选定方式排序
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    // 排序：优先级高→低，创建时间近→远（已完成的始终排最后）
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
     return result.sort((a, b) => {
       // 已完成的始终排在最后
       if (a.status === 'completed' && b.status !== 'completed') return 1;
       if (a.status !== 'completed' && b.status === 'completed') return -1;
 
-      if (sortBy === 'priority') {
-        // 逾期优先，再按优先级高到低
-        const aOverdue = isOverdue(a) ? 0 : 1;
-        const bOverdue = isOverdue(b) ? 0 : 1;
-        if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
-      }
+      // 按优先级高→低排序
+      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+      if (priorityDiff !== 0) return priorityDiff;
 
-      if (sortBy === 'dueDate') {
-        // 有截止日期的排前面，按日期升序
-        if (!a.dueDate && !b.dueDate) return 0;
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return a.dueDate.localeCompare(b.dueDate);
-      }
-
-      // created: 按创建时间降序（最新在前）
+      // 优先级相同则按创建时间降序（最新在前）
       return b.createdAt.localeCompare(a.createdAt);
     });
-  }, [todos, searchQuery, filterCategory, filterPriority, filterStatus, sortBy]);
+  }, [todos, searchQuery, filterCategory, filterStatus]);
 
   const handleAdd = useCallback(() => {
     setEditingId(null);
@@ -497,35 +462,15 @@ export function WorkbenchPage() {
           )}
         </div>
 
-        {/* 排序控制 */}
-        <div className="flex items-center gap-2">
+        {/* 排序提示 + 过滤器 */}
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] text-text-muted">
             <i className="fas fa-sort-amount-down mr-1" />
-            排序
+            按优先级高→低 · 创建时间近→远
           </span>
-          <div className="flex items-center gap-1">
-            {([
-              { v: 'priority' as const, l: '优先级（高→低）' },
-              { v: 'dueDate' as const, l: '截止日期' },
-              { v: 'created' as const, l: '创建时间' },
-            ]).map((opt) => (
-              <button
-                key={opt.v}
-                onClick={() => setSortBy(opt.v)}
-                className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                  sortBy === opt.v
-                    ? 'bg-accent-cyan/15 text-accent-cyan'
-                    : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
-                }`}
-              >
-                {opt.l}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* 过滤器 */}
-        <div className="flex flex-wrap items-center gap-2">
+          <div className="h-4 w-px bg-border-custom" />
+
           {/* 状态过滤 */}
           <div className="flex items-center gap-1">
             {[
@@ -551,60 +496,32 @@ export function WorkbenchPage() {
 
           <div className="h-4 w-px bg-border-custom" />
 
-          {/* 优先级过滤 */}
+          {/* 艾森豪威尔分类过滤 */}
           <div className="flex items-center gap-1">
-            {[
-              { v: 'all', l: '全部' },
-              { v: 'high', l: '高' },
-              { v: 'medium', l: '中' },
-              { v: 'low', l: '低' },
-            ].map((opt) => (
+            <button
+              onClick={() => setFilterCategory('all')}
+              className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                filterCategory === 'all'
+                  ? 'bg-accent-cyan/15 text-accent-cyan'
+                  : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+              }`}
+            >
+              全部分类
+            </button>
+            {EISENHOWER_CATEGORIES.map((cat) => (
               <button
-                key={opt.v}
-                onClick={() => setFilterPriority(opt.v)}
+                key={cat.value}
+                onClick={() => setFilterCategory(cat.value)}
                 className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                  filterPriority === opt.v
+                  filterCategory === cat.value
                     ? 'bg-accent-cyan/15 text-accent-cyan'
                     : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                 }`}
               >
-                {opt.l}
+                {cat.label}
               </button>
             ))}
           </div>
-
-          {allCategories.length > 0 && (
-            <>
-              <div className="h-4 w-px bg-border-custom" />
-
-              {/* 分类过滤 */}
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setFilterCategory('all')}
-                  className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                    filterCategory === 'all'
-                      ? 'bg-accent-cyan/15 text-accent-cyan'
-                      : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
-                  }`}
-                >
-                  全部分类
-                </button>
-                {allCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setFilterCategory(cat)}
-                    className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                      filterCategory === cat
-                        ? 'bg-accent-cyan/15 text-accent-cyan'
-                        : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </div>
       </div>
 
@@ -635,12 +552,11 @@ export function WorkbenchPage() {
             {/* 结果计数 */}
             <div className="flex items-center justify-between text-xs text-text-muted">
               <span>共 {filteredTodos.length} 条结果</span>
-              {(filterStatus !== 'all' || filterPriority !== 'all' || filterCategory !== 'all' || searchQuery) && (
+              {(filterStatus !== 'all' || filterCategory !== 'all' || searchQuery) && (
                 <button
                   onClick={() => {
                     setSearchQuery('');
                     setFilterStatus('all');
-                    setFilterPriority('all');
                     setFilterCategory('all');
                   }}
                   className="text-accent-cyan hover:underline"

@@ -5,6 +5,8 @@ interface AutoResizeTextareaProps {
   onChange: (value: string) => void;
   onPasteFiles?: (files: FileList) => void;
   onImageClick?: (src: string, name: string) => void;
+  /** 粘贴/拖拽图片时，先通过此回调压缩处理 dataUrl，再插入编辑器 */
+  onProcessImage?: (dataUrl: string) => Promise<string>;
   placeholder?: string;
   minRows?: number;
   maxRows?: number;
@@ -34,6 +36,7 @@ export const AutoResizeTextarea = forwardRef<AutoResizeTextareaHandle, AutoResiz
       onChange,
       onPasteFiles,
       onImageClick,
+      onProcessImage,
       placeholder,
       minRows = 4,
       maxRows = 20,
@@ -166,9 +169,13 @@ export const AutoResizeTextarea = forwardRef<AutoResizeTextareaHandle, AutoResiz
           files.forEach((file) => {
             if (file.type.startsWith('image/')) {
               const reader = new FileReader();
-              reader.onload = (ev) => {
-                const dataUrl = ev.target?.result as string;
-                insertImageAtCursor(dataUrl, file.name);
+              reader.onload = async (ev) => {
+                const rawDataUrl = ev.target?.result as string;
+                // 如果提供了压缩回调，先压缩再插入
+                const finalDataUrl = onProcessImage
+                  ? await onProcessImage(rawDataUrl)
+                  : rawDataUrl;
+                insertImageAtCursor(finalDataUrl, file.name);
                 syncToParent();
                 adjustHeight();
               };
@@ -184,7 +191,7 @@ export const AutoResizeTextarea = forwardRef<AutoResizeTextareaHandle, AutoResiz
           }
         }
       },
-      [onPasteFiles, syncToParent, adjustHeight, insertImageAtCursor],
+      [onPasteFiles, onProcessImage, syncToParent, adjustHeight, insertImageAtCursor],
     );
 
     // IME 输入法
@@ -207,9 +214,12 @@ export const AutoResizeTextarea = forwardRef<AutoResizeTextareaHandle, AutoResiz
           files.forEach((file) => {
             if (file.type.startsWith('image/')) {
               const reader = new FileReader();
-              reader.onload = (ev) => {
-                const dataUrl = ev.target?.result as string;
-                insertImageAtCursor(dataUrl, file.name);
+              reader.onload = async (ev) => {
+                const rawDataUrl = ev.target?.result as string;
+                const finalDataUrl = onProcessImage
+                  ? await onProcessImage(rawDataUrl)
+                  : rawDataUrl;
+                insertImageAtCursor(finalDataUrl, file.name);
                 syncToParent();
                 adjustHeight();
               };
@@ -218,7 +228,7 @@ export const AutoResizeTextarea = forwardRef<AutoResizeTextareaHandle, AutoResiz
           });
         }
       },
-      [onPasteFiles, syncToParent, adjustHeight, insertImageAtCursor],
+      [onPasteFiles, onProcessImage, syncToParent, adjustHeight, insertImageAtCursor],
     );
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {

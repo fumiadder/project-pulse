@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useTodoStore } from '@/stores/useTodoStore';
 import { useUserStore } from '@/stores/useUserStore';
+import { AutoResizeTextarea, type AutoResizeTextareaHandle } from '@/components/shared/AutoResizeTextarea';
+import { ImageEditorModal } from '@/components/modals/ImageEditorModal';
 import type { Todo } from '@/types';
 import {
   type ReminderType,
@@ -20,15 +22,13 @@ import {
   localInputToIso,
 } from '@/utils/reminder';
 
-/** 预设分类 */
-const CATEGORIES = ['工作', '学习', '生活', '健康', '其他'] as const;
-
-/** 优先级配置 */
-const PRIORITY_OPTIONS = [
-  { value: 'high' as const, label: '高', color: 'text-accent-red border-accent-red/50 bg-accent-red/10' },
-  { value: 'medium' as const, label: '中', color: 'text-accent-orange border-accent-orange/50 bg-accent-orange/10' },
-  { value: 'low' as const, label: '低', color: 'text-accent-cyan border-accent-cyan/50 bg-accent-cyan/10' },
-];
+/** 艾森豪威尔矩阵分类（兼作优先级） */
+const EISENHOWER_CATEGORIES = [
+  { value: '紧急重要', label: '紧急重要', priority: 'high' as const, color: 'border-accent-red/50 bg-accent-red/10 text-accent-red', icon: 'fa-exclamation-circle' },
+  { value: '重要不紧急', label: '重要不紧急', priority: 'medium' as const, color: 'border-accent-orange/50 bg-accent-orange/10 text-accent-orange', icon: 'fa-star' },
+  { value: '紧急不重要', label: '紧急不重要', priority: 'medium' as const, color: 'border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan', icon: 'fa-bolt' },
+  { value: '不重要不紧急', label: '不重要不紧急', priority: 'low' as const, color: 'border-text-muted/30 bg-bg-tertiary text-text-muted', icon: 'fa-minus-circle' },
+] as const;
 
 /** 状态配置 */
 const STATUS_OPTIONS = [
@@ -94,10 +94,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('工作');
-  const [customCategory, setCustomCategory] = useState('');
+  const [category, setCategory] = useState<string>('重要不紧急');
   const [tagsInput, setTagsInput] = useState('');
-  const [priority, setPriority] = useState<Todo['priority']>('medium');
   const [status, setStatus] = useState<Todo['status']>('pending');
   const [dueDate, setDueDate] = useState('');
   // 提醒配置状态
@@ -108,7 +106,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours'>('minutes');
   const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<AutoResizeTextareaHandle>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const isEditing = !!todoId;
 
@@ -121,10 +120,10 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       if (existing) {
         setTitle(existing.title);
         setDescription(existing.description);
-        setCategory(CATEGORIES.includes(existing.category as any) ? existing.category : '其他');
-        setCustomCategory(CATEGORIES.includes(existing.category as any) ? '' : existing.category);
+        // 兼容旧分类：如果旧分类不在艾森豪威尔矩阵中，映射到最接近的
+        const isEisenhower = EISENHOWER_CATEGORIES.some(c => c.value === existing.category);
+        setCategory(isEisenhower ? existing.category : '重要不紧急');
         setTagsInput(existing.tags.join(', '));
-        setPriority(existing.priority);
         setStatus(existing.status);
         setDueDate(existing.dueDate ?? '');
         // 解析提醒配置
@@ -150,10 +149,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
     } else {
       setTitle('');
       setDescription('');
-      setCategory('工作');
-      setCustomCategory('');
+      setCategory('重要不紧急');
       setTagsInput('');
-      setPriority('medium');
       setStatus('pending');
       setDueDate('');
       setReminderType('none');
@@ -165,39 +162,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
     }
   }, [open, todoId, todos]);
 
-  /** 处理粘贴图片 */
-  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    const imageFiles: File[] = [];
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (file) imageFiles.push(file);
-      }
-    }
-
-    if (imageFiles.length === 0) return;
-    e.preventDefault();
-
-    for (const file of imageFiles) {
-      try {
-        const dataUrl = await fileToDataUrl(file);
-        const compressed = await compressImage(dataUrl);
-        setImages((prev) => [...prev, compressed]);
-      } catch {
-        // 忽略单个文件失败
-      }
-    }
-  }, []);
-
-  /** 处理文件选择上传 */
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
+  /** 粘贴文件时：压缩并添加到 images 数组（用于卡片缩略图） */
+  const handlePasteFiles = useCallback(async (files: FileList) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (!file.type.startsWith('image/')) continue;
@@ -209,32 +175,60 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
         // 忽略单个文件失败
       }
     }
-
-    // 清空 input 以便重复选择同一文件
-    e.target.value = '';
   }, []);
 
-  /** 删除图片 */
-  const removeImage = useCallback((index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  /** AutoResizeTextarea 内联插入图片前先压缩 */
+  const handleProcessImage = useCallback(async (dataUrl: string): Promise<string> => {
+    const compressed = await compressImage(dataUrl);
+    setImages((prev) => [...prev, compressed]);
+    return compressed;
   }, []);
 
-  /** 预览图片（在新标签页打开） */
-  const previewImage = useCallback((dataUrl: string) => {
-    const w = window.open();
-    if (w) {
-      w.document.write(`<img src="${dataUrl}" style="max-width:100%;max-height:100vh;margin:auto;display:block;" />`);
-      w.document.title = '图片预览';
-    }
+  /** 点击内联图片预览 */
+  const handleImageClick = useCallback((src: string) => {
+    // 先同步编辑器内容，确保 description 状态与 DOM 一致
+    descriptionRef.current?.syncContent();
+    setPreviewImage(src);
+  }, []);
+
+  /** 图片编辑后更新（框选删除/裁剪） */
+  const handleUpdateImage = useCallback((oldSrc: string, newSrc: string) => {
+    // 更新 description HTML 中的图片 src
+    setDescription((prev) => prev.split(oldSrc).join(newSrc));
+    // 更新 images 数组
+    setImages((prev) => prev.map((img) => (img === oldSrc ? newSrc : img)));
+    // 更新预览状态
+    setPreviewImage(newSrc);
+  }, []);
+
+  /** 删除整张图片 */
+  const handleDeleteImage = useCallback((src: string) => {
+    // 从 description HTML 中移除对应的 img 标签
+    setDescription((prev) => {
+      const temp = document.createElement('div');
+      temp.innerHTML = prev;
+      temp.querySelectorAll('img').forEach((img) => {
+        if (img.getAttribute('src') === src) {
+          img.remove();
+        }
+      });
+      return temp.innerHTML;
+    });
+    // 从 images 数组中移除
+    setImages((prev) => prev.filter((img) => img !== src));
   }, []);
 
   const handleSave = async () => {
     if (!title.trim()) return;
+    // 保存前强制同步编辑器内容（防止 IME composing 未完成导致内容丢失）
+    descriptionRef.current?.syncContent();
     setIsSaving(true);
 
     try {
       const now = new Date().toISOString();
-      const finalCategory = category === '其他' && customCategory.trim() ? customCategory.trim() : category;
+      // 从艾森豪威尔分类推导优先级
+      const eisenhowerItem = EISENHOWER_CATEGORIES.find(c => c.value === category);
+      const priority = eisenhowerItem?.priority ?? 'medium';
       const tags = tagsInput
         .split(',')
         .map((s) => s.trim())
@@ -258,8 +252,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           const updated: Todo = {
             ...existing,
             title: title.trim(),
-            description: description.trim(),
-            category: finalCategory,
+            description,
+            category,
             tags,
             priority,
             status,
@@ -276,8 +270,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           id: generateId(),
           userId: currentUser?.id ?? '',
           title: title.trim(),
-          description: description.trim(),
-          category: finalCategory,
+          description,
+          category,
           tags,
           priority,
           status,
@@ -299,7 +293,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-bg-secondary border-border-primary/30 text-text-primary" onPaste={handlePaste}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-bg-secondary border-border-primary/30 text-text-primary">
         <DialogHeader>
           <DialogTitle className="text-text-primary">
             {isEditing ? '编辑待办' : '新建待办'}
@@ -323,108 +317,47 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
             />
           </div>
 
-          {/* 描述 */}
+          {/* 描述（支持内联粘贴图片） */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-text-muted">描述</label>
-            <textarea
+            <label className="text-xs font-medium text-text-muted">
+              描述
+              <span className="text-text-muted/60 ml-1">（可直接 Ctrl+V 粘贴图片）</span>
+            </label>
+            <AutoResizeTextarea
+              ref={descriptionRef}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="详细描述（可选）..."
-              rows={3}
-              className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50 resize-none"
+              onChange={(v) => setDescription(v)}
+              onPasteFiles={handlePasteFiles}
+              onProcessImage={handleProcessImage}
+              onImageClick={(src) => handleImageClick(src)}
+              placeholder="输入详细描述，支持粘贴图片..."
+              minRows={4}
             />
           </div>
 
-          {/* 图片附件 */}
+          {/* 艾森豪威尔分类（兼作优先级） */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-text-muted">
-                <i className="fas fa-image text-accent-cyan mr-1" />
-                图片
-                {images.length > 0 && <span className="text-text-muted ml-1">({images.length})</span>}
-              </label>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1 rounded-md bg-accent-cyan/10 px-2 py-1 text-[10px] text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
-              >
-                <i className="fas fa-upload" />
-                选择图片
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </div>
-
-            {/* 粘贴提示 */}
-            {images.length === 0 && (
-              <p className="text-[10px] text-text-muted">
-                <i className="fas fa-info-circle mr-1" />
-                可直接 Ctrl+V 粘贴截图，或点击"选择图片"上传
-              </p>
-            )}
-
-            {/* 图片预览网格 */}
-            {images.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                {images.map((img, i) => (
-                  <div
-                    key={i}
-                    className="group relative aspect-square overflow-hidden rounded-lg border border-border-custom bg-bg-primary"
-                  >
-                    <img
-                      src={img}
-                      alt={`图片 ${i + 1}`}
-                      className="h-full w-full cursor-pointer object-cover transition-transform hover:scale-105"
-                      onClick={() => previewImage(img)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity hover:bg-accent-red group-hover:opacity-100"
-                      title="删除图片"
-                    >
-                      <i className="fas fa-times text-[10px]" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* 分类 */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-text-muted">分类</label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
+            <label className="text-xs font-medium text-text-muted">
+              <i className="fas fa-layer-group text-accent-cyan mr-1" />
+              优先级分类
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {EISENHOWER_CATEGORIES.map((cat) => (
                 <button
-                  key={cat}
+                  key={cat.value}
                   type="button"
-                  onClick={() => { setCategory(cat); if (cat !== '其他') setCustomCategory(''); }}
-                  className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
-                    category === cat
-                      ? 'border-accent-cyan/50 bg-accent-cyan/10 text-accent-cyan'
+                  onClick={() => setCategory(cat.value)}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                    category === cat.value
+                      ? cat.color
                       : 'border-border-primary/30 text-text-secondary hover:border-border-hover hover:text-text-primary'
                   }`}
                 >
-                  {cat}
+                  <i className={`fas ${cat.icon} text-[10px]`} />
+                  {cat.label}
                 </button>
               ))}
             </div>
-            {category === '其他' && (
-              <input
-                type="text"
-                value={customCategory}
-                onChange={(e) => setCustomCategory(e.target.value)}
-                placeholder="输入自定义分类名称..."
-                className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-              />
-            )}
           </div>
 
           {/* 标签 */}
@@ -434,30 +367,9 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
               type="text"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="多个标签用逗号分隔，如：紧急, 前端, 优化"
+              placeholder="多个标签用逗号分隔，如：前端, 优化"
               className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
             />
-          </div>
-
-          {/* 优先级 */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-text-muted">优先级</label>
-            <div className="flex gap-2">
-              {PRIORITY_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setPriority(opt.value)}
-                  className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                    priority === opt.value
-                      ? opt.color
-                      : 'border-border-primary/30 text-text-secondary hover:text-text-primary'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* 进度状态 */}
@@ -654,6 +566,16 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* 图片编辑弹窗（支持框选删除/裁剪） */}
+      {previewImage && (
+        <ImageEditorModal
+          src={previewImage}
+          onClose={() => setPreviewImage(null)}
+          onUpdateImage={handleUpdateImage}
+          onDeleteImage={handleDeleteImage}
+        />
+      )}
     </Dialog>
   );
 }

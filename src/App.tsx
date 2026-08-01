@@ -5,6 +5,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { ProgressEditorModal } from '@/components/modals/ProgressEditorModal';
+import { useReminder } from '@/hooks/useReminder';
 
 // Lazy-loaded page components
 const DashboardPage = lazy(() =>
@@ -74,6 +75,9 @@ function App() {
 
   // Global ProgressEditorModal state for Ctrl+N shortcut
   const [globalProgressOpen, setGlobalProgressOpen] = useState(false);
+
+  // 定时提醒：检查待办提醒时间，发送浏览器通知
+  useReminder();
 
   // On mount: load users
   useEffect(() => {

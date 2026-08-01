@@ -34,6 +34,23 @@ function generateId(): string {
   return `todo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** ISO 字符串转 datetime-local 输入值 */
+function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** datetime-local 输入值转 ISO 字符串 */
+function localInputToIso(local: string): string | null {
+  if (!local) return null;
+  const d = new Date(local);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 interface TodoEditorModalProps {
   open: boolean;
   onClose: () => void;
@@ -52,6 +69,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [priority, setPriority] = useState<Todo['priority']>('medium');
   const [status, setStatus] = useState<Todo['status']>('pending');
   const [dueDate, setDueDate] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const isEditing = !!todoId;
@@ -71,6 +89,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
         setPriority(existing.priority);
         setStatus(existing.status);
         setDueDate(existing.dueDate ?? '');
+        setReminderTime(isoToLocalInput(existing.reminderTime));
       }
     } else {
       setTitle('');
@@ -81,6 +100,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       setPriority('medium');
       setStatus('pending');
       setDueDate('');
+      setReminderTime('');
     }
   }, [open, todoId, todos]);
 
@@ -108,6 +128,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
             priority,
             status,
             dueDate: dueDate || null,
+            reminderTime: localInputToIso(reminderTime),
             completedAt: status === 'completed' ? (existing.completedAt ?? now) : null,
             updatedAt: now,
           };
@@ -124,6 +145,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           priority,
           status,
           dueDate: dueDate || null,
+          reminderTime: localInputToIso(reminderTime),
           completedAt: status === 'completed' ? now : null,
           createdAt: now,
           updatedAt: now,
@@ -295,6 +317,47 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
               onChange={(e) => setDueDate(e.target.value)}
               className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
             />
+          </div>
+
+          {/* 定时提醒 */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-text-muted">
+                <i className="fas fa-bell text-accent-orange mr-1" />
+                定时提醒
+              </label>
+              {reminderTime && (
+                <button
+                  type="button"
+                  onClick={() => setReminderTime('')}
+                  className="text-[10px] text-text-muted hover:text-accent-red transition-colors"
+                >
+                  清除提醒
+                </button>
+              )}
+            </div>
+            <input
+              type="datetime-local"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+              className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+            />
+            {reminderTime && (
+              <p className="text-[10px] text-text-muted">
+                <i className="fas fa-info-circle mr-1" />
+                将在 {new Date(reminderTime).toLocaleString('zh-CN')} 发送浏览器通知提醒
+              </p>
+            )}
+            {'Notification' in window && Notification.permission === 'default' && (
+              <button
+                type="button"
+                onClick={() => Notification.requestPermission()}
+                className="flex items-center gap-1.5 rounded-lg bg-accent-orange/10 px-3 py-1.5 text-[11px] text-accent-orange hover:bg-accent-orange/20 transition-colors w-fit"
+              >
+                <i className="fas fa-bell" />
+                启用浏览器通知
+              </button>
+            )}
           </div>
         </div>
 

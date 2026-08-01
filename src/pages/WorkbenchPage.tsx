@@ -70,6 +70,31 @@ function formatDueDate(dateStr: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/** 格式化创建时间 */
+function formatCreatedAt(isoStr: string): string {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** 格式化提醒时间 */
+function formatReminderTime(isoStr: string | null): string {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** 检查提醒是否即将触发（30分钟内） */
+function isReminderSoon(todo: Todo): boolean {
+  if (!todo.reminderTime || todo.status === 'completed') return false;
+  const diff = new Date(todo.reminderTime).getTime() - Date.now();
+  return diff > 0 && diff < 30 * 60 * 1000;
+}
+
 /** 统计卡片组件 */
 function StatCard({
   label,
@@ -265,20 +290,6 @@ function TodoCard({
             <i className="fas fa-folder mr-1 text-text-muted" />
             {todo.category || '未分类'}
           </span>
-
-          {/* 截止日期 */}
-          {todo.dueDate && (
-            <span
-              className={`flex items-center gap-1 text-[10px] ${
-                overdue ? 'text-accent-red font-medium' : dueToday ? 'text-accent-orange font-medium' : 'text-text-muted'
-              }`}
-            >
-              <i className="fas fa-clock" />
-              {formatDueDate(todo.dueDate)}
-              {overdue && '（逾期）'}
-              {dueToday && '（今天）'}
-            </span>
-          )}
         </div>
 
         {/* 标签行 */}
@@ -291,6 +302,42 @@ function TodoCard({
             ))}
           </div>
         )}
+
+        {/* 时间信息区 */}
+        <div className="flex flex-col gap-1 rounded-md bg-bg-primary/50 px-2.5 py-2 text-[10px]">
+          {/* 创建时间 */}
+          <div className="flex items-center gap-1.5 text-text-muted">
+            <i className="fas fa-calendar-plus text-text-muted/60" />
+            <span>创建：{formatCreatedAt(todo.createdAt)}</span>
+          </div>
+
+          {/* 截止日期 */}
+          {todo.dueDate && (
+            <div className={`flex items-center gap-1.5 ${
+              overdue ? 'text-accent-red font-medium' : dueToday ? 'text-accent-orange font-medium' : 'text-text-muted'
+            }`}>
+              <i className="fas fa-calendar-times" />
+              <span>
+                截止：{formatDueDate(todo.dueDate)}
+                {overdue && '（逾期）'}
+                {dueToday && '（今天）'}
+              </span>
+            </div>
+          )}
+
+          {/* 提醒时间 */}
+          {todo.reminderTime && (
+            <div className={`flex items-center gap-1.5 ${
+              isReminderSoon(todo) ? 'text-accent-orange font-medium animate-pulse' : 'text-text-muted'
+            }`}>
+              <i className="fas fa-bell" />
+              <span>
+                提醒：{formatReminderTime(todo.reminderTime)}
+                {isReminderSoon(todo) && '（即将提醒）'}
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* 进度条 */}
         <div className="flex items-center gap-2 pt-1">

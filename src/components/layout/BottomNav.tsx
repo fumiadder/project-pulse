@@ -1,10 +1,10 @@
 import { useUIStore } from '@/stores/useUIStore';
 
 const bottomNavItems = [
+  { key: 'workbench', label: '工作台', icon: 'fa-tasks' },
   { key: 'dashboard', label: '控制台', icon: 'fa-th-large' },
   { key: 'calendar', label: '日历', icon: 'fa-calendar-alt' },
   { key: 'projects', label: '项目', icon: 'fa-project-diagram' },
-  { key: 'workbench', label: '工作台', icon: 'fa-tasks' },
   { key: 'daily-report', label: '日报', icon: 'fa-file-alt' },
 ] as const;
 

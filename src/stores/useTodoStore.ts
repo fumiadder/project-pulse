@@ -43,6 +43,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
       const todos = raw.map((t: any) => ({
         ...t,
         tags: safeParseTags(t.tags),
+        reminderTime: t.reminderTime ?? null,
       }));
       set({ todos });
     } finally {

@@ -92,6 +92,7 @@ export interface Todo {
   priority: 'high' | 'medium' | 'low';              // 优先级
   status: 'pending' | 'in-progress' | 'completed';  // 状态
   dueDate: string | null;                           // 截止日期
+  reminderTime: string | null;                      // 提醒时间（ISO 字符串）
   completedAt: string | null;                       // 完成时间
   createdAt: string;
   updatedAt: string;

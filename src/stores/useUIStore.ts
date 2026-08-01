@@ -8,7 +8,7 @@ interface UIStore {
 }
 
 export const useUIStore = create<UIStore>((set) => ({
-  activePage: 'dashboard',
+  activePage: 'workbench',
   sidebarCollapsed: false,
 
   setActivePage: (page) => set({ activePage: page }),

@@ -1,20 +1,25 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTodoStore } from '@/stores/useTodoStore';
+import { parseReminderConfig } from '@/utils/reminder';
 import type { Todo } from '@/types';
 
 /**
  * 定时提醒 Hook
  *
- * 每隔 30 秒检查一次所有待办，如果某条待办的 reminderTime 已到且尚未触发过通知，
- * 则发送浏览器通知。已触发过的通知通过内存 Set 记录，避免重复提醒。
+ * 支持三种提醒类型：
+ * - once: 指定时间提醒一次
+ * - daily: 每天固定时间提醒
+ * - interval: 每隔 N 分钟/小时提醒
  *
+ * 每隔 30 秒检查一次所有待办，使用 Map 记录每个 todo 的上次触发时间戳。
  * 前端提醒仅在页面打开时生效。若需要后台提醒，需配合 Service Worker / Push API。
  */
 export function useReminder() {
   const { todos } = useTodoStore();
 
-  // 已触发提醒的 todo ID 集合（本次会话内去重）
-  const triggeredRef = useRef<Set<string>>(new Set());
+  // 记录每个 todo 的上次触发时间戳（用于 interval/daily 去重）
+  // once 类型触发后标记为 -1 表示不再触发
+  const lastTriggeredRef = useRef<Map<string, number>>(new Map());
 
   /** 发送浏览器通知 */
   const sendNotification = useCallback((todo: Todo) => {
@@ -42,26 +47,97 @@ export function useReminder() {
     }
   }, []);
 
+  /** 检查单个 todo 是否应该触发提醒 */
+  const shouldTrigger = useCallback((todo: Todo, now: number): boolean => {
+    if (!todo.reminderTime) return false;
+    if (todo.status === 'completed') return false;
+
+    const config = parseReminderConfig(todo.reminderTime);
+    if (config.type === 'none') return false;
+
+    const lastTs = lastTriggeredRef.current.get(todo.id);
+
+    switch (config.type) {
+      case 'once': {
+        // once 类型：触发一次后不再重复（lastTs === -1 表示已触发）
+        if (lastTs === -1) return false;
+        if (!config.datetime) return false;
+        const targetTs = new Date(config.datetime).getTime();
+        if (isNaN(targetTs)) return false;
+        // 提醒时间已到（允许 60 秒误差）
+        if (targetTs <= now + 60_000) {
+          return true;
+        }
+        return false;
+      }
+
+      case 'daily': {
+        // daily 类型：每天在指定 HH:MM 触发一次
+        if (!config.time) return false;
+        const [h, m] = config.time.split(':').map(Number);
+        if (isNaN(h) || isNaN(m)) return false;
+        const nowDate = new Date(now);
+        // 当前时间是否匹配（允许 60 秒误差，即检查分钟级别）
+        const currentH = nowDate.getHours();
+        const currentM = nowDate.getMinutes();
+        if (currentH !== h || currentM !== m) return false;
+        // 检查今天是否已经触发过
+        if (lastTs !== undefined && lastTs > 0) {
+          const lastDate = new Date(lastTs);
+          // 同一天同一小时同一分钟已经触发过，跳过
+          if (
+            lastDate.getFullYear() === nowDate.getFullYear() &&
+            lastDate.getMonth() === nowDate.getMonth() &&
+            lastDate.getDate() === nowDate.getDate() &&
+            lastDate.getHours() === currentH &&
+            lastDate.getMinutes() === currentM
+          ) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      case 'interval': {
+        // interval 类型：每隔 N 分钟触发一次
+        const intervalMs = (config.intervalMinutes || 0) * 60 * 1000;
+        if (intervalMs <= 0) return false;
+        // 如果从未触发过，立即触发
+        if (lastTs === undefined || lastTs === -1) {
+          // 但需要检查 todo 创建时间，避免刚创建就触发
+          const createdTs = new Date(todo.createdAt).getTime();
+          if (now - createdTs < intervalMs) return false;
+          return true;
+        }
+        // 检查是否已经过了间隔时间
+        if (now - lastTs >= intervalMs) {
+          return true;
+        }
+        return false;
+      }
+
+      default:
+        return false;
+    }
+  }, []);
+
   /** 检查所有待办的提醒时间 */
   const checkReminders = useCallback(() => {
     const now = Date.now();
 
     for (const todo of todos) {
-      // 跳过无提醒、已完成、已触发的
-      if (!todo.reminderTime) continue;
-      if (todo.status === 'completed') continue;
-      if (triggeredRef.current.has(todo.id)) continue;
-
-      const reminderTs = new Date(todo.reminderTime).getTime();
-      if (isNaN(reminderTs)) continue;
-
-      // 提醒时间已到（允许 60 秒误差）
-      if (reminderTs <= now + 60_000) {
-        triggeredRef.current.add(todo.id);
+      if (shouldTrigger(todo, now)) {
+        const config = parseReminderConfig(todo.reminderTime);
+        // once 类型触发后标记 -1 不再重复
+        if (config.type === 'once') {
+          lastTriggeredRef.current.set(todo.id, -1);
+        } else {
+          lastTriggeredRef.current.set(todo.id, now);
+        }
         sendNotification(todo);
       }
     }
-  }, [todos, sendNotification]);
+  }, [todos, shouldTrigger, sendNotification]);
 
   // 请求通知权限（仅一次）
   useEffect(() => {
@@ -94,9 +170,9 @@ export function useReminder() {
   // 清理已删除 todo 的触发记录
   useEffect(() => {
     const currentIds = new Set(todos.map((t) => t.id));
-    for (const id of triggeredRef.current) {
+    for (const id of lastTriggeredRef.current.keys()) {
       if (!currentIds.has(id)) {
-        triggeredRef.current.delete(id);
+        lastTriggeredRef.current.delete(id);
       }
     }
   }, [todos]);

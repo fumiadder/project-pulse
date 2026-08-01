@@ -11,6 +11,14 @@ import { Button } from '@/components/ui/button';
 import { useTodoStore } from '@/stores/useTodoStore';
 import { useUserStore } from '@/stores/useUserStore';
 import type { Todo } from '@/types';
+import {
+  type ReminderType,
+  type ReminderConfig,
+  parseReminderConfig,
+  serializeReminderConfig,
+  isoToLocalInput,
+  localInputToIso,
+} from '@/utils/reminder';
 
 /** 预设分类 */
 const CATEGORIES = ['工作', '学习', '生活', '健康', '其他'] as const;
@@ -32,23 +40,6 @@ const STATUS_OPTIONS = [
 /** 生成唯一 ID */
 function generateId(): string {
   return `todo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/** ISO 字符串转 datetime-local 输入值 */
-function isoToLocalInput(iso: string | null | undefined): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** datetime-local 输入值转 ISO 字符串 */
-function localInputToIso(local: string): string | null {
-  if (!local) return null;
-  const d = new Date(local);
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString();
 }
 
 /** 将 File 转为 base64 data URL */
@@ -109,7 +100,12 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [priority, setPriority] = useState<Todo['priority']>('medium');
   const [status, setStatus] = useState<Todo['status']>('pending');
   const [dueDate, setDueDate] = useState('');
-  const [reminderTime, setReminderTime] = useState('');
+  // 提醒配置状态
+  const [reminderType, setReminderType] = useState<ReminderType>('none');
+  const [reminderOnceDate, setReminderOnceDate] = useState('');       // datetime-local
+  const [reminderDailyTime, setReminderDailyTime] = useState('09:00'); // HH:MM
+  const [intervalValue, setIntervalValue] = useState(30);              // 数值
+  const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours'>('minutes');
   const [images, setImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,7 +127,24 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
         setPriority(existing.priority);
         setStatus(existing.status);
         setDueDate(existing.dueDate ?? '');
-        setReminderTime(isoToLocalInput(existing.reminderTime));
+        // 解析提醒配置
+        const rc = parseReminderConfig(existing.reminderTime);
+        setReminderType(rc.type);
+        setReminderOnceDate(rc.type === 'once' ? isoToLocalInput(rc.datetime) : '');
+        setReminderDailyTime(rc.type === 'daily' ? (rc.time || '09:00') : '09:00');
+        if (rc.type === 'interval' && rc.intervalMinutes) {
+          const mins = rc.intervalMinutes;
+          if (mins >= 60 && mins % 60 === 0) {
+            setIntervalValue(mins / 60);
+            setIntervalUnit('hours');
+          } else {
+            setIntervalValue(mins);
+            setIntervalUnit('minutes');
+          }
+        } else {
+          setIntervalValue(30);
+          setIntervalUnit('minutes');
+        }
         setImages(existing.images ?? []);
       }
     } else {
@@ -143,7 +156,11 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       setPriority('medium');
       setStatus('pending');
       setDueDate('');
-      setReminderTime('');
+      setReminderType('none');
+      setReminderOnceDate('');
+      setReminderDailyTime('09:00');
+      setIntervalValue(30);
+      setIntervalUnit('minutes');
       setImages([]);
     }
   }, [open, todoId, todos]);
@@ -223,6 +240,18 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
         .map((s) => s.trim())
         .filter(Boolean);
 
+      // 构建提醒配置
+      let config: ReminderConfig = { type: 'none' };
+      if (reminderType === 'once' && reminderOnceDate) {
+        config = { type: 'once', datetime: localInputToIso(reminderOnceDate) };
+      } else if (reminderType === 'daily' && reminderDailyTime) {
+        config = { type: 'daily', time: reminderDailyTime };
+      } else if (reminderType === 'interval' && intervalValue > 0) {
+        const mins = intervalUnit === 'hours' ? intervalValue * 60 : intervalValue;
+        config = { type: 'interval', intervalMinutes: mins };
+      }
+      const serializedReminder = serializeReminderConfig(config);
+
       if (isEditing && todoId) {
         const existing = todos.find((t) => t.id === todoId);
         if (existing) {
@@ -235,7 +264,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
             priority,
             status,
             dueDate: dueDate || null,
-            reminderTime: localInputToIso(reminderTime),
+            reminderTime: serializedReminder,
             images,
             completedAt: status === 'completed' ? (existing.completedAt ?? now) : null,
             updatedAt: now,
@@ -253,7 +282,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           priority,
           status,
           dueDate: dueDate || null,
-          reminderTime: localInputToIso(reminderTime),
+          reminderTime: serializedReminder,
           images,
           completedAt: status === 'completed' ? now : null,
           createdAt: now,
@@ -492,34 +521,114 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
 
           {/* 定时提醒 */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-text-muted">
-                <i className="fas fa-bell text-accent-orange mr-1" />
-                定时提醒
-              </label>
-              {reminderTime && (
+            <label className="text-xs font-medium text-text-muted">
+              <i className="fas fa-bell text-accent-orange mr-1" />
+              定时提醒
+            </label>
+
+            {/* 提醒类型选择 */}
+            <div className="flex gap-1.5">
+              {([
+                { v: 'none' as const, l: '不提醒', icon: 'fa-bell-slash' },
+                { v: 'once' as const, l: '指定时间', icon: 'fa-clock' },
+                { v: 'daily' as const, l: '每天', icon: 'fa-calendar-day' },
+                { v: 'interval' as const, l: '每隔', icon: 'fa-redo' },
+              ]).map((opt) => (
                 <button
+                  key={opt.v}
                   type="button"
-                  onClick={() => setReminderTime('')}
-                  className="text-[10px] text-text-muted hover:text-accent-red transition-colors"
+                  onClick={() => setReminderType(opt.v)}
+                  className={`flex-1 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                    reminderType === opt.v
+                      ? 'border-accent-orange/50 bg-accent-orange/10 text-accent-orange'
+                      : 'border-border-primary/30 text-text-secondary hover:text-text-primary hover:border-border-hover'
+                  }`}
                 >
-                  清除提醒
+                  <i className={`fas ${opt.icon} mr-1`} />
+                  {opt.l}
                 </button>
-              )}
+              ))}
             </div>
-            <input
-              type="datetime-local"
-              value={reminderTime}
-              onChange={(e) => setReminderTime(e.target.value)}
-              className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-            />
-            {reminderTime && (
-              <p className="text-[10px] text-text-muted">
-                <i className="fas fa-info-circle mr-1" />
-                将在 {new Date(reminderTime).toLocaleString('zh-CN')} 发送浏览器通知提醒
-              </p>
+
+            {/* 指定时间：日期+时间选择器 */}
+            {reminderType === 'once' && (
+              <input
+                type="datetime-local"
+                value={reminderOnceDate}
+                onChange={(e) => setReminderOnceDate(e.target.value)}
+                className="w-full rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              />
             )}
-            {'Notification' in window && Notification.permission === 'default' && (
+
+            {/* 每天：时间选择器 */}
+            {reminderType === 'daily' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-secondary">每天</span>
+                <input
+                  type="time"
+                  value={reminderDailyTime}
+                  onChange={(e) => setReminderDailyTime(e.target.value)}
+                  className="rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                />
+                <span className="text-xs text-text-secondary">提醒</span>
+              </div>
+            )}
+
+            {/* 每隔：数值+单位 */}
+            {reminderType === 'interval' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-secondary">每隔</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={999}
+                  value={intervalValue}
+                  onChange={(e) => setIntervalValue(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-20 rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                />
+                <div className="flex gap-1">
+                  {(['minutes', 'hours'] as const).map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => setIntervalUnit(u)}
+                      className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                        intervalUnit === u
+                          ? 'bg-accent-orange/15 text-accent-orange'
+                          : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                      }`}
+                    >
+                      {u === 'minutes' ? '分钟' : '小时'}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-text-secondary">提醒一次</span>
+              </div>
+            )}
+
+            {/* 提醒预览描述 */}
+            {reminderType !== 'none' && (() => {
+              let preview = '';
+              if (reminderType === 'once' && reminderOnceDate) {
+                const d = new Date(reminderOnceDate);
+                if (!isNaN(d.getTime())) {
+                  preview = `将在 ${d.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 提醒`;
+                }
+              } else if (reminderType === 'daily' && reminderDailyTime) {
+                preview = `每天 ${reminderDailyTime} 提醒`;
+              } else if (reminderType === 'interval' && intervalValue > 0) {
+                const unitLabel = intervalUnit === 'hours' ? '小时' : '分钟';
+                preview = `每隔 ${intervalValue} ${unitLabel}提醒一次`;
+              }
+              return preview ? (
+                <p className="text-[10px] text-accent-orange/80">
+                  <i className="fas fa-info-circle mr-1" />
+                  {preview}
+                </p>
+              ) : null;
+            })()}
+
+            {'Notification' in window && Notification.permission === 'default' && reminderType !== 'none' && (
               <button
                 type="button"
                 onClick={() => Notification.requestPermission()}

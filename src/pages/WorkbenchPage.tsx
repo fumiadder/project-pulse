@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTodoStore } from '@/stores/useTodoStore';
 import { useUserStore } from '@/stores/useUserStore';
 import { TodoEditorModal } from '@/components/modals/TodoEditorModal';
+import { getReminderLabel, parseReminderConfig } from '@/utils/reminder';
 import type { Todo } from '@/types';
 
 /** 优先级样式映射 */
@@ -79,19 +80,12 @@ function formatCreatedAt(isoStr: string): string {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** 格式化提醒时间 */
-function formatReminderTime(isoStr: string | null): string {
-  if (!isoStr) return '';
-  const d = new Date(isoStr);
-  if (isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** 检查提醒是否即将触发（30分钟内） */
+/** 检查提醒是否即将触发（仅 once 类型，30分钟内） */
 function isReminderSoon(todo: Todo): boolean {
   if (!todo.reminderTime || todo.status === 'completed') return false;
-  const diff = new Date(todo.reminderTime).getTime() - Date.now();
+  const config = parseReminderConfig(todo.reminderTime);
+  if (config.type !== 'once' || !config.datetime) return false;
+  const diff = new Date(config.datetime).getTime() - Date.now();
   return diff > 0 && diff < 30 * 60 * 1000;
 }
 
@@ -115,58 +109,6 @@ function StatCard({
       <div className="flex flex-col">
         <span className="text-xl font-bold text-text-primary leading-none">{value}</span>
         <span className="text-[10px] text-text-muted mt-1">{label}</span>
-      </div>
-    </div>
-  );
-}
-
-/** 分类统计柱状图 */
-function CategoryChart({ todos }: { todos: Todo[] }) {
-  const categoryStats = useMemo(() => {
-    const map = new Map<string, { total: number; completed: number }>();
-    for (const t of todos) {
-      const cat = t.category || '未分类';
-      if (!map.has(cat)) map.set(cat, { total: 0, completed: 0 });
-      const stat = map.get(cat)!;
-      stat.total++;
-      if (t.status === 'completed') stat.completed++;
-    }
-    return Array.from(map.entries())
-      .map(([cat, stat]) => ({ cat, ...stat, rate: stat.total > 0 ? (stat.completed / stat.total) * 100 : 0 }))
-      .sort((a, b) => b.total - a.total);
-  }, [todos]);
-
-  if (categoryStats.length === 0) return null;
-
-  return (
-    <div className="rounded-lg border border-border-custom bg-bg-secondary p-4">
-      <h3 className="text-sm font-medium text-text-primary mb-3">
-        <i className="fas fa-chart-pie text-accent-cyan mr-2" />
-        分类完成率
-      </h3>
-      <div className="flex flex-col gap-2.5">
-        {categoryStats.map((item) => (
-          <div key={item.cat} className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-text-secondary">{item.cat}</span>
-              <span className="text-text-muted">
-                {item.completed}/{item.total} ({Math.round(item.rate)}%)
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-bg-tertiary overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  item.rate === 100
-                    ? 'bg-accent-green'
-                    : item.rate >= 50
-                    ? 'bg-accent-cyan'
-                    : 'bg-accent-orange'
-                }`}
-                style={{ width: `${item.rate}%` }}
-              />
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -348,17 +290,21 @@ function TodoCard({
           )}
 
           {/* 提醒时间 */}
-          {todo.reminderTime && (
-            <div className={`flex items-center gap-1.5 ${
-              isReminderSoon(todo) ? 'text-accent-orange font-medium animate-pulse' : 'text-text-muted'
-            }`}>
-              <i className="fas fa-bell" />
-              <span>
-                提醒：{formatReminderTime(todo.reminderTime)}
-                {isReminderSoon(todo) && '（即将提醒）'}
-              </span>
-            </div>
-          )}
+          {todo.reminderTime && (() => {
+            const label = getReminderLabel(todo.reminderTime);
+            if (!label) return null;
+            return (
+              <div className={`flex items-center gap-1.5 ${
+                isReminderSoon(todo) ? 'text-accent-orange font-medium animate-pulse' : 'text-text-muted'
+              }`}>
+                <i className="fas fa-bell" />
+                <span>
+                  {label}
+                  {isReminderSoon(todo) && '（即将提醒）'}
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* 进度条 */}
@@ -397,6 +343,7 @@ export function WorkbenchPage() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [sortBy, setSortBy] = useState<'priority' | 'created' | 'dueDate'>('priority');
 
   // 加载数据
   useEffect(() => {
@@ -450,20 +397,33 @@ export function WorkbenchPage() {
       }
     }
 
-    // 排序：未完成在前，按优先级排序，逾期优先
+    // 排序：未完成在前，按选定方式排序
     const priorityOrder = { high: 0, medium: 1, low: 2 };
-    const statusOrder = { 'in-progress': 0, pending: 1, completed: 2 };
     return result.sort((a, b) => {
+      // 已完成的始终排在最后
       if (a.status === 'completed' && b.status !== 'completed') return 1;
       if (a.status !== 'completed' && b.status === 'completed') return -1;
-      const aOverdue = isOverdue(a) ? 0 : 1;
-      const bOverdue = isOverdue(b) ? 0 : 1;
-      if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-      const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
-      if (pDiff !== 0) return pDiff;
-      return statusOrder[a.status] - statusOrder[b.status];
+
+      if (sortBy === 'priority') {
+        // 逾期优先，再按优先级高到低
+        const aOverdue = isOverdue(a) ? 0 : 1;
+        const bOverdue = isOverdue(b) ? 0 : 1;
+        if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      }
+
+      if (sortBy === 'dueDate') {
+        // 有截止日期的排前面，按日期升序
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate.localeCompare(b.dueDate);
+      }
+
+      // created: 按创建时间降序（最新在前）
+      return b.createdAt.localeCompare(a.createdAt);
     });
-  }, [todos, searchQuery, filterCategory, filterPriority, filterStatus]);
+  }, [todos, searchQuery, filterCategory, filterPriority, filterStatus, sortBy]);
 
   const handleAdd = useCallback(() => {
     setEditingId(null);
@@ -483,8 +443,6 @@ export function WorkbenchPage() {
     },
     [deleteTodo],
   );
-
-  const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
@@ -517,33 +475,6 @@ export function WorkbenchPage() {
         <StatCard label="已逾期" value={stats.overdue} icon="fa-exclamation-circle" color="bg-accent-red/10 text-accent-red" />
       </div>
 
-      {/* 完成率进度条 + 分类图表 */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {/* 完成率 */}
-        <div className="rounded-lg border border-border-custom bg-bg-secondary p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-text-primary">
-              <i className="fas fa-chart-line text-accent-cyan mr-2" />
-              整体完成率
-            </h3>
-            <span className="text-2xl font-bold text-accent-cyan">{completionRate}%</span>
-          </div>
-          <div className="h-3 rounded-full bg-bg-tertiary overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-accent-cyan to-accent-green transition-all duration-700"
-              style={{ width: `${completionRate}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-2 text-[10px] text-text-muted">
-            <span>已完成 {stats.completed} 项</span>
-            <span>剩余 {stats.total - stats.completed} 项</span>
-          </div>
-        </div>
-
-        {/* 分类统计 */}
-        <CategoryChart todos={todos} />
-      </div>
-
       {/* 搜索和过滤栏 */}
       <div className="flex flex-col gap-3">
         {/* 搜索框 */}
@@ -564,6 +495,33 @@ export function WorkbenchPage() {
               <i className="fas fa-times text-xs" />
             </button>
           )}
+        </div>
+
+        {/* 排序控制 */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-text-muted">
+            <i className="fas fa-sort-amount-down mr-1" />
+            排序
+          </span>
+          <div className="flex items-center gap-1">
+            {([
+              { v: 'priority' as const, l: '优先级（高→低）' },
+              { v: 'dueDate' as const, l: '截止日期' },
+              { v: 'created' as const, l: '创建时间' },
+            ]).map((opt) => (
+              <button
+                key={opt.v}
+                onClick={() => setSortBy(opt.v)}
+                className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                  sortBy === opt.v
+                    ? 'bg-accent-cyan/15 text-accent-cyan'
+                    : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                }`}
+              >
+                {opt.l}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 过滤器 */}

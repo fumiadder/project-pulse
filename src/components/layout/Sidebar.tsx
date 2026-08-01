@@ -27,7 +27,7 @@ const navItems = [
 
 export function Sidebar({ collapsed, onItemClick }: SidebarProps) {
   const { activePage, setActivePage, toggleSidebar } = useUIStore();
-  const { currentUser, logout, users, switchUser } = useUserStore();
+  const { currentUser, logout } = useUserStore();
 
   const handleNavClick = (page: string) => {
     setActivePage(page);
@@ -37,13 +37,6 @@ export function Sidebar({ collapsed, onItemClick }: SidebarProps) {
   const handleLogout = () => {
     if (window.confirm('确定要退出登录吗？')) {
       logout();
-    }
-  };
-
-  const handleSwitchUser = () => {
-    const otherUsers = users.filter((u) => u.id !== currentUser?.id);
-    if (otherUsers.length > 0) {
-      switchUser(otherUsers[0].id);
     }
   };
 
@@ -183,20 +176,6 @@ export function Sidebar({ collapsed, onItemClick }: SidebarProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
-                        onClick={handleSwitchUser}
-                        className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-cyan transition-colors"
-                        title="切换用户"
-                      >
-                        <i className="fas fa-exchange-alt text-xs" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="bg-bg-tertiary text-text-primary border border-border-custom">
-                      切换用户
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
                         onClick={handleLogout}
                         className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-red transition-colors"
                         title="退出登录"
@@ -210,22 +189,13 @@ export function Sidebar({ collapsed, onItemClick }: SidebarProps) {
                   </Tooltip>
                 </TooltipProvider>
               ) : (
-                <>
-                  <button
-                    onClick={handleSwitchUser}
-                    className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-cyan transition-colors"
-                    title="切换用户"
-                  >
-                    <i className="fas fa-exchange-alt text-xs" />
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-red transition-colors"
-                    title="退出登录"
-                  >
-                    <i className="fas fa-sign-out-alt text-xs" />
-                  </button>
-                </>
+                <button
+                  onClick={handleLogout}
+                  className="flex h-7 w-7 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-accent-red transition-colors"
+                  title="退出登录"
+                >
+                  <i className="fas fa-sign-out-alt text-xs" />
+                </button>
               )}
             </div>
           </div>

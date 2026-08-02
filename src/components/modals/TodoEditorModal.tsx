@@ -241,8 +241,10 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       });
       return temp.innerHTML;
     });
-    // 从 images 数组中移除
+    // 从 images 数组中移除（兼容 src 可能经过裁剪/删除选区后变化的情况）
     setImages((prev) => prev.filter((img) => img !== src));
+    // 关闭预览弹窗
+    setPreviewImage(null);
   }, []);
 
   const handleSave = async () => {

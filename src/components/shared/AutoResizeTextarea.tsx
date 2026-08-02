@@ -56,14 +56,16 @@ export const AutoResizeTextarea = forwardRef<AutoResizeTextareaHandle, AutoResiz
       },
     }), [onChange]);
 
-    // 同步外部 value 到编辑器
+    // 同步外部 value 到编辑器（不受 isInternalUpdate 阻止，
+    // 确保程序化更新如删除图片能正确同步到 DOM）
     useEffect(() => {
       const el = editorRef.current;
-      if (!el || isInternalUpdate.current) return;
+      if (!el) return;
       if (el.innerHTML !== value) {
         el.innerHTML = value;
+        adjustHeight();
       }
-    }, [value]);
+    }, [value, adjustHeight]);
 
     // 自动调整高度
     const adjustHeight = useCallback(() => {

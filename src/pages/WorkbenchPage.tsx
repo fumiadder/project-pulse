@@ -430,14 +430,16 @@ export function WorkbenchPage() {
   const [showFeatureGuide, setShowFeatureGuide] = useState(false);
   const [showCompleted, setShowCompleted] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { editMode, toggleEditMode } = useLayoutStore();
+  const { editMode, toggleEditMode, loadFromServer } = useLayoutStore();
 
   useEffect(() => {
     loadTodos(currentUser?.id);
     loadCheckins(currentUser?.id);
     loadProgress(currentUser?.id);
     loadProjects();
-  }, [loadTodos, loadCheckins, loadProgress, loadProjects, currentUser?.id]);
+    // 从服务器加载布局顺序（支持多终端同步）
+    loadFromServer(currentUser?.id);
+  }, [loadTodos, loadCheckins, loadProgress, loadProjects, currentUser?.id, loadFromServer]);
 
   // 键盘快捷键
   useEffect(() => {

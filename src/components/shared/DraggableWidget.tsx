@@ -4,8 +4,8 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface DraggableWidgetProps {
   id: string;
-  /** 宽度跨度：full=整行, half=半行, third=三分之一 */
-  span?: 'full' | 'half' | 'third' | 'two-thirds';
+  /** 宽度跨度：full=整行, half=半行, third=三分之一, quarter=四分之一, sixth=六分之一 */
+  span?: 'full' | 'half' | 'third' | 'two-thirds' | 'quarter' | 'sixth';
   /** 编辑模式下显示拖拽手柄 */
   editMode: boolean;
   children: ReactNode;
@@ -13,10 +13,12 @@ interface DraggableWidgetProps {
 
 /** span 对应的 grid-column class */
 const SPAN_CLASS: Record<string, string> = {
-  full: 'col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4',
-  half: 'col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-2',
-  third: 'col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1',
-  'two-thirds': 'col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-3',
+  full:        'col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 2xl:col-span-6',
+  'two-thirds':'col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-3 2xl:col-span-4',
+  half:        'col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-3',
+  third:       'col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-2 2xl:col-span-2',
+  quarter:     'col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1 2xl:col-span-2',
+  sixth:       'col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1 2xl:col-span-1',
 };
 
 export function DraggableWidget({

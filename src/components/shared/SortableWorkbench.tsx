@@ -99,8 +99,8 @@ export function SortableWorkbench({ widgets }: SortableWorkbenchProps) {
           </div>
         )}
 
-        {/* 响应式网格：1列(手机) → 2列(平板) → 3列(小桌面) → 4列(大桌面) */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-auto">
+        {/* 响应式网格：1列(手机) → 2列(平板) → 3列(小桌面) → 4列(中桌面) → 6列(大桌面) */}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 auto-rows-auto">
           {sortedWidgets.map((widget) => (
             <DraggableWidget
               key={widget.id}

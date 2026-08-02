@@ -128,11 +128,11 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
     } finally {
       setIsProcessing(false);
     }
-  }, [currentSrc, getSelectionInNaturalCoordinates, onUpdateImage]);
+  }, [currentSrc, getSelectionInNaturalCoords, onUpdateImage]);
 
   /** 裁剪选区：只保留选中区域 */
   const handleCropSelection = useCallback(async () => {
-    const coords = getSelectionInNaturalCoordinates();
+    const coords = getSelectionInNaturalCoords();
     if (!coords) return;
 
     setIsProcessing(true);
@@ -166,7 +166,7 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
     } finally {
       setIsProcessing(false);
     }
-  }, [currentSrc, getSelectionInNaturalCoordinates, onUpdateImage]);
+  }, [currentSrc, getSelectionInNaturalCoords, onUpdateImage]);
 
   /** 删除整张图片 */
   const handleDeleteImage = useCallback(() => {

@@ -16,6 +16,8 @@ interface AutoResizeTextareaProps {
 export interface AutoResizeTextareaHandle {
   /** 强制将编辑器当前 innerHTML 同步到 onChange */
   syncContent: () => void;
+  /** 直接获取编辑器当前 innerHTML（不经过 state） */
+  getInnerHTML: () => string;
 }
 
 const TEXT_COLORS = [
@@ -48,11 +50,15 @@ export const AutoResizeTextarea = forwardRef<AutoResizeTextareaHandle, AutoResiz
     const isComposing = useRef(false);
     const isInternalUpdate = useRef(false);
 
-    // 暴露 syncContent 给父组件
+    // 暴露 syncContent 和 getInnerHTML 给父组件
     useImperativeHandle(ref, () => ({
       syncContent: () => {
         const el = editorRef.current;
         if (el) onChange(el.innerHTML);
+      },
+      getInnerHTML: () => {
+        const el = editorRef.current;
+        return el ? el.innerHTML : '';
       },
     }), [onChange]);
 

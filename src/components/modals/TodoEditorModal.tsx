@@ -108,10 +108,23 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [subtasks, setSubtasks] = useState<SubTask[]>([]);
   const [newSubtaskText, setNewSubtaskText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const descriptionRef = useRef<AutoResizeTextareaHandle>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const isEditing = !!todoId;
+
+  /** 从 description HTML 中提取所有图片 src，确保 images 数组与描述一致 */
+  function extractImagesFromHtml(html: string): string[] {
+    try {
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      const imgs = temp.querySelectorAll('img');
+      return Array.from(imgs).map((img) => img.getAttribute('src') || img.src).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
 
   /** 添加子任务 */
   const handleAddSubtask = useCallback(() => {
@@ -140,6 +153,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   // 打开时初始化表单
   useEffect(() => {
     if (!open) return;
+    setSaveError(null);
 
     if (todoId) {
       const existing = todos.find((t) => t.id === todoId);
@@ -220,8 +234,17 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
 
   /** 图片编辑后更新（框选删除/裁剪） */
   const handleUpdateImage = useCallback((oldSrc: string, newSrc: string) => {
-    // 更新 description HTML 中的图片 src
-    setDescription((prev) => prev.split(oldSrc).join(newSrc));
+    // 更新 description HTML 中的图片 src（双重匹配防止浏览器规范化差异）
+    setDescription((prev) => {
+      const temp = document.createElement('div');
+      temp.innerHTML = prev;
+      temp.querySelectorAll('img').forEach((img) => {
+        if (img.getAttribute('src') === oldSrc || img.src === oldSrc) {
+          img.setAttribute('src', newSrc);
+        }
+      });
+      return temp.innerHTML;
+    });
     // 更新 images 数组
     setImages((prev) => prev.map((img) => (img === oldSrc ? newSrc : img)));
     // 更新预览状态
@@ -231,11 +254,12 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   /** 删除整张图片 */
   const handleDeleteImage = useCallback((src: string) => {
     // 从 description HTML 中移除对应的 img 标签
+    // 同时匹配 getAttribute('src') 和 img.src，防止浏览器规范化导致不匹配
     setDescription((prev) => {
       const temp = document.createElement('div');
       temp.innerHTML = prev;
       temp.querySelectorAll('img').forEach((img) => {
-        if (img.getAttribute('src') === src) {
+        if (img.getAttribute('src') === src || img.src === src) {
           img.remove();
         }
       });
@@ -251,6 +275,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
     if (!title.trim()) return;
     // 保存前强制同步编辑器内容（防止 IME composing 未完成导致内容丢失）
     descriptionRef.current?.syncContent();
+    setSaveError(null);
     setIsSaving(true);
 
     try {
@@ -275,20 +300,33 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       }
       const serializedReminder = serializeReminderConfig(config);
 
+      // ★ 关键修复：从 DOM 直接读取最新的描述内容，避免闭包中 description 过期
+      // syncContent 已将 DOM 同步给 onChange(setDescription)，但 handleSave
+      // 闭包中的 description 变量仍是旧值。这里直接从编辑器读取确保一致。
+      const editorEl = descriptionRef.current as any;
+      let latestDescription = description;
+      if (editorEl && typeof editorEl.getInnerHTML === 'function') {
+        latestDescription = editorEl.getInnerHTML();
+      }
+
+      // ★ 关键修复：从描述 HTML 中重新提取图片列表，确保 images 数组
+      // 与描述内容完全一致（删除图片后 images 自动同步）
+      const syncedImages = extractImagesFromHtml(latestDescription);
+
       if (isEditing && todoId) {
         const existing = todos.find((t) => t.id === todoId);
         if (existing) {
           const updated: Todo = {
             ...existing,
             title: title.trim(),
-            description,
+            description: latestDescription,
             category,
             tags,
             priority,
             status,
             dueDate: dueDate || null,
             reminderTime: serializedReminder,
-            images,
+            images: syncedImages,
             subtasks,
             completedAt: status === 'completed' ? (existing.completedAt ?? now) : null,
             updatedAt: now,
@@ -300,14 +338,14 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           id: generateId(),
           userId: currentUser?.id ?? '',
           title: title.trim(),
-          description,
+          description: latestDescription,
           category,
           tags,
           priority,
           status,
           dueDate: dueDate || null,
           reminderTime: serializedReminder,
-          images,
+          images: syncedImages,
           subtasks,
           pinned: false,
           completedAt: status === 'completed' ? now : null,
@@ -318,6 +356,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       }
 
       onClose();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : '保存失败，请重试');
     } finally {
       setIsSaving(false);
     }
@@ -673,6 +713,12 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
         </div>
 
         <DialogFooter className="gap-2">
+          {saveError && (
+            <p className="mr-auto text-xs text-accent-red flex items-center gap-1">
+              <i className="fas fa-exclamation-circle" />
+              {saveError}
+            </p>
+          )}
           <Button variant="outline" onClick={onClose} className="text-text-secondary">
             取消
           </Button>

@@ -95,7 +95,10 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
   },
 
   updateTodo: async (todo) => {
-    await api.putTodo(todo);
+    const res = await api.putTodo(todo);
+    if (!res.success) {
+      throw new Error(res.error || '保存待办失败');
+    }
     set((state) => ({
       todos: safeTodos(state).map((t) => (t.id === todo.id ? todo : t)),
     }));

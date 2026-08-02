@@ -5,11 +5,13 @@ import { useUserStore } from '@/stores/useUserStore';
 import { useProgressStore } from '@/stores/useProgressStore';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 import { TodoEditorModal } from '@/components/modals/TodoEditorModal';
 import { CheckinEditorModal } from '@/components/modals/CheckinEditorModal';
 import { CircularProgress } from '@/components/shared/CircularProgress';
 import { GreetingCard } from '@/components/shared/GreetingCard';
 import { WeeklyHeatmap } from '@/components/shared/WeeklyHeatmap';
+import { SortableWorkbench, type WidgetConfig } from '@/components/shared/SortableWorkbench';
 import { getReminderLabel, parseReminderConfig } from '@/utils/reminder';
 import type { Todo, CheckIn } from '@/types';
 
@@ -428,6 +430,7 @@ export function WorkbenchPage() {
   const [showFeatureGuide, setShowFeatureGuide] = useState(false);
   const [showCompleted, setShowCompleted] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { editMode, toggleEditMode } = useLayoutStore();
 
   useEffect(() => {
     loadTodos(currentUser?.id);
@@ -648,6 +651,408 @@ export function WorkbenchPage() {
     };
   }, [todos]);
 
+  // Widget 配置数组 — 每个卡片区域定义为一个可拖拽 Widget
+  const widgets: WidgetConfig[] = useMemo(() => {
+    const list: WidgetConfig[] = [
+      // 1. 今日聚焦
+      {
+        id: 'focus',
+        span: 'full',
+        render: () =>
+          pinnedTodos.length > 0 ? (
+            <div className="h-full rounded-xl border border-accent-orange/20 bg-gradient-to-br from-accent-orange/5 to-bg-secondary p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <i className="fas fa-star text-accent-orange text-xs" />
+                  <span className="text-xs font-bold text-text-primary">今日聚焦</span>
+                  <span className="text-[9px] text-text-muted">TODAY'S FOCUS</span>
+                  <span className="rounded-full bg-accent-orange/15 px-2 py-0.5 text-[9px] text-accent-orange">{pinnedTodos.length}项置顶</span>
+                </div>
+                <span className="text-[10px] text-text-muted">点击星标可取消置顶</span>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {pinnedTodos.map((todo) => (
+                  <TodoCard
+                    key={todo.id}
+                    todo={todo}
+                    onToggle={() => toggleComplete(todo.id)}
+                    onEdit={() => handleEdit(todo.id)}
+                    onDelete={() => handleDelete(todo.id)}
+                    onPin={() => togglePin(todo.id)}
+                    onToggleSubtask={(subtaskId) => toggleSubtask(todo.id, subtaskId)}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null,
+      },
+      // 2. 问候卡 + 快速记录
+      {
+        id: 'greeting',
+        span: 'full',
+        render: () => (
+          <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <GreetingCard>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex gap-3 text-center">
+                    <div>
+                      <div className="text-xl font-bold text-accent-cyan">{stats.pending}</div>
+                      <div className="text-[9px] text-text-muted">待开始</div>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-accent-orange">{stats.inProgress}</div>
+                      <div className="text-[9px] text-text-muted">进行中</div>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-accent-green">{stats.completed}</div>
+                      <div className="text-[9px] text-text-muted">已完成</div>
+                    </div>
+                  </div>
+                </div>
+              </GreetingCard>
+            </div>
+            <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
+              <div className="mb-3 flex items-center gap-1.5">
+                <i className="fas fa-bolt text-accent-cyan text-xs" />
+                <span className="text-xs font-bold text-text-primary">快速记录</span>
+                <span className="text-[9px] text-text-muted">QUICK ADD</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <QuickAddButton icon="fa-list-check" label="记待办" color="bg-accent-cyan/10 text-accent-cyan" onClick={handleAdd} />
+                <QuickAddButton icon="fa-check-circle" label="记打卡" color="bg-accent-green/10 text-accent-green" onClick={handleAddCheckin} />
+                <QuickAddButton icon="fa-chart-line" label="记进度" color="bg-accent-orange/10 text-accent-orange" onClick={handleNavigateProgress} />
+                <QuickAddButton icon="fa-lightbulb" label="记想法" color="bg-accent-purple/10 text-accent-purple" onClick={handleNavigateIdeas} />
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      // 3. 今日概览 + 数据汇总
+      {
+        id: 'vitals',
+        span: 'full',
+        render: () => (
+          <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-3">
+            <div className="lg:col-span-2 rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <i className="fas fa-chart-pie text-accent-cyan text-xs" />
+                  <span className="text-xs font-bold text-text-primary">今日概览</span>
+                  <span className="text-[9px] text-text-muted">DAILY VITALS</span>
+                </div>
+                <FeatureHint icon="fa-info-circle" text="各模块今日完成率一目了然" />
+              </div>
+              <div className="flex items-center justify-around gap-2 overflow-x-auto pb-1">
+                <CircularProgress percent={todoPercent} color="#00d4ff" icon="fa-list-check" label="待办完成" subtext={`${stats.completed}/${stats.total}项`} />
+                <CircularProgress percent={checkinPercent} color="#4a9a7a" icon="fa-check-circle" label="每日打卡" subtext={`${checkinStats.doneToday}/${checkinStats.total}项`} />
+                <CircularProgress percent={progressPercent} color="#c4945a" icon="fa-chart-line" label="进度更新" subtext={`${progressStats.count}条`} />
+                <CircularProgress percent={projectPercent} color="#a855f7" icon="fa-project-diagram" label="活跃项目" subtext={`${projectStats.active}个`} />
+              </div>
+            </div>
+            <div className="rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-4">
+              <div className="mb-3 flex items-center gap-1.5">
+                <i className="fas fa-database text-accent-purple text-xs" />
+                <span className="text-xs font-bold text-text-primary">数据汇总</span>
+                <span className="text-[9px] text-text-muted">SUMMARY</span>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-layer-group text-accent-cyan text-xs w-4" />
+                    <span className="text-xs text-text-secondary">累计待办</span>
+                  </div>
+                  <span className="text-sm font-bold text-text-primary">{stats.total}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-star text-accent-orange text-xs w-4" />
+                    <span className="text-xs text-text-secondary">今日聚焦</span>
+                  </div>
+                  <span className="text-sm font-bold text-accent-orange">{stats.pinned}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-fire text-accent-green text-xs w-4" />
+                    <span className="text-xs text-text-secondary">打卡项</span>
+                  </div>
+                  <span className="text-sm font-bold text-text-primary">{checkinStats.total}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-exclamation-triangle text-accent-red text-xs w-4" />
+                    <span className="text-xs text-text-secondary">已逾期</span>
+                  </div>
+                  <span className="text-sm font-bold text-accent-red">{stats.overdue}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      // 4. 每日打卡
+      {
+        id: 'checkin',
+        span: 'half',
+        render: () => (
+          <div className="h-full rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <i className="fas fa-check-circle text-accent-green text-xs" />
+                <span className="text-xs font-bold text-text-primary">每日打卡</span>
+                <span className="text-[9px] text-text-muted">CHECKIN</span>
+              </div>
+              <button
+                onClick={handleAddCheckin}
+                className="flex items-center gap-1 rounded-md bg-accent-green/10 px-2 py-1 text-[10px] text-accent-green transition-colors hover:bg-accent-green/20"
+              >
+                <i className="fas fa-plus text-[9px]" />
+                新增
+              </button>
+            </div>
+            {checkins.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <i className="fas fa-fire text-2xl text-text-muted/20" />
+                <p className="text-xs text-text-muted">还没有打卡项，点击"新增"创建第一个习惯吧</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+                {checkins.map((checkin) => (
+                  <CheckinCard
+                    key={checkin.id}
+                    checkin={checkin}
+                    onToggle={() => toggleToday(checkin.id)}
+                    onEdit={() => handleEditCheckin(checkin.id)}
+                    onDelete={() => handleDeleteCheckin(checkin.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      // 5. 生产力洞察
+      {
+        id: 'insights',
+        span: 'half',
+        render: () => (
+          <div className="h-full rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-4">
+            <div className="mb-3 flex items-center gap-1.5">
+              <i className="fas fa-lightbulb text-accent-orange text-xs" />
+              <span className="text-xs font-bold text-text-primary">生产力洞察</span>
+              <span className="text-[9px] text-text-muted">INSIGHTS</span>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-text-secondary">总体完成率</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-20 rounded-full bg-bg-tertiary overflow-hidden">
+                    <div className="h-full rounded-full bg-accent-cyan transition-all duration-500" style={{ width: `${insights.completionRate}%` }} />
+                  </div>
+                  <span className="text-sm font-bold text-accent-cyan">{insights.completionRate}%</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <i className="fas fa-check-double text-accent-green text-xs w-4" />
+                  <span className="text-xs text-text-secondary">今日完成</span>
+                </div>
+                <span className="text-sm font-bold text-accent-green">{insights.todayCompleted} 项</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <i className="fas fa-calendar-week text-accent-cyan text-xs w-4" />
+                  <span className="text-xs text-text-secondary">本周完成</span>
+                </div>
+                <span className="text-sm font-bold text-accent-cyan">{insights.weekCompleted} 项</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <i className="fas fa-exclamation-circle text-accent-red text-xs w-4" />
+                  <span className="text-xs text-text-secondary">紧急重要完成</span>
+                </div>
+                <span className="text-sm font-bold text-accent-red">{insights.highPriorityDone}/{insights.highPriorityTotal}</span>
+              </div>
+              <div className="rounded-lg bg-accent-orange/5 border border-accent-orange/20 px-3 py-2">
+                <p className="text-[11px] text-accent-orange/90 flex items-start gap-1.5">
+                  <i className="fas fa-quote-left text-[9px] mt-0.5 shrink-0" />
+                  <span>{insights.tip}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      // 6. 活动热力图
+      {
+        id: 'heatmap',
+        span: 'full',
+        render: () => (
+          <div className="h-full rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <i className="fas fa-fire text-accent-green text-xs" />
+                <span className="text-xs font-bold text-text-primary">活动热力图</span>
+                <span className="text-[9px] text-text-muted">ACTIVITY MAP</span>
+              </div>
+              <FeatureHint icon="fa-info-circle" text="绿色越深表示当日完成待办越多" />
+            </div>
+            <WeeklyHeatmap todos={todos} weeks={8} />
+          </div>
+        ),
+      },
+      // 7. 待办列表（搜索+过滤+卡片网格）
+      {
+        id: 'todos',
+        span: 'full',
+        render: () => (
+          <div className="flex h-full flex-col gap-3">
+            {/* 搜索和过滤栏 */}
+            <div className="relative">
+              <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-xs" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="搜索待办标题、描述或标签... (按 / 快速聚焦)"
+                className="w-full rounded-lg border border-border-custom bg-bg-secondary py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
+                  <i className="fas fa-times text-xs" />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] text-text-muted">
+                <i className="fas fa-sort-amount-down mr-1" />
+                按优先级高→低 · 创建时间近→远
+              </span>
+              <div className="h-4 w-px bg-border-custom" />
+              <div className="flex items-center gap-1">
+                {[
+                  { v: 'all', l: '全部' },
+                  { v: 'pending', l: '待开始' },
+                  { v: 'in-progress', l: '进行中' },
+                  { v: 'completed', l: '已完成' },
+                  { v: 'overdue', l: '已逾期' },
+                ].map((opt) => (
+                  <button
+                    key={opt.v}
+                    onClick={() => setFilterStatus(opt.v)}
+                    className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                      filterStatus === opt.v ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                    }`}
+                  >
+                    {opt.l}
+                  </button>
+                ))}
+              </div>
+              <div className="h-4 w-px bg-border-custom" />
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setFilterCategory('all')}
+                  className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                    filterCategory === 'all' ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                  }`}
+                >
+                  全部分类
+                </button>
+                {EISENHOWER_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    onClick={() => setFilterCategory(cat.value)}
+                    className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                      filterCategory === cat.value ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+              <div className="h-4 w-px bg-border-custom" />
+              <button
+                onClick={() => setShowCompleted(!showCompleted)}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors ${
+                  showCompleted ? 'text-text-muted hover:text-text-primary' : 'text-accent-cyan bg-accent-cyan/10'
+                }`}
+              >
+                <i className={`fas ${showCompleted ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`} />
+                {showCompleted ? '隐藏已完成' : '显示已完成'}
+              </button>
+              {stats.completed > 0 && (
+                <button
+                  onClick={handleClearCompleted}
+                  className="flex items-center gap-1.5 rounded-md bg-accent-red/10 px-2.5 py-1 text-xs text-accent-red transition-colors hover:bg-accent-red/20"
+                >
+                  <i className="fas fa-broom text-[10px]" />
+                  清除已完成 ({stats.completed})
+                </button>
+              )}
+            </div>
+
+            {/* 待办卡片网格 */}
+            {isLoading ? (
+              <div className="flex h-40 items-center justify-center">
+                <i className="fas fa-spinner fa-spin text-2xl text-accent-cyan" />
+              </div>
+            ) : filteredTodos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border-custom py-16">
+                <i className="fas fa-clipboard-list text-4xl text-text-muted/30" />
+                <p className="text-sm text-text-muted">
+                  {todos.length === 0 ? '还没有待办事项，点击右上角创建第一个吧' : '没有匹配的待办事项'}
+                </p>
+                {todos.length === 0 && (
+                  <button onClick={handleAdd} className="rounded-lg bg-accent-cyan/10 px-4 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/20 transition-colors">
+                    <i className="fas fa-plus mr-1" />
+                    新建待办
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between text-xs text-text-muted">
+                  <span>共 {filteredTodos.length} 条结果</span>
+                  {(filterStatus !== 'all' || filterCategory !== 'all' || searchQuery) && (
+                    <button
+                      onClick={() => { setSearchQuery(''); setFilterStatus('all'); setFilterCategory('all'); }}
+                      className="text-accent-cyan hover:underline"
+                    >
+                      清除筛选
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filteredTodos.map((todo) => (
+                    <TodoCard
+                      key={todo.id}
+                      todo={todo}
+                      onToggle={() => toggleComplete(todo.id)}
+                      onEdit={() => handleEdit(todo.id)}
+                      onDelete={() => handleDelete(todo.id)}
+                      onPin={() => togglePin(todo.id)}
+                      onToggleSubtask={(subtaskId) => toggleSubtask(todo.id, subtaskId)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        ),
+      },
+    ];
+    return list;
+  }, [
+    pinnedTodos, stats, checkinStats, progressStats, projectStats,
+    todoPercent, checkinPercent, progressPercent, projectPercent,
+    insights, checkins, todos, isLoading, filteredTodos,
+    searchQuery, filterCategory, filterStatus, showCompleted,
+    handleAdd, handleEdit, handleDelete, handleAddCheckin, handleEditCheckin,
+    handleDeleteCheckin, handleClearCompleted, handleNavigateProgress,
+    handleNavigateIdeas, toggleComplete, togglePin, toggleSubtask, toggleToday,
+  ]);
+
   return (
     <div className="flex flex-col gap-4 animate-fade-in-up">
       {/* 页面标题 */}
@@ -662,421 +1067,34 @@ export function WorkbenchPage() {
             管理你的待办事项、每日打卡和完成进度
           </p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-2 rounded-lg bg-accent-cyan px-4 py-2 text-sm font-medium text-bg-primary transition-colors hover:bg-accent-cyan/80"
-          title="新建待办 (快捷键: N)"
-        >
-          <i className="fas fa-plus" />
-          <span className="hidden sm:inline">新建待办</span>
-          <kbd className="hidden sm:inline rounded bg-bg-primary/20 px-1.5 py-0.5 text-[9px] font-mono">N</kbd>
-        </button>
-      </div>
-
-      {/* 今日聚焦 — 置顶区域（全宽卡片展示，位于最顶部） */}
-      {pinnedTodos.length > 0 && (
-        <div className="rounded-xl border border-accent-orange/20 bg-gradient-to-br from-accent-orange/5 to-bg-secondary p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-star text-accent-orange text-xs" />
-              <span className="text-xs font-bold text-text-primary">今日聚焦</span>
-              <span className="text-[9px] text-text-muted">TODAY'S FOCUS</span>
-              <span className="rounded-full bg-accent-orange/15 px-2 py-0.5 text-[9px] text-accent-orange">{pinnedTodos.length}项置顶</span>
-            </div>
-            <span className="text-[10px] text-text-muted">点击星标可取消置顶</span>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {pinnedTodos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onToggle={() => toggleComplete(todo.id)}
-                onEdit={() => handleEdit(todo.id)}
-                onDelete={() => handleDelete(todo.id)}
-                onPin={() => togglePin(todo.id)}
-                onToggleSubtask={(subtaskId) => toggleSubtask(todo.id, subtaskId)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 第一行：问候卡 + 快速记录 */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <GreetingCard>
-            <div className="flex flex-col items-end gap-1">
-              <div className="flex gap-3 text-center">
-                <div>
-                  <div className="text-xl font-bold text-accent-cyan">{stats.pending}</div>
-                  <div className="text-[9px] text-text-muted">待开始</div>
-                </div>
-                <div>
-                  <div className="text-xl font-bold text-accent-orange">{stats.inProgress}</div>
-                  <div className="text-[9px] text-text-muted">进行中</div>
-                </div>
-                <div>
-                  <div className="text-xl font-bold text-accent-green">{stats.completed}</div>
-                  <div className="text-[9px] text-text-muted">已完成</div>
-                </div>
-              </div>
-            </div>
-          </GreetingCard>
-        </div>
-
-        {/* 快速记录 */}
-        <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-          <div className="mb-3 flex items-center gap-1.5">
-            <i className="fas fa-bolt text-accent-cyan text-xs" />
-            <span className="text-xs font-bold text-text-primary">快速记录</span>
-            <span className="text-[9px] text-text-muted">QUICK ADD</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <QuickAddButton icon="fa-list-check" label="记待办" color="bg-accent-cyan/10 text-accent-cyan" onClick={handleAdd} />
-            <QuickAddButton icon="fa-check-circle" label="记打卡" color="bg-accent-green/10 text-accent-green" onClick={handleAddCheckin} />
-            <QuickAddButton icon="fa-chart-line" label="记进度" color="bg-accent-orange/10 text-accent-orange" onClick={handleNavigateProgress} />
-            <QuickAddButton icon="fa-lightbulb" label="记想法" color="bg-accent-purple/10 text-accent-purple" onClick={handleNavigateIdeas} />
-          </div>
-        </div>
-      </div>
-
-      {/* 第二行：每日概览 + 统计汇总 */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        {/* 每日概览 — 圆环进度 */}
-        <div className="lg:col-span-2 rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-chart-pie text-accent-cyan text-xs" />
-              <span className="text-xs font-bold text-text-primary">今日概览</span>
-              <span className="text-[9px] text-text-muted">DAILY VITALS</span>
-            </div>
-            <FeatureHint icon="fa-info-circle" text="各模块今日完成率一目了然" />
-          </div>
-          <div className="flex items-center justify-around gap-2 overflow-x-auto pb-1">
-            <CircularProgress
-              percent={todoPercent}
-              color="#00d4ff"
-              icon="fa-list-check"
-              label="待办完成"
-              subtext={`${stats.completed}/${stats.total}项`}
-            />
-            <CircularProgress
-              percent={checkinPercent}
-              color="#4a9a7a"
-              icon="fa-check-circle"
-              label="每日打卡"
-              subtext={`${checkinStats.doneToday}/${checkinStats.total}项`}
-            />
-            <CircularProgress
-              percent={progressPercent}
-              color="#c4945a"
-              icon="fa-chart-line"
-              label="进度更新"
-              subtext={`${progressStats.count}条`}
-            />
-            <CircularProgress
-              percent={projectPercent}
-              color="#a855f7"
-              icon="fa-project-diagram"
-              label="活跃项目"
-              subtext={`${projectStats.active}个`}
-            />
-          </div>
-        </div>
-
-        {/* 统计汇总 */}
-        <div className="rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-4">
-          <div className="mb-3 flex items-center gap-1.5">
-            <i className="fas fa-database text-accent-purple text-xs" />
-            <span className="text-xs font-bold text-text-primary">数据汇总</span>
-            <span className="text-[9px] text-text-muted">SUMMARY</span>
-          </div>
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="fas fa-layer-group text-accent-cyan text-xs w-4" />
-                <span className="text-xs text-text-secondary">累计待办</span>
-              </div>
-              <span className="text-sm font-bold text-text-primary">{stats.total}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="fas fa-star text-accent-orange text-xs w-4" />
-                <span className="text-xs text-text-secondary">今日聚焦</span>
-              </div>
-              <span className="text-sm font-bold text-accent-orange">{stats.pinned}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="fas fa-fire text-accent-green text-xs w-4" />
-                <span className="text-xs text-text-secondary">打卡项</span>
-              </div>
-              <span className="text-sm font-bold text-text-primary">{checkinStats.total}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="fas fa-exclamation-triangle text-accent-red text-xs w-4" />
-                <span className="text-xs text-text-secondary">已逾期</span>
-              </div>
-              <span className="text-sm font-bold text-accent-red">{stats.overdue}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 第三行：每日打卡 + 生产力洞察 */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {/* 每日打卡 */}
-        <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-check-circle text-accent-green text-xs" />
-              <span className="text-xs font-bold text-text-primary">每日打卡</span>
-              <span className="text-[9px] text-text-muted">CHECKIN</span>
-            </div>
-            <button
-              onClick={handleAddCheckin}
-              className="flex items-center gap-1 rounded-md bg-accent-green/10 px-2 py-1 text-[10px] text-accent-green transition-colors hover:bg-accent-green/20"
-            >
-              <i className="fas fa-plus text-[9px]" />
-              新增
-            </button>
-          </div>
-          {checkins.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <i className="fas fa-fire text-2xl text-text-muted/20" />
-              <p className="text-xs text-text-muted">
-                还没有打卡项，点击"新增"创建第一个习惯吧
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-              {checkins.map((checkin) => (
-                <CheckinCard
-                  key={checkin.id}
-                  checkin={checkin}
-                  onToggle={() => toggleToday(checkin.id)}
-                  onEdit={() => handleEditCheckin(checkin.id)}
-                  onDelete={() => handleDeleteCheckin(checkin.id)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* 生产力洞察 */}
-        <div className="rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-4">
-          <div className="mb-3 flex items-center gap-1.5">
-            <i className="fas fa-lightbulb text-accent-orange text-xs" />
-            <span className="text-xs font-bold text-text-primary">生产力洞察</span>
-            <span className="text-[9px] text-text-muted">INSIGHTS</span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {/* 总体完成率 */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-text-secondary">总体完成率</span>
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-20 rounded-full bg-bg-tertiary overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-accent-cyan transition-all duration-500"
-                    style={{ width: `${insights.completionRate}%` }}
-                  />
-                </div>
-                <span className="text-sm font-bold text-accent-cyan">{insights.completionRate}%</span>
-              </div>
-            </div>
-
-            {/* 今日完成 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="fas fa-check-double text-accent-green text-xs w-4" />
-                <span className="text-xs text-text-secondary">今日完成</span>
-              </div>
-              <span className="text-sm font-bold text-accent-green">{insights.todayCompleted} 项</span>
-            </div>
-
-            {/* 本周完成 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="fas fa-calendar-week text-accent-cyan text-xs w-4" />
-                <span className="text-xs text-text-secondary">本周完成</span>
-              </div>
-              <span className="text-sm font-bold text-accent-cyan">{insights.weekCompleted} 项</span>
-            </div>
-
-            {/* 高优完成 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className="fas fa-exclamation-circle text-accent-red text-xs w-4" />
-                <span className="text-xs text-text-secondary">紧急重要完成</span>
-              </div>
-              <span className="text-sm font-bold text-accent-red">
-                {insights.highPriorityDone}/{insights.highPriorityTotal}
-              </span>
-            </div>
-
-            {/* 建议提示 */}
-            <div className="rounded-lg bg-accent-orange/5 border border-accent-orange/20 px-3 py-2">
-              <p className="text-[11px] text-accent-orange/90 flex items-start gap-1.5">
-                <i className="fas fa-quote-left text-[9px] mt-0.5 shrink-0" />
-                <span>{insights.tip}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 第四行：活动热力图（全宽） */}
-      <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <i className="fas fa-fire text-accent-green text-xs" />
-            <span className="text-xs font-bold text-text-primary">活动热力图</span>
-            <span className="text-[9px] text-text-muted">ACTIVITY MAP</span>
-          </div>
-          <FeatureHint icon="fa-info-circle" text="绿色越深表示当日完成待办越多" />
-        </div>
-        <WeeklyHeatmap todos={todos} weeks={8} />
-      </div>
-
-      {/* 搜索和过滤栏 */}
-      <div className="flex flex-col gap-3">
-        <div className="relative">
-          <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-xs" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索待办标题、描述或标签... (按 / 快速聚焦)"
-            className="w-full rounded-lg border border-border-custom bg-bg-secondary py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
-              <i className="fas fa-times text-xs" />
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-text-muted">
-            <i className="fas fa-sort-amount-down mr-1" />
-            按优先级高→低 · 创建时间近→远
-          </span>
-          <div className="h-4 w-px bg-border-custom" />
-          <div className="flex items-center gap-1">
-            {[
-              { v: 'all', l: '全部' },
-              { v: 'pending', l: '待开始' },
-              { v: 'in-progress', l: '进行中' },
-              { v: 'completed', l: '已完成' },
-              { v: 'overdue', l: '已逾期' },
-            ].map((opt) => (
-              <button
-                key={opt.v}
-                onClick={() => setFilterStatus(opt.v)}
-                className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                  filterStatus === opt.v ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
-                }`}
-              >
-                {opt.l}
-              </button>
-            ))}
-          </div>
-          <div className="h-4 w-px bg-border-custom" />
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setFilterCategory('all')}
-              className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                filterCategory === 'all' ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
-              }`}
-            >
-              全部分类
-            </button>
-            {EISENHOWER_CATEGORIES.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => setFilterCategory(cat.value)}
-                className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                  filterCategory === cat.value ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-          <div className="h-4 w-px bg-border-custom" />
-          {/* 显示/隐藏已完成 */}
+        <div className="flex items-center gap-2">
+          {/* 编辑布局按钮 */}
           <button
-            onClick={() => setShowCompleted(!showCompleted)}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors ${
-              showCompleted ? 'text-text-muted hover:text-text-primary' : 'text-accent-cyan bg-accent-cyan/10'
+            onClick={toggleEditMode}
+            className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs transition-all ${
+              editMode
+                ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
+                : 'border-border-custom bg-bg-tertiary/50 text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan'
             }`}
+            title="编辑卡片布局"
           >
-            <i className={`fas ${showCompleted ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`} />
-            {showCompleted ? '隐藏已完成' : '显示已完成'}
+            <i className={`fas ${editMode ? 'fa-check' : 'fa-grip-vertical'} text-[10px]`} />
+            <span className="hidden sm:inline">{editMode ? '完成编辑' : '编辑布局'}</span>
           </button>
-          {/* 批量清除已完成 */}
-          {stats.completed > 0 && (
-            <button
-              onClick={handleClearCompleted}
-              className="flex items-center gap-1.5 rounded-md bg-accent-red/10 px-2.5 py-1 text-xs text-accent-red transition-colors hover:bg-accent-red/20"
-            >
-              <i className="fas fa-broom text-[10px]" />
-              清除已完成 ({stats.completed})
-            </button>
-          )}
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-2 rounded-lg bg-accent-cyan px-4 py-2 text-sm font-medium text-bg-primary transition-colors hover:bg-accent-cyan/80"
+            title="新建待办 (快捷键: N)"
+          >
+            <i className="fas fa-plus" />
+            <span className="hidden sm:inline">新建待办</span>
+            <kbd className="hidden sm:inline rounded bg-bg-primary/20 px-1.5 py-0.5 text-[9px] font-mono">N</kbd>
+          </button>
         </div>
       </div>
 
-      {/* 待办卡片网格 */}
-      <div className="flex flex-col gap-3">
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <i className="fas fa-spinner fa-spin text-2xl text-accent-cyan" />
-          </div>
-        ) : filteredTodos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border-custom py-16">
-            <i className="fas fa-clipboard-list text-4xl text-text-muted/30" />
-            <p className="text-sm text-text-muted">
-              {todos.length === 0 ? '还没有待办事项，点击右上角创建第一个吧' : '没有匹配的待办事项'}
-            </p>
-            {todos.length === 0 && (
-              <button onClick={handleAdd} className="rounded-lg bg-accent-cyan/10 px-4 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/20 transition-colors">
-                <i className="fas fa-plus mr-1" />
-                新建待办
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between text-xs text-text-muted">
-              <span>共 {filteredTodos.length} 条结果</span>
-              {(filterStatus !== 'all' || filterCategory !== 'all' || searchQuery) && (
-                <button
-                  onClick={() => { setSearchQuery(''); setFilterStatus('all'); setFilterCategory('all'); }}
-                  className="text-accent-cyan hover:underline"
-                >
-                  清除筛选
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredTodos.map((todo) => (
-                <TodoCard
-                  key={todo.id}
-                  todo={todo}
-                  onToggle={() => toggleComplete(todo.id)}
-                  onEdit={() => handleEdit(todo.id)}
-                  onDelete={() => handleDelete(todo.id)}
-                  onPin={() => togglePin(todo.id)}
-                  onToggleSubtask={(subtaskId) => toggleSubtask(todo.id, subtaskId)}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      {/* 可拖拽 Widget 布局 */}
+      <SortableWorkbench widgets={widgets} />
 
       {/* 功能说明区 — 可折叠 */}
       <div className="rounded-xl border border-border-primary/20 bg-bg-secondary/50 overflow-hidden">
@@ -1095,7 +1113,6 @@ export function WorkbenchPage() {
         {showFeatureGuide && (
           <div className="border-t border-border-custom/50 p-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {/* 待办管理 */}
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-cyan/10">
@@ -1108,8 +1125,6 @@ export function WorkbenchPage() {
                   点击卡片可编辑详情，卡片左侧色条标识分类，进度条自动计算完成率。
                 </p>
               </div>
-
-              {/* 子任务 */}
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-green/10">
@@ -1122,8 +1137,6 @@ export function WorkbenchPage() {
                   子任务进度条实时反映完成比例，帮助追踪复杂任务的执行情况。
                 </p>
               </div>
-
-              {/* 今日聚焦 */}
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-orange/10">
@@ -1136,8 +1149,6 @@ export function WorkbenchPage() {
                   聚焦列表按优先级排序，帮助你集中精力处理最关键的任务。
                 </p>
               </div>
-
-              {/* 每日打卡 */}
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-green/10">
@@ -1150,8 +1161,6 @@ export function WorkbenchPage() {
                   自动统计连续天数，培养好习惯。支持自定义图标和颜色。
                 </p>
               </div>
-
-              {/* 图片粘贴 */}
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-purple/10">
@@ -1164,8 +1173,6 @@ export function WorkbenchPage() {
                   点击图片可打开编辑器进行框选裁剪或删除，图片同时显示在卡片缩略图中。
                 </p>
               </div>
-
-              {/* 定时提醒 */}
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-orange/10">
@@ -1178,8 +1185,18 @@ export function WorkbenchPage() {
                   需开启浏览器通知权限，提醒即将到来时卡片会闪烁提示。
                 </p>
               </div>
-
-              {/* 活动热力图 */}
+              <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-cyan/10">
+                    <i className="fas fa-grip-vertical text-accent-cyan text-xs" />
+                  </div>
+                  <span className="text-xs font-bold text-text-primary">自定义布局</span>
+                </div>
+                <p className="text-[11px] text-text-secondary leading-relaxed">
+                  点击右上角「编辑布局」按钮进入拖拽模式，拖动卡片顶部的「拖拽」按钮即可自由调整卡片顺序。
+                  布局自动保存，下次打开保持上次排列。支持重置为默认布局。
+                </p>
+              </div>
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-green/10">
@@ -1192,8 +1209,6 @@ export function WorkbenchPage() {
                   一目了然地看到你的工作节奏和活跃天数，帮助保持持续产出。
                 </p>
               </div>
-
-              {/* 生产力洞察 */}
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-orange/10">
@@ -1206,8 +1221,6 @@ export function WorkbenchPage() {
                   并根据数据智能给出效率建议，帮助你持续优化工作方式。
                 </p>
               </div>
-
-              {/* 快捷键 */}
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-cyan/10">

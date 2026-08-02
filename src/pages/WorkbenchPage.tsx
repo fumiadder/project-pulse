@@ -398,18 +398,6 @@ function QuickAddButton({ icon, label, color, onClick }: { icon: string; label: 
 }
 
 // ============================================
-// 功能说明提示条
-// ============================================
-function FeatureHint({ icon, text }: { icon: string; text: string }) {
-  return (
-    <div className="flex items-center gap-1.5 rounded-md bg-accent-cyan/5 px-2.5 py-1 text-[10px] text-text-muted">
-      <i className={`fas ${icon} text-accent-cyan/60`} />
-      <span>{text}</span>
-    </div>
-  );
-}
-
-// ============================================
 // 主页面
 // ============================================
 export function WorkbenchPage() {
@@ -786,114 +774,102 @@ export function WorkbenchPage() {
           </div>
         ),
       },
-      // 4. 每日打卡
+      // 3. 每日打卡 + 生产力洞察 + 活动热力图（合并为紧凑布局）
       {
-        id: 'checkin',
-        span: 'half',
-        render: () => (
-          <div className="h-full rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <i className="fas fa-check-circle text-accent-green text-xs" />
-                <span className="text-xs font-bold text-text-primary">每日打卡</span>
-                <span className="text-[9px] text-text-muted">CHECKIN</span>
-              </div>
-              <button
-                onClick={handleAddCheckin}
-                className="flex items-center gap-1 rounded-md bg-accent-green/10 px-2 py-1 text-[10px] text-accent-green transition-colors hover:bg-accent-green/20"
-              >
-                <i className="fas fa-plus text-[9px]" />
-                新增
-              </button>
-            </div>
-            {checkins.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <i className="fas fa-fire text-2xl text-text-muted/20" />
-                <p className="text-xs text-text-muted">还没有打卡项，点击"新增"创建第一个习惯吧</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-                {checkins.map((checkin) => (
-                  <CheckinCard
-                    key={checkin.id}
-                    checkin={checkin}
-                    onToggle={() => toggleToday(checkin.id)}
-                    onEdit={() => handleEditCheckin(checkin.id)}
-                    onDelete={() => handleDeleteCheckin(checkin.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ),
-      },
-      // 5. 生产力洞察
-      {
-        id: 'insights',
-        span: 'half',
-        render: () => (
-          <div className="h-full rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-4">
-            <div className="mb-3 flex items-center gap-1.5">
-              <i className="fas fa-lightbulb text-accent-orange text-xs" />
-              <span className="text-xs font-bold text-text-primary">生产力洞察</span>
-              <span className="text-[9px] text-text-muted">INSIGHTS</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-secondary">总体完成率</span>
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-20 rounded-full bg-bg-tertiary overflow-hidden">
-                    <div className="h-full rounded-full bg-accent-cyan transition-all duration-500" style={{ width: `${insights.completionRate}%` }} />
-                  </div>
-                  <span className="text-sm font-bold text-accent-cyan">{insights.completionRate}%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-check-double text-accent-green text-xs w-4" />
-                  <span className="text-xs text-text-secondary">今日完成</span>
-                </div>
-                <span className="text-sm font-bold text-accent-green">{insights.todayCompleted} 项</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-calendar-week text-accent-cyan text-xs w-4" />
-                  <span className="text-xs text-text-secondary">本周完成</span>
-                </div>
-                <span className="text-sm font-bold text-accent-cyan">{insights.weekCompleted} 项</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-exclamation-circle text-accent-red text-xs w-4" />
-                  <span className="text-xs text-text-secondary">紧急重要完成</span>
-                </div>
-                <span className="text-sm font-bold text-accent-red">{insights.highPriorityDone}/{insights.highPriorityTotal}</span>
-              </div>
-              <div className="rounded-lg bg-accent-orange/5 border border-accent-orange/20 px-3 py-2">
-                <p className="text-[11px] text-accent-orange/90 flex items-start gap-1.5">
-                  <i className="fas fa-quote-left text-[9px] mt-0.5 shrink-0" />
-                  <span>{insights.tip}</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        ),
-      },
-      // 6. 活动热力图
-      {
-        id: 'heatmap',
+        id: 'activity',
         span: 'full',
         render: () => (
-          <div className="h-full rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
+          <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-3">
+            {/* 左列：每日打卡 */}
+            <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <i className="fas fa-check-circle text-accent-green text-xs" />
+                  <span className="text-xs font-bold text-text-primary">每日打卡</span>
+                  <span className="text-[9px] text-text-muted">CHECKIN</span>
+                </div>
+                <button
+                  onClick={handleAddCheckin}
+                  className="flex items-center gap-1 rounded-md bg-accent-green/10 px-2 py-1 text-[10px] text-accent-green transition-colors hover:bg-accent-green/20"
+                >
+                  <i className="fas fa-plus text-[9px]" />
+                  新增
+                </button>
+              </div>
+              {checkins.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-4 text-center">
+                  <i className="fas fa-fire text-2xl text-text-muted/20" />
+                  <p className="text-xs text-text-muted">还没有打卡项</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                  {checkins.map((checkin) => (
+                    <CheckinCard
+                      key={checkin.id}
+                      checkin={checkin}
+                      onToggle={() => toggleToday(checkin.id)}
+                      onEdit={() => handleEditCheckin(checkin.id)}
+                      onDelete={() => handleDeleteCheckin(checkin.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* 中列：生产力洞察 */}
+            <div className="rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-4">
+              <div className="mb-3 flex items-center gap-1.5">
+                <i className="fas fa-lightbulb text-accent-orange text-xs" />
+                <span className="text-xs font-bold text-text-primary">生产力洞察</span>
+                <span className="text-[9px] text-text-muted">INSIGHTS</span>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-secondary">总体完成率</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-16 rounded-full bg-bg-tertiary overflow-hidden">
+                      <div className="h-full rounded-full bg-accent-cyan transition-all duration-500" style={{ width: `${insights.completionRate}%` }} />
+                    </div>
+                    <span className="text-sm font-bold text-accent-cyan">{insights.completionRate}%</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-check-double text-accent-green text-xs w-4" />
+                    <span className="text-xs text-text-secondary">今日完成</span>
+                  </div>
+                  <span className="text-sm font-bold text-accent-green">{insights.todayCompleted} 项</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-calendar-week text-accent-cyan text-xs w-4" />
+                    <span className="text-xs text-text-secondary">本周完成</span>
+                  </div>
+                  <span className="text-sm font-bold text-accent-cyan">{insights.weekCompleted} 项</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-exclamation-circle text-accent-red text-xs w-4" />
+                    <span className="text-xs text-text-secondary">紧急重要完成</span>
+                  </div>
+                  <span className="text-sm font-bold text-accent-red">{insights.highPriorityDone}/{insights.highPriorityTotal}</span>
+                </div>
+                <div className="rounded-lg bg-accent-orange/5 border border-accent-orange/20 px-3 py-2">
+                  <p className="text-[11px] text-accent-orange/90 flex items-start gap-1.5">
+                    <i className="fas fa-quote-left text-[9px] mt-0.5 shrink-0" />
+                    <span>{insights.tip}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            {/* 右列：活动热力图 */}
+            <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
+              <div className="mb-3 flex items-center gap-1.5">
                 <i className="fas fa-fire text-accent-green text-xs" />
                 <span className="text-xs font-bold text-text-primary">活动热力图</span>
-                <span className="text-[9px] text-text-muted">ACTIVITY MAP</span>
+                <span className="text-[9px] text-text-muted">ACTIVITY</span>
               </div>
-              <FeatureHint icon="fa-info-circle" text="绿色越深表示当日完成待办越多" />
+              <WeeklyHeatmap todos={todos} weeks={8} />
             </div>
-            <WeeklyHeatmap todos={todos} weeks={8} />
           </div>
         ),
       },

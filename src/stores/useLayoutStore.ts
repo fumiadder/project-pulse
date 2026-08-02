@@ -5,18 +5,14 @@ import { api } from '@/services/api';
 export type WidgetId =
   | 'focus'        // 今日聚焦
   | 'overview'     // 问候 + 快速记录 + 今日概览 + 数据汇总（合并）
-  | 'checkin'      // 每日打卡
-  | 'insights'     // 生产力洞察
-  | 'heatmap'      // 活动热力图
+  | 'activity'     // 每日打卡 + 生产力洞察 + 活动热力图（合并）
   | 'todos';       // 待办列表
 
 /** 默认排序 */
 const DEFAULT_ORDER: WidgetId[] = [
   'focus',
   'overview',
-  'checkin',
-  'insights',
-  'heatmap',
+  'activity',
   'todos',
 ];
 

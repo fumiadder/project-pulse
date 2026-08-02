@@ -62,7 +62,7 @@ export function GreetingCard({ children }: GreetingCardProps) {
   const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${getWeekday(now)} · 第${getWeekNumber(now)}周`;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary via-bg-secondary to-bg-tertiary p-5">
+    <div className="relative overflow-hidden rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary via-bg-secondary to-bg-tertiary p-4">
       {/* 装饰光效 */}
       <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-accent-cyan/5 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-accent-purple/5 blur-3xl" />

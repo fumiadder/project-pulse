@@ -33,8 +33,9 @@ function getSettingKey(userId?: string): string {
   return userId ? `${SETTING_KEY_PREFIX}:${userId}` : SETTING_KEY_PREFIX;
 }
 
-/** 防抖保存计时器 */
+/** 防抖保存计时器 + 待保存的数据 */
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingSave: { userId: string | undefined; order: WidgetId[] } | null = null;
 
 interface LayoutStore {
   /** Widget 排列顺序 */
@@ -45,6 +46,8 @@ interface LayoutStore {
   isLoading: boolean;
   /** 当前已加载布局的用户 ID（防止重复加载） */
   loadedUserId: string | undefined;
+  /** 当前用户 ID（用于保存时确定 key，在 loadFromServer 调用时立即设置） */
+  currentUserId: string | undefined;
   /** 重排 Widget */
   reorder: (from: number, to: number) => void;
   /** 直接设置排序 */
@@ -57,12 +60,17 @@ interface LayoutStore {
   setEditMode: (val: boolean) => void;
   /** 从服务器加载布局（登录后调用） */
   loadFromServer: (userId?: string) => Promise<void>;
+  /** 立即保存待写入的数据（页面卸载时调用） */
+  flushSave: () => void;
 }
 
 /** 校验并解析从服务器获取的排序数据 */
-function parseOrder(raw: string): WidgetId[] | null {
+function parseOrder(raw: unknown): WidgetId[] | null {
   try {
-    const parsed = JSON.parse(raw);
+    // 兼容字符串和 { value: string } 两种格式
+    const str = typeof raw === 'string' ? raw : (raw as { value?: string })?.value;
+    if (!str || typeof str !== 'string') return null;
+    const parsed = JSON.parse(str);
     if (!Array.isArray(parsed) || parsed.length === 0) return null;
     // 校验每一项都是合法的 WidgetId
     const valid = parsed.filter((id: unknown) => typeof id === 'string' && VALID_IDS.has(id));
@@ -80,16 +88,60 @@ function parseOrder(raw: string): WidgetId[] | null {
 }
 
 /** 防抖保存布局到服务器 */
-function saveToServer(userId: string | undefined, order: WidgetId[]) {
+function scheduleSave(userId: string | undefined, order: WidgetId[]) {
+  // 记录待保存的数据
+  pendingSave = { userId, order };
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    const key = getSettingKey(userId);
+    saveTimer = null;
+    if (!pendingSave) return;
+    const { userId: uid, order: ord } = pendingSave;
+    pendingSave = null;
+    const key = getSettingKey(uid);
     try {
-      await api.putSetting(key, JSON.stringify(order));
+      await api.putSetting(key, JSON.stringify(ord));
     } catch (e) {
       console.error('[LayoutStore] 保存布局到服务器失败:', e);
     }
-  }, 500);
+  }, 300);
+}
+
+/** 页面卸载时立即同步保存（使用 sendBeacon 确保请求发出） */
+function flushSaveSync() {
+  if (!pendingSave) return;
+  const { userId, order } = pendingSave;
+  pendingSave = null;
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  // 使用 sendBeacon 确保页面卸载时请求仍能发出
+  const key = getSettingKey(userId);
+  const url = `${import.meta.env.VITE_API_BASE || '/api'}/settings/${encodeURIComponent(key)}`;
+  const blob = new Blob([JSON.stringify({ value: JSON.stringify(order) })], { type: 'application/json' });
+  try {
+    navigator.sendBeacon(url, blob);
+  } catch {
+    // sendBeacon 不支持 PUT 方法，改用 fetch + keepalive
+    try {
+      fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: JSON.stringify(order) }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {}
+  }
+}
+
+// 注册 beforeunload 监听器（仅注册一次）
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushSaveSync);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      flushSaveSync();
+    }
+  });
 }
 
 export const useLayoutStore = create<LayoutStore>()((set, get) => ({
@@ -97,6 +149,7 @@ export const useLayoutStore = create<LayoutStore>()((set, get) => ({
   editMode: false,
   isLoading: false,
   loadedUserId: undefined,
+  currentUserId: undefined,
 
   reorder: (from, to) => {
     const state = get();
@@ -104,25 +157,30 @@ export const useLayoutStore = create<LayoutStore>()((set, get) => ({
     const [moved] = newOrder.splice(from, 1);
     newOrder.splice(to, 0, moved);
     set({ order: newOrder });
-    saveToServer(state.loadedUserId, newOrder);
+    // 使用 currentUserId（在 loadFromServer 调用时已立即设置）
+    scheduleSave(state.currentUserId, newOrder);
   },
 
   setOrder: (order) => {
     set({ order });
-    saveToServer(get().loadedUserId, order);
+    scheduleSave(get().currentUserId, order);
   },
 
   resetOrder: () => {
     set({ order: DEFAULT_ORDER });
-    saveToServer(get().loadedUserId, DEFAULT_ORDER);
+    scheduleSave(get().currentUserId, DEFAULT_ORDER);
   },
 
   toggleEditMode: () => set((state) => ({ editMode: !state.editMode })),
   setEditMode: (val) => set({ editMode: val }),
 
+  flushSave: () => flushSaveSync(),
+
   loadFromServer: async (userId) => {
     const state = get();
-    // 如果已经为该用户加载过，不重复加载
+    // 立即设置 currentUserId，确保后续 reorder 保存到正确的 key
+    set({ currentUserId: userId });
+    // 如果已经为该用户加载过且不在加载中，不重复加载
     if (state.loadedUserId === userId && !state.isLoading) return;
 
     set({ isLoading: true });
@@ -138,7 +196,7 @@ export const useLayoutStore = create<LayoutStore>()((set, get) => ({
       }
       // 服务器上没有数据或解析失败，使用默认排序，并保存到服务器
       set({ order: DEFAULT_ORDER, loadedUserId: userId, isLoading: false });
-      saveToServer(userId, DEFAULT_ORDER);
+      scheduleSave(userId, DEFAULT_ORDER);
     } catch (e) {
       console.error('[LayoutStore] 从服务器加载布局失败:', e);
       set({ isLoading: false, loadedUserId: userId });

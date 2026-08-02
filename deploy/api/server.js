@@ -324,17 +324,20 @@ app.put('/api/users', (req, res) => {
 
 // ---------- Settings ----------
 app.get('/api/settings/:key', (req, res) => {
-  const row = db.prepare('SELECT * FROM settings WHERE key = ?').get(req.params.key);
-  res.json({ success: true, data: row || null });
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(req.params.key);
+  res.json({ success: true, data: row ? row.value : null });
 });
 
 app.put('/api/settings/:key', (req, res) => {
   const { value } = req.body;
+  if (value === undefined) {
+    return res.json({ success: false, error: 'Value is required' });
+  }
   db.prepare(`
     INSERT INTO settings (key, value) VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value
   `).run(req.params.key, typeof value === 'object' ? JSON.stringify(value) : String(value));
-  res.json({ success: true, data: { key: req.params.key, value } });
+  res.json({ success: true, data: value });
 });
 
 // ---------- Reports ----------

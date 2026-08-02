@@ -205,11 +205,10 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
     }
   }, []);
 
-  /** AutoResizeTextarea 内联插入图片前先压缩 */
+  /** AutoResizeTextarea 内联插入图片前先压缩（不再重复添加到 images 数组，
+   *  由 handlePasteFiles 统一负责管理 images） */
   const handleProcessImage = useCallback(async (dataUrl: string): Promise<string> => {
-    const compressed = await compressImage(dataUrl);
-    setImages((prev) => [...prev, compressed]);
-    return compressed;
+    return await compressImage(dataUrl);
   }, []);
 
   /** 点击内联图片预览 */

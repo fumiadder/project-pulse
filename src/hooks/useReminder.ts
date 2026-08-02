@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTodoStore } from '@/stores/useTodoStore';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 import { parseReminderConfig } from '@/utils/reminder';
-import { toast } from '@/hooks/use-toast';
 import type { Todo } from '@/types';
 
 /**
@@ -13,10 +13,11 @@ import type { Todo } from '@/types';
  * - interval: 每隔 N 分钟/小时提醒
  *
  * 每隔 30 秒检查一次所有待办，使用 Map 记录每个 todo 的上次触发时间戳。
- * 同时发送浏览器通知和页面内 Toast 通知。
+ * 同时发送浏览器通知和推送到右上角通知中心。
  */
 export function useReminder() {
   const { todos } = useTodoStore();
+  const { addNotification } = useNotificationStore();
 
   // 记录每个 todo 的上次触发时间戳（用于 interval/daily 去重）
   // once 类型触发后标记为 -1 表示不再触发
@@ -53,22 +54,27 @@ export function useReminder() {
     }
   }, []);
 
-  /** 发送页面内 Toast 通知 */
-  const sendToastNotification = useCallback((todo: Todo) => {
+  /** 推送通知到通知中心 */
+  const pushNotification = useCallback((todo: Todo) => {
     const config = parseReminderConfig(todo.reminderTime);
     let reminderLabel = '';
     if (config.type === 'once') reminderLabel = '定时提醒';
     else if (config.type === 'daily') reminderLabel = '每日提醒';
     else if (config.type === 'interval') reminderLabel = '间隔提醒';
 
-    // 使用 toast 通知
-    toast({
-      title: `⏰ ${reminderLabel}：${todo.title}`,
-      description: todo.dueDate
-        ? `截止日期：${todo.dueDate}`
-        : '请查看待办详情',
+    // 构建通知内容
+    const bodyParts: string[] = [];
+    if (todo.dueDate) bodyParts.push(`截止日期：${todo.dueDate}`);
+    if (todo.priority === 'high') bodyParts.push('优先级：高');
+    if (todo.category) bodyParts.push(`分类：${todo.category}`);
+
+    addNotification({
+      type: 'reminder',
+      title: `${reminderLabel}：${todo.title}`,
+      body: bodyParts.join(' · ') || '请查看待办详情',
+      todoId: todo.id,
     });
-  }, []);
+  }, [addNotification]);
 
   /** 检查单个 todo 是否应该触发提醒 */
   const shouldTrigger = useCallback((todo: Todo, now: number): boolean => {
@@ -157,12 +163,12 @@ export function useReminder() {
         } else {
           lastTriggeredRef.current.set(todo.id, now);
         }
-        // 同时发送浏览器通知和页面内 Toast
+        // 同时发送浏览器通知和推送通知中心
         sendBrowserNotification(todo);
-        sendToastNotification(todo);
+        pushNotification(todo);
       }
     }
-  }, [todos, shouldTrigger, sendBrowserNotification, sendToastNotification]);
+  }, [todos, shouldTrigger, sendBrowserNotification, pushNotification]);
 
   // 请求通知权限（仅一次）
   useEffect(() => {

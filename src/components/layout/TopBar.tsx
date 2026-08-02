@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useUIStore } from '@/stores/useUIStore';
-import { useProjectStore } from '@/stores/useProjectStore';
-import { useProgressStore } from '@/stores/useProgressStore';
-import { useUserStore } from '@/stores/useUserStore';
-import { api } from '@/services/api';
+import { NotificationCenter } from './NotificationCenter';
 
 interface TopBarProps {
   onMenuToggle: () => void;
@@ -11,6 +8,7 @@ interface TopBarProps {
 
 const pageTitles: Record<string, string> = {
   dashboard: '控制台',
+  workbench: '个人工作台',
   calendar: '日历视图',
   projects: '项目管理',
   'daily-report': '日报',
@@ -91,6 +89,9 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
           <i className="fas fa-file-export text-[10px]" />
           <span className="hidden sm:inline">导出</span>
         </button>
+
+        {/* Notification Center (Bell Icon) */}
+        <NotificationCenter />
       </div>
     </header>
   );

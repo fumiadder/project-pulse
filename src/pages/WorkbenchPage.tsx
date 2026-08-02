@@ -671,6 +671,34 @@ export function WorkbenchPage() {
         </button>
       </div>
 
+      {/* 今日聚焦 — 置顶区域（全宽卡片展示，位于最顶部） */}
+      {pinnedTodos.length > 0 && (
+        <div className="rounded-xl border border-accent-orange/20 bg-gradient-to-br from-accent-orange/5 to-bg-secondary p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <i className="fas fa-star text-accent-orange text-xs" />
+              <span className="text-xs font-bold text-text-primary">今日聚焦</span>
+              <span className="text-[9px] text-text-muted">TODAY'S FOCUS</span>
+              <span className="rounded-full bg-accent-orange/15 px-2 py-0.5 text-[9px] text-accent-orange">{pinnedTodos.length}项置顶</span>
+            </div>
+            <span className="text-[10px] text-text-muted">点击星标可取消置顶</span>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {pinnedTodos.map((todo) => (
+              <TodoCard
+                key={todo.id}
+                todo={todo}
+                onToggle={() => toggleComplete(todo.id)}
+                onEdit={() => handleEdit(todo.id)}
+                onDelete={() => handleDelete(todo.id)}
+                onPin={() => togglePin(todo.id)}
+                onToggleSubtask={(subtaskId) => toggleSubtask(todo.id, subtaskId)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 第一行：问候卡 + 快速记录 */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -794,59 +822,8 @@ export function WorkbenchPage() {
         </div>
       </div>
 
-      {/* 第三行：今日聚焦 + 每日打卡 */}
+      {/* 第三行：每日打卡 + 生产力洞察 */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {/* 今日聚焦 */}
-        <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-star text-accent-orange text-xs" />
-              <span className="text-xs font-bold text-text-primary">今日聚焦</span>
-              <span className="text-[9px] text-text-muted">TODAY'S FOCUS</span>
-            </div>
-            <span className="text-[10px] text-text-muted">{pinnedTodos.length}项</span>
-          </div>
-          {pinnedTodos.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <i className="fas fa-star text-2xl text-text-muted/20" />
-              <p className="text-xs text-text-muted">
-                点击待办卡片上的 <i className="fas fa-star text-accent-orange/60" /> 即可把要事置顶到这里
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {pinnedTodos.slice(0, 4).map((todo) => {
-                const catConfig = getCategoryConfig(todo.category);
-                return (
-                  <div
-                    key={todo.id}
-                    onClick={() => handleEdit(todo.id)}
-                    className="group flex cursor-pointer items-center gap-2.5 rounded-lg border border-border-custom bg-bg-primary/50 p-2.5 transition-colors hover:border-accent-orange/30"
-                  >
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleComplete(todo.id); }}
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[8px] ${
-                        todo.status === 'completed' ? 'border-accent-green bg-accent-green/20 text-accent-green' : 'border-border-hover text-transparent'
-                      }`}
-                    >
-                      <i className="fas fa-check" />
-                    </button>
-                    <span className="flex-1 text-xs font-medium text-text-primary truncate">{todo.title}</span>
-                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium ${catConfig.color}`}>
-                      {catConfig.label}
-                    </span>
-                    {todo.dueDate && (
-                      <span className={`shrink-0 text-[9px] ${isOverdue(todo) ? 'text-accent-red' : isDueToday(todo) ? 'text-accent-orange' : 'text-text-muted'}`}>
-                        {formatDueDate(todo.dueDate)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
         {/* 每日打卡 */}
         <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
           <div className="mb-3 flex items-center justify-between">
@@ -883,22 +860,6 @@ export function WorkbenchPage() {
               ))}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* 第四行：活动热力图 + 生产力洞察 */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        {/* 活动热力图 */}
-        <div className="lg:col-span-2 rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <i className="fas fa-fire text-accent-green text-xs" />
-              <span className="text-xs font-bold text-text-primary">活动热力图</span>
-              <span className="text-[9px] text-text-muted">ACTIVITY MAP</span>
-            </div>
-            <FeatureHint icon="fa-info-circle" text="绿色越深表示当日完成待办越多" />
-          </div>
-          <WeeklyHeatmap todos={todos} weeks={8} />
         </div>
 
         {/* 生产力洞察 */}
@@ -961,6 +922,19 @@ export function WorkbenchPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 第四行：活动热力图（全宽） */}
+      <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <i className="fas fa-fire text-accent-green text-xs" />
+            <span className="text-xs font-bold text-text-primary">活动热力图</span>
+            <span className="text-[9px] text-text-muted">ACTIVITY MAP</span>
+          </div>
+          <FeatureHint icon="fa-info-circle" text="绿色越深表示当日完成待办越多" />
+        </div>
+        <WeeklyHeatmap todos={todos} weeks={8} />
       </div>
 
       {/* 搜索和过滤栏 */}

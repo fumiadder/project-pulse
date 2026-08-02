@@ -178,11 +178,13 @@ function TodoCard({
             {todo.title}
           </span>
 
-          {/* 置顶按钮 */}
+          {/* 置顶按钮 — 始终可见 */}
           <button
             onClick={(e) => { e.stopPropagation(); onPin(); }}
             className={`flex h-6 w-6 shrink-0 items-center justify-center rounded transition-all ${
-              todo.pinned ? 'text-accent-orange' : 'text-text-muted opacity-0 hover:text-accent-orange group-hover:opacity-100'
+              todo.pinned
+                ? 'text-accent-orange bg-accent-orange/10'
+                : 'text-text-muted hover:text-accent-orange hover:bg-accent-orange/10'
             }`}
             title={todo.pinned ? '取消置顶' : '置顶到今日聚焦'}
           >

@@ -47,7 +47,7 @@ export const useCheckinStore = create<CheckinStore>((set, get) => ({
       const checkins = raw.map((c: any) => ({
         ...c,
         history: safeParseHistory(c.history),
-        pinned: c.pinned ?? false,
+        pinned: c.pinned === true || c.pinned === 1 || c.pinned === 'true' || c.pinned === '1',
       }));
       set({ checkins });
     } finally {

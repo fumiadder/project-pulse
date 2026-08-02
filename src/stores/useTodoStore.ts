@@ -77,7 +77,7 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
         tags: safeParseTags(t.tags),
         reminderTime: t.reminderTime ?? null,
         images: safeParseImages(t.images),
-        pinned: t.pinned === true || t.pinned === 1,
+        pinned: t.pinned === true || t.pinned === 1 || t.pinned === 'true' || t.pinned === '1',
         subtasks: safeParseSubtasks(t.subtasks),
       }));
       set({ todos });

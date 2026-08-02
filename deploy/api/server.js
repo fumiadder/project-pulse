@@ -163,6 +163,9 @@ function sanitizeRow(row) {
   for (const [k, v] of Object.entries(row)) {
     if (v === null || v === undefined) {
       out[k] = null;
+    } else if (typeof v === 'boolean') {
+      // SQLite stores booleans as INTEGER 0/1
+      out[k] = v ? 1 : 0;
     } else if (typeof v === 'number' || typeof v === 'string' || typeof v === 'bigint') {
       out[k] = v;
     } else if (Buffer.isBuffer(v)) {

@@ -5,6 +5,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { ProgressEditorModal } from '@/components/modals/ProgressEditorModal';
+import { Toaster } from '@/components/ui/toaster';
 import { useReminder } from '@/hooks/useReminder';
 
 // Lazy-loaded page components
@@ -122,6 +123,9 @@ function App() {
         open={globalProgressOpen}
         onClose={() => setGlobalProgressOpen(false)}
       />
+
+      {/* Toast notifications (for reminders etc.) */}
+      <Toaster />
     </>
   );
 }

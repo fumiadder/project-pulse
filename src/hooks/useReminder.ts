@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTodoStore } from '@/stores/useTodoStore';
 import { parseReminderConfig } from '@/utils/reminder';
+import { toast } from '@/hooks/use-toast';
 import type { Todo } from '@/types';
 
 /**
@@ -12,7 +13,7 @@ import type { Todo } from '@/types';
  * - interval: 每隔 N 分钟/小时提醒
  *
  * 每隔 30 秒检查一次所有待办，使用 Map 记录每个 todo 的上次触发时间戳。
- * 前端提醒仅在页面打开时生效。若需要后台提醒，需配合 Service Worker / Push API。
+ * 同时发送浏览器通知和页面内 Toast 通知。
  */
 export function useReminder() {
   const { todos } = useTodoStore();
@@ -22,12 +23,19 @@ export function useReminder() {
   const lastTriggeredRef = useRef<Map<string, number>>(new Map());
 
   /** 发送浏览器通知 */
-  const sendNotification = useCallback((todo: Todo) => {
+  const sendBrowserNotification = useCallback((todo: Todo) => {
     if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
 
     const title = `待办提醒：${todo.title}`;
     const bodyParts: string[] = [];
-    if (todo.description) bodyParts.push(todo.description.slice(0, 80));
+    // 提取纯文本描述
+    if (todo.description) {
+      const temp = document.createElement('div');
+      temp.innerHTML = todo.description;
+      const text = (temp.textContent || '').trim();
+      if (text) bodyParts.push(text.slice(0, 80));
+    }
     if (todo.dueDate) bodyParts.push(`截止日期：${todo.dueDate}`);
     if (todo.priority === 'high') bodyParts.push('优先级：高');
 
@@ -39,12 +47,27 @@ export function useReminder() {
     };
 
     try {
-      if (Notification.permission === 'granted') {
-        new Notification(title, options);
-      }
+      new Notification(title, options);
     } catch {
       // 某些浏览器在 SW 上下文外创建 Notification 会失败，静默忽略
     }
+  }, []);
+
+  /** 发送页面内 Toast 通知 */
+  const sendToastNotification = useCallback((todo: Todo) => {
+    const config = parseReminderConfig(todo.reminderTime);
+    let reminderLabel = '';
+    if (config.type === 'once') reminderLabel = '定时提醒';
+    else if (config.type === 'daily') reminderLabel = '每日提醒';
+    else if (config.type === 'interval') reminderLabel = '间隔提醒';
+
+    // 使用 toast 通知
+    toast({
+      title: `⏰ ${reminderLabel}：${todo.title}`,
+      description: todo.dueDate
+        ? `截止日期：${todo.dueDate}`
+        : '请查看待办详情',
+    });
   }, []);
 
   /** 检查单个 todo 是否应该触发提醒 */
@@ -134,10 +157,12 @@ export function useReminder() {
         } else {
           lastTriggeredRef.current.set(todo.id, now);
         }
-        sendNotification(todo);
+        // 同时发送浏览器通知和页面内 Toast
+        sendBrowserNotification(todo);
+        sendToastNotification(todo);
       }
     }
-  }, [todos, shouldTrigger, sendNotification]);
+  }, [todos, shouldTrigger, sendBrowserNotification, sendToastNotification]);
 
   // 请求通知权限（仅一次）
   useEffect(() => {

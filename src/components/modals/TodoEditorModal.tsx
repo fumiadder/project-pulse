@@ -308,6 +308,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
           reminderTime: serializedReminder,
           images,
           subtasks,
+          pinned: false,
           completedAt: status === 'completed' ? now : null,
           createdAt: now,
           updatedAt: now,
@@ -658,8 +659,14 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
                 className="flex items-center gap-1.5 rounded-lg bg-accent-orange/10 px-3 py-1.5 text-[11px] text-accent-orange hover:bg-accent-orange/20 transition-colors w-fit"
               >
                 <i className="fas fa-bell" />
-                启用浏览器通知
+                启用浏览器通知（同时支持页面内弹窗提醒）
               </button>
+            )}
+            {reminderType !== 'none' && (
+              <p className="text-[10px] text-text-muted">
+                <i className="fas fa-info-circle mr-1" />
+                提醒将在页面打开时通过弹窗通知{Notification.permission === 'granted' ? '和浏览器通知' : ''}发送
+              </p>
             )}
           </div>
         </div>

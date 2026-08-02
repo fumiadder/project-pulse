@@ -4,8 +4,7 @@ import { api } from '@/services/api';
 /** Widget ID 类型 */
 export type WidgetId =
   | 'focus'        // 今日聚焦
-  | 'greeting'     // 问候卡 + 快速记录
-  | 'vitals'       // 今日概览 + 数据汇总
+  | 'overview'     // 问候 + 快速记录 + 今日概览 + 数据汇总（合并）
   | 'checkin'      // 每日打卡
   | 'insights'     // 生产力洞察
   | 'heatmap'      // 活动热力图
@@ -14,8 +13,7 @@ export type WidgetId =
 /** 默认排序 */
 const DEFAULT_ORDER: WidgetId[] = [
   'focus',
-  'greeting',
-  'vitals',
+  'overview',
   'checkin',
   'insights',
   'heatmap',

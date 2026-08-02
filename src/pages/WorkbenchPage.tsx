@@ -688,104 +688,98 @@ export function WorkbenchPage() {
             </div>
           ) : null,
       },
-      // 2. 问候卡 + 快速记录
+      // 2. 问候 + 快速记录 + 今日概览 + 数据汇总（合并为紧凑布局）
       {
-        id: 'greeting',
+        id: 'overview',
         span: 'full',
         render: () => (
           <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+            {/* 左列：问候卡（上）+ 今日概览（下） */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
+              {/* 问候卡 */}
               <GreetingCard>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex gap-3 text-center">
-                    <div>
-                      <div className="text-xl font-bold text-accent-cyan">{stats.pending}</div>
-                      <div className="text-[9px] text-text-muted">待开始</div>
-                    </div>
-                    <div>
-                      <div className="text-xl font-bold text-accent-orange">{stats.inProgress}</div>
-                      <div className="text-[9px] text-text-muted">进行中</div>
-                    </div>
-                    <div>
-                      <div className="text-xl font-bold text-accent-green">{stats.completed}</div>
-                      <div className="text-[9px] text-text-muted">已完成</div>
-                    </div>
+                <div className="flex gap-3 text-center">
+                  <div>
+                    <div className="text-xl font-bold text-accent-cyan">{stats.pending}</div>
+                    <div className="text-[9px] text-text-muted">待开始</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-accent-orange">{stats.inProgress}</div>
+                    <div className="text-[9px] text-text-muted">进行中</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-accent-green">{stats.completed}</div>
+                    <div className="text-[9px] text-text-muted">已完成</div>
                   </div>
                 </div>
               </GreetingCard>
-            </div>
-            <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-              <div className="mb-3 flex items-center gap-1.5">
-                <i className="fas fa-bolt text-accent-cyan text-xs" />
-                <span className="text-xs font-bold text-text-primary">快速记录</span>
-                <span className="text-[9px] text-text-muted">QUICK ADD</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <QuickAddButton icon="fa-list-check" label="记待办" color="bg-accent-cyan/10 text-accent-cyan" onClick={handleAdd} />
-                <QuickAddButton icon="fa-check-circle" label="记打卡" color="bg-accent-green/10 text-accent-green" onClick={handleAddCheckin} />
-                <QuickAddButton icon="fa-chart-line" label="记进度" color="bg-accent-orange/10 text-accent-orange" onClick={handleNavigateProgress} />
-                <QuickAddButton icon="fa-lightbulb" label="记想法" color="bg-accent-purple/10 text-accent-purple" onClick={handleNavigateIdeas} />
-              </div>
-            </div>
-          </div>
-        ),
-      },
-      // 3. 今日概览 + 数据汇总
-      {
-        id: 'vitals',
-        span: 'full',
-        render: () => (
-          <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
+              {/* 今日概览 */}
+              <div className="flex-1 rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
+                <div className="mb-3 flex items-center gap-1.5">
                   <i className="fas fa-chart-pie text-accent-cyan text-xs" />
                   <span className="text-xs font-bold text-text-primary">今日概览</span>
                   <span className="text-[9px] text-text-muted">DAILY VITALS</span>
                 </div>
-                <FeatureHint icon="fa-info-circle" text="各模块今日完成率一目了然" />
-              </div>
-              <div className="flex items-center justify-around gap-2 overflow-x-auto pb-1">
-                <CircularProgress percent={todoPercent} color="#00d4ff" icon="fa-list-check" label="待办完成" subtext={`${stats.completed}/${stats.total}项`} />
-                <CircularProgress percent={checkinPercent} color="#4a9a7a" icon="fa-check-circle" label="每日打卡" subtext={`${checkinStats.doneToday}/${checkinStats.total}项`} />
-                <CircularProgress percent={progressPercent} color="#c4945a" icon="fa-chart-line" label="进度更新" subtext={`${progressStats.count}条`} />
-                <CircularProgress percent={projectPercent} color="#a855f7" icon="fa-project-diagram" label="活跃项目" subtext={`${projectStats.active}个`} />
+                <div className="flex items-center justify-around gap-2 overflow-x-auto pb-1">
+                  <CircularProgress percent={todoPercent} color="#00d4ff" icon="fa-list-check" label="待办完成" subtext={`${stats.completed}/${stats.total}项`} />
+                  <CircularProgress percent={checkinPercent} color="#4a9a7a" icon="fa-check-circle" label="每日打卡" subtext={`${checkinStats.doneToday}/${checkinStats.total}项`} />
+                  <CircularProgress percent={progressPercent} color="#c4945a" icon="fa-chart-line" label="进度更新" subtext={`${progressStats.count}条`} />
+                  <CircularProgress percent={projectPercent} color="#a855f7" icon="fa-project-diagram" label="活跃项目" subtext={`${projectStats.active}个`} />
+                </div>
               </div>
             </div>
-            <div className="rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-4">
-              <div className="mb-3 flex items-center gap-1.5">
-                <i className="fas fa-database text-accent-purple text-xs" />
-                <span className="text-xs font-bold text-text-primary">数据汇总</span>
-                <span className="text-[9px] text-text-muted">SUMMARY</span>
+            {/* 右列：快速记录（上）+ 数据汇总（下） */}
+            <div className="flex flex-col gap-3">
+              {/* 快速记录 */}
+              <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-3">
+                <div className="mb-2 flex items-center gap-1.5">
+                  <i className="fas fa-bolt text-accent-cyan text-xs" />
+                  <span className="text-xs font-bold text-text-primary">快速记录</span>
+                  <span className="text-[9px] text-text-muted">QUICK ADD</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <QuickAddButton icon="fa-list-check" label="记待办" color="bg-accent-cyan/10 text-accent-cyan" onClick={handleAdd} />
+                  <QuickAddButton icon="fa-check-circle" label="记打卡" color="bg-accent-green/10 text-accent-green" onClick={handleAddCheckin} />
+                  <QuickAddButton icon="fa-chart-line" label="记进度" color="bg-accent-orange/10 text-accent-orange" onClick={handleNavigateProgress} />
+                  <QuickAddButton icon="fa-lightbulb" label="记想法" color="bg-accent-purple/10 text-accent-purple" onClick={handleNavigateIdeas} />
+                </div>
               </div>
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <i className="fas fa-layer-group text-accent-cyan text-xs w-4" />
-                    <span className="text-xs text-text-secondary">累计待办</span>
-                  </div>
-                  <span className="text-sm font-bold text-text-primary">{stats.total}</span>
+              {/* 数据汇总 */}
+              <div className="flex-1 rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-3">
+                <div className="mb-2 flex items-center gap-1.5">
+                  <i className="fas fa-database text-accent-purple text-xs" />
+                  <span className="text-xs font-bold text-text-primary">数据汇总</span>
+                  <span className="text-[9px] text-text-muted">SUMMARY</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <i className="fas fa-star text-accent-orange text-xs w-4" />
-                    <span className="text-xs text-text-secondary">今日聚焦</span>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-layer-group text-accent-cyan text-xs w-4" />
+                      <span className="text-xs text-text-secondary">累计待办</span>
+                    </div>
+                    <span className="text-sm font-bold text-text-primary">{stats.total}</span>
                   </div>
-                  <span className="text-sm font-bold text-accent-orange">{stats.pinned}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <i className="fas fa-fire text-accent-green text-xs w-4" />
-                    <span className="text-xs text-text-secondary">打卡项</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-star text-accent-orange text-xs w-4" />
+                      <span className="text-xs text-text-secondary">今日聚焦</span>
+                    </div>
+                    <span className="text-sm font-bold text-accent-orange">{stats.pinned}</span>
                   </div>
-                  <span className="text-sm font-bold text-text-primary">{checkinStats.total}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <i className="fas fa-exclamation-triangle text-accent-red text-xs w-4" />
-                    <span className="text-xs text-text-secondary">已逾期</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-fire text-accent-green text-xs w-4" />
+                      <span className="text-xs text-text-secondary">打卡项</span>
+                    </div>
+                    <span className="text-sm font-bold text-text-primary">{checkinStats.total}</span>
                   </div>
-                  <span className="text-sm font-bold text-accent-red">{stats.overdue}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-exclamation-triangle text-accent-red text-xs w-4" />
+                      <span className="text-xs text-text-secondary">已逾期</span>
+                    </div>
+                    <span className="text-sm font-bold text-accent-red">{stats.overdue}</span>
+                  </div>
                 </div>
               </div>
             </div>

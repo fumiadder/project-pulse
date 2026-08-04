@@ -289,6 +289,10 @@ function TodoCard({
             <i className="fas fa-calendar-plus text-text-muted/60" />
             <span>创建：{formatCreatedAt(todo.createdAt)}</span>
           </div>
+          <div className="flex items-center gap-1.5 text-text-muted">
+            <i className="fas fa-edit text-text-muted/60" />
+            <span>更新：{formatCreatedAt(todo.updatedAt)}</span>
+          </div>
           {todo.dueDate && (
             <div className={`flex items-center gap-1.5 ${overdue ? 'text-accent-red font-medium' : dueToday ? 'text-accent-orange font-medium' : 'text-text-muted'}`}>
               <i className="fas fa-calendar-times" />
@@ -416,7 +420,7 @@ export function WorkbenchPage() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showFeatureGuide, setShowFeatureGuide] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { editMode, toggleEditMode, loadFromServer } = useLayoutStore();
 
@@ -583,16 +587,6 @@ export function WorkbenchPage() {
     },
     [deleteCheckin],
   );
-
-  const handleClearCompleted = useCallback(async () => {
-    const completedTodos = todos.filter((t) => t.status === 'completed');
-    if (completedTodos.length === 0) return;
-    if (window.confirm(`确定要清除 ${completedTodos.length} 条已完成的待办吗？此操作不可撤销。`)) {
-      for (const todo of completedTodos) {
-        await deleteTodo(todo.id);
-      }
-    }
-  }, [todos, deleteTodo]);
 
   // 导航到进度页（日历视图）
   const handleNavigateProgress = useCallback(() => {
@@ -953,15 +947,6 @@ export function WorkbenchPage() {
                 <i className={`fas ${showCompleted ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`} />
                 {showCompleted ? '隐藏已完成' : '显示已完成'}
               </button>
-              {stats.completed > 0 && (
-                <button
-                  onClick={handleClearCompleted}
-                  className="flex items-center gap-1.5 rounded-md bg-accent-red/10 px-2.5 py-1 text-xs text-accent-red transition-colors hover:bg-accent-red/20"
-                >
-                  <i className="fas fa-broom text-[10px]" />
-                  清除已完成 ({stats.completed})
-                </button>
-              )}
             </div>
 
             {/* 待办卡片网格 */}
@@ -1021,7 +1006,7 @@ export function WorkbenchPage() {
     insights, checkins, todos, isLoading, filteredTodos,
     searchQuery, filterCategory, filterStatus, showCompleted,
     handleAdd, handleEdit, handleDelete, handleAddCheckin, handleEditCheckin,
-    handleDeleteCheckin, handleClearCompleted, handleNavigateProgress,
+    handleDeleteCheckin, handleNavigateProgress,
     handleNavigateIdeas, toggleComplete, togglePin, toggleSubtask, toggleToday,
   ]);
 

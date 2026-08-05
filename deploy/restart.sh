@@ -45,8 +45,15 @@ npm install --production --silent 2>/dev/null
 kill $(lsof -t -i:3080) 2>/dev/null 2>&1 || true
 sleep 1
 
-# 启动新进程（通过 DB_PATH 环境变量指定数据库）
-DB_PATH="$DB_PATH" nohup node server.js > /var/log/pp-api.log 2>&1 &
+# 启动新进程（通过 DB_PATH 环境变量指定数据库，加载飞书凭证）
+# 飞书凭证从 .env 文件读取（如不存在则忽略，飞书提醒功能不可用）
+if [ -f "$DEPLOY_DIR/api/.env" ]; then
+  set -a
+  source "$DEPLOY_DIR/api/.env"
+  set +a
+fi
+DB_PATH="$DB_PATH" FEISHU_APP_ID="$FEISHU_APP_ID" FEISHU_APP_SECRET="$FEISHU_APP_SECRET" \
+  nohup node server.js > /var/log/pp-api.log 2>&1 &
 sleep 3
 
 # 验证

@@ -1148,6 +1148,83 @@ app.get('/api/export/excel', (req, res) => {
   }
 });
 
+// ---------- Feishu (飞书) Notification ----------
+// 飞书应用凭证：通过环境变量配置
+const FEISHU_APP_ID = process.env.FEISHU_APP_ID || '';
+const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET || '';
+const FEISHU_BASE_URL = 'https://open.feishu.cn/open-apis';
+
+// 缓存 tenant_access_token（有效期 2 小时，提前 5 分钟刷新）
+let cachedToken = null;
+let cachedTokenExpire = 0;
+
+async function getFeishuToken() {
+  const now = Date.now();
+  if (cachedToken && now < cachedTokenExpire - 300000) {
+    return cachedToken;
+  }
+  if (!FEISHU_APP_ID || !FEISHU_APP_SECRET) {
+    throw new Error('飞书应用凭证未配置 (FEISHU_APP_ID / FEISHU_APP_SECRET)');
+  }
+  const resp = await fetch(`${FEISHU_BASE_URL}/auth/v3/tenant_access_token/internal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ app_id: FEISHU_APP_ID, app_secret: FEISHU_APP_SECRET }),
+  });
+  const data = await resp.json();
+  if (data.code !== 0) {
+    throw new Error(`飞书获取 token 失败: ${data.msg}`);
+  }
+  cachedToken = data.tenant_access_token;
+  cachedTokenExpire = now + data.expire * 1000;
+  return cachedToken;
+}
+
+/**
+ * POST /api/feishu-notify
+ * 发送飞书消息提醒
+ * body: { open_id, title, body }
+ */
+app.post('/api/feishu-notify', async (req, res) => {
+  try {
+    const { open_id, title, body } = req.body || {};
+    if (!open_id) {
+      return res.json({ success: false, error: '缺少 open_id' });
+    }
+    if (!FEISHU_APP_ID || !FEISHU_APP_SECRET) {
+      return res.json({ success: false, error: '飞书应用凭证未配置' });
+    }
+
+    const token = await getFeishuToken();
+
+    // 构建消息内容（纯文本）
+    const text = body ? `${title}\n${body}` : title;
+
+    const resp = await fetch(`${FEISHU_BASE_URL}/im/v1/messages?receive_id_type=open_id`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        receive_id: open_id,
+        msg_type: 'text',
+        content: JSON.stringify({ text }),
+      }),
+    });
+
+    const data = await resp.json();
+    if (data.code !== 0) {
+      throw new Error(`飞书发送失败: ${data.msg}`);
+    }
+
+    res.json({ success: true, data: { message_id: data.data?.message_id } });
+  } catch (err) {
+    console.error('Feishu notify error:', err.message);
+    res.json({ success: false, error: err.message });
+  }
+});
+
 // Serve frontend static files (production)
 const DIST_PATH = process.env.DIST_PATH || path.join(__dirname, '..', 'dist');
 if (fs.existsSync(DIST_PATH)) {

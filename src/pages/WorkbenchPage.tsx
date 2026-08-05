@@ -13,6 +13,7 @@ import { GreetingCard } from '@/components/shared/GreetingCard';
 import { WeeklyHeatmap } from '@/components/shared/WeeklyHeatmap';
 import { SortableWorkbench, type WidgetConfig } from '@/components/shared/SortableWorkbench';
 import { getReminderLabel, parseReminderConfig } from '@/utils/reminder';
+import { api } from '@/services/api';
 import type { Todo, CheckIn } from '@/types';
 
 // ============================================
@@ -421,6 +422,9 @@ export function WorkbenchPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [showFeatureGuide, setShowFeatureGuide] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showFeishuSetting, setShowFeishuSetting] = useState(false);
+  const [feishuOpenId, setFeishuOpenId] = useState('');
+  const [feishuStatus, setFeishuStatus] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { editMode, toggleEditMode, loadFromServer } = useLayoutStore();
 
@@ -596,6 +600,49 @@ export function WorkbenchPage() {
     },
     [deleteCheckin],
   );
+
+  // 飞书设置：加载已保存的 open_id
+  useEffect(() => {
+    if (!showFeishuSetting) return;
+    setFeishuStatus(null);
+    api.getSetting('feishu_open_id').then((res) => {
+      if (res.success && res.data) {
+        setFeishuOpenId(res.data);
+      }
+    }).catch(() => {});
+  }, [showFeishuSetting]);
+
+  // 飞书设置：保存 open_id
+  const handleSaveFeishuOpenId = useCallback(async () => {
+    setFeishuStatus('保存中...');
+    const res = await api.putSetting('feishu_open_id', feishuOpenId.trim());
+    if (res.success) {
+      setFeishuStatus('已保存');
+      setTimeout(() => setFeishuStatus(null), 2000);
+    } else {
+      setFeishuStatus('保存失败');
+    }
+  }, [feishuOpenId]);
+
+  // 飞书设置：发送测试消息
+  const handleTestFeishuNotify = useCallback(async () => {
+    if (!feishuOpenId.trim()) {
+      setFeishuStatus('请先填写 open_id');
+      return;
+    }
+    setFeishuStatus('发送测试消息...');
+    const res = await api.sendFeishuNotify(
+      feishuOpenId.trim(),
+      '测试消息',
+      '这是来自 Project Pulse 的飞书提醒测试消息',
+    );
+    if (res.success) {
+      setFeishuStatus('测试消息已发送');
+    } else {
+      setFeishuStatus(`发送失败: ${res.error}`);
+    }
+    setTimeout(() => setFeishuStatus(null), 3000);
+  }, [feishuOpenId]);
 
   // 导航到进度页（日历视图）
   const handleNavigateProgress = useCallback(() => {
@@ -1034,6 +1081,19 @@ export function WorkbenchPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* 飞书提醒设置按钮 */}
+          <button
+            onClick={() => setShowFeishuSetting(!showFeishuSetting)}
+            className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs transition-all ${
+              showFeishuSetting
+                ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
+                : 'border-border-custom bg-bg-tertiary/50 text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan'
+            }`}
+            title="飞书提醒设置"
+          >
+            <i className="fab fa-feishu text-[10px]" />
+            <span className="hidden sm:inline">飞书提醒</span>
+          </button>
           {/* 编辑布局按钮 */}
           <button
             onClick={toggleEditMode}
@@ -1058,6 +1118,52 @@ export function WorkbenchPage() {
           </button>
         </div>
       </div>
+
+      {/* 飞书提醒设置面板 */}
+      {showFeishuSetting && (
+        <div className="rounded-xl border border-accent-cyan/20 bg-bg-secondary/80 p-4 animate-fade-in-up">
+          <div className="mb-3 flex items-center gap-2">
+            <i className="fab fa-feishu text-accent-cyan" />
+            <span className="text-sm font-bold text-text-primary">飞书提醒设置</span>
+            <span className="text-[10px] text-text-muted">FEISHU NOTIFICATION</span>
+          </div>
+          <p className="mb-3 text-xs text-text-muted">
+            配置飞书 Open ID 后，待办提醒将同时推送到飞书。
+            <br />
+            <span className="text-text-muted/60">
+              需要在服务器配置环境变量 FEISHU_APP_ID 和 FEISHU_APP_SECRET（飞书应用凭证）。
+              Open ID 可在飞书管理后台或通过 API 获取。
+            </span>
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="text"
+              value={feishuOpenId}
+              onChange={(e) => setFeishuOpenId(e.target.value)}
+              placeholder="输入飞书 Open ID (ou_xxx)"
+              className="flex-1 rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+            />
+            <button
+              onClick={handleSaveFeishuOpenId}
+              className="rounded-lg bg-accent-cyan/20 px-4 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/30 transition-colors"
+            >
+              保存
+            </button>
+            <button
+              onClick={handleTestFeishuNotify}
+              className="rounded-lg bg-bg-tertiary px-4 py-2 text-xs text-text-secondary hover:bg-bg-tertiary/80 transition-colors"
+            >
+              测试发送
+            </button>
+          </div>
+          {feishuStatus && (
+            <p className="mt-2 text-xs text-accent-cyan">
+              <i className="fas fa-info-circle mr-1" />
+              {feishuStatus}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 可拖拽 Widget 布局 */}
       <SortableWorkbench widgets={widgets} />

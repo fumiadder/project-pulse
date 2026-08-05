@@ -156,6 +156,14 @@ export const api = {
     });
   },
 
+  // --- Feishu Notification ---
+  sendFeishuNotify(openId: string, title: string, body?: string): Promise<ApiResponse<{ message_id: string }>> {
+    return apiFetch<{ message_id: string }>('/feishu-notify', {
+      method: 'POST',
+      body: JSON.stringify({ open_id: openId, title, body }),
+    });
+  },
+
   // --- AI Summary ---
   generateAiSummary(type: 'daily' | 'weekly' | 'monthly', entries: unknown[], projects: unknown[], style?: string): Promise<ApiResponse<{ summary: string; model?: string }>> {
     return apiFetch<{ summary: string; model?: string }>('/ai-summary', {

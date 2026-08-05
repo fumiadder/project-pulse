@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useTodoStore } from '@/stores/useTodoStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
+import { api } from '@/services/api';
 import { parseReminderConfig } from '@/utils/reminder';
 import type { Todo } from '@/types';
 
@@ -13,7 +14,7 @@ import type { Todo } from '@/types';
  * - interval: 每隔 N 分钟/小时提醒
  *
  * 每隔 30 秒检查一次所有待办，使用 Map 记录每个 todo 的上次触发时间戳。
- * 同时发送浏览器通知和推送到右上角通知中心。
+ * 同时发送浏览器通知、推送到右上角通知中心、以及飞书消息提醒。
  */
 export function useReminder() {
   const { todos } = useTodoStore();
@@ -22,6 +23,49 @@ export function useReminder() {
   // 记录每个 todo 的上次触发时间戳（用于 interval/daily 去重）
   // once 类型触发后标记为 -1 表示不再触发
   const lastTriggeredRef = useRef<Map<string, number>>(new Map());
+
+  // 缓存飞书 open_id（从 settings 加载）
+  const feishuOpenIdRef = useRef<string | null>(null);
+  const feishuOpenIdLoadedRef = useRef(false);
+
+  /** 加载飞书 open_id（仅一次） */
+  const loadFeishuOpenId = useCallback(async () => {
+    if (feishuOpenIdLoadedRef.current) return;
+    feishuOpenIdLoadedRef.current = true;
+    try {
+      const res = await api.getSetting('feishu_open_id');
+      if (res.success && res.data) {
+        feishuOpenIdRef.current = res.data;
+      }
+    } catch {
+      // 忽略错误
+    }
+  }, []);
+
+  /** 发送飞书消息提醒 */
+  const sendFeishuNotification = useCallback(async (todo: Todo) => {
+    const openId = feishuOpenIdRef.current;
+    if (!openId) return;
+
+    const title = `待办提醒：${todo.title}`;
+    const bodyParts: string[] = [];
+    // 提取纯文本描述
+    if (todo.description) {
+      const temp = document.createElement('div');
+      temp.innerHTML = todo.description;
+      const text = (temp.textContent || '').trim();
+      if (text) bodyParts.push(text.slice(0, 80));
+    }
+    if (todo.dueDate) bodyParts.push(`截止日期：${todo.dueDate}`);
+    if (todo.priority === 'high') bodyParts.push('优先级：高');
+    if (todo.category) bodyParts.push(`分类：${todo.category}`);
+
+    try {
+      await api.sendFeishuNotify(openId, title, bodyParts.join('\n'));
+    } catch {
+      // 忽略错误，不影响其他提醒渠道
+    }
+  }, []);
 
   /** 发送浏览器通知 */
   const sendBrowserNotification = useCallback((todo: Todo) => {
@@ -163,12 +207,18 @@ export function useReminder() {
         } else {
           lastTriggeredRef.current.set(todo.id, now);
         }
-        // 同时发送浏览器通知和推送通知中心
+        // 同时发送浏览器通知、推送通知中心、飞书消息
         sendBrowserNotification(todo);
         pushNotification(todo);
+        sendFeishuNotification(todo);
       }
     }
-  }, [todos, shouldTrigger, sendBrowserNotification, pushNotification]);
+  }, [todos, shouldTrigger, sendBrowserNotification, pushNotification, sendFeishuNotification]);
+
+  // 启动时加载飞书 open_id
+  useEffect(() => {
+    loadFeishuOpenId();
+  }, [loadFeishuOpenId]);
 
   // 请求通知权限（仅一次）
   useEffect(() => {

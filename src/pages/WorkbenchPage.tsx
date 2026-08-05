@@ -501,17 +501,26 @@ export function WorkbenchPage() {
   const progressPercent = progressStats.count > 0 ? Math.min(100, progressStats.count * 25) : 0;
   const projectPercent = projectStats.total > 0 ? Math.round((projectStats.active / projectStats.total) * 100) : 0;
 
-  // 置顶的待办（今日聚焦）
+  // 置顶的待办（今日聚焦）— 仅显示今日及未来的置顶待办，过期置顶待办回落到下方列表
   const pinnedTodos = useMemo(() => {
-    return todos.filter((t) => t.pinned && t.status !== 'completed').sort((a, b) => {
-      const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
-    });
+    return todos
+      .filter((t) => t.pinned && t.status !== 'completed' && !isOverdue(t))
+      .sort((a, b) => {
+        const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      });
   }, [todos]);
 
-  // 过滤后的待办列表
+  // 过滤后的待办列表（包含过期的置顶待办）
   const filteredTodos = useMemo(() => {
-    let result = todos.filter((t) => !t.pinned || t.status === 'completed');
+    let result = todos.filter((t) => {
+      // 已完成的在下方列表正常显示
+      if (t.status === 'completed') return true;
+      // 非置顶的正常显示
+      if (!t.pinned) return true;
+      // 置顶但已过期的回落到下方列表
+      return isOverdue(t);
+    });
 
     // 隐藏已完成
     if (!showCompleted) {

@@ -46,7 +46,11 @@ async function apiFetch<T>(
     }
 
     const json = await response.json();
-    // API returns { success: true, data: ... } - unwrap the data field
+    // Server returns { success: true, data: ... } or { success: false, error: ... }
+    if (json.success === false) {
+      return { success: false, error: json.error || 'Unknown server error' };
+    }
+    // Unwrap the data field
     const data: T = json?.data !== undefined ? json.data : json;
     return { success: true, data };
   } catch (err) {

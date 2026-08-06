@@ -1283,7 +1283,8 @@ app.post('/api/feishu-notify', async (req, res) => {
 
     const data = await resp.json();
     if (data.code !== 0) {
-      throw new Error(`飞书发送失败: ${data.msg}`);
+      console.error('Feishu API error:', JSON.stringify(data));
+      throw new Error(`飞书发送失败(code=${data.code}): ${data.msg}`);
     }
 
     res.json({ success: true, data: { message_id: data.data?.message_id } });

@@ -24,29 +24,9 @@ export function useReminder() {
   // once 类型触发后标记为 -1 表示不再触发
   const lastTriggeredRef = useRef<Map<string, number>>(new Map());
 
-  // 缓存飞书 open_id（从 settings 加载）
-  const feishuOpenIdRef = useRef<string | null>(null);
-  const feishuOpenIdLoadedRef = useRef(false);
-
-  /** 加载飞书 open_id（仅一次） */
-  const loadFeishuOpenId = useCallback(async () => {
-    if (feishuOpenIdLoadedRef.current) return;
-    feishuOpenIdLoadedRef.current = true;
-    try {
-      const res = await api.getSetting('feishu_open_id');
-      if (res.success && res.data) {
-        feishuOpenIdRef.current = res.data;
-      }
-    } catch {
-      // 忽略错误
-    }
-  }, []);
-
+  // 飞书提醒：服务器自动从 settings 读取凭证和 open_id，前端只需调用
   /** 发送飞书消息提醒 */
   const sendFeishuNotification = useCallback(async (todo: Todo) => {
-    const openId = feishuOpenIdRef.current;
-    if (!openId) return;
-
     const title = `待办提醒：${todo.title}`;
     const bodyParts: string[] = [];
     // 提取纯文本描述
@@ -61,7 +41,7 @@ export function useReminder() {
     if (todo.category) bodyParts.push(`分类：${todo.category}`);
 
     try {
-      await api.sendFeishuNotify(openId, title, bodyParts.join('\n'));
+      await api.sendFeishuNotify(title, bodyParts.join('\n'));
     } catch {
       // 忽略错误，不影响其他提醒渠道
     }
@@ -214,11 +194,6 @@ export function useReminder() {
       }
     }
   }, [todos, shouldTrigger, sendBrowserNotification, pushNotification, sendFeishuNotification]);
-
-  // 启动时加载飞书 open_id
-  useEffect(() => {
-    loadFeishuOpenId();
-  }, [loadFeishuOpenId]);
 
   // 请求通知权限（仅一次）
   useEffect(() => {

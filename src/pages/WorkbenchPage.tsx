@@ -423,7 +423,10 @@ export function WorkbenchPage() {
   const [showFeatureGuide, setShowFeatureGuide] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showFeishuSetting, setShowFeishuSetting] = useState(false);
+  const [feishuAppId, setFeishuAppId] = useState('');
+  const [feishuAppSecret, setFeishuAppSecret] = useState('');
   const [feishuOpenId, setFeishuOpenId] = useState('');
+  const [feishuConfigHint, setFeishuConfigHint] = useState('');
   const [feishuStatus, setFeishuStatus] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { editMode, toggleEditMode, loadFromServer } = useLayoutStore();
@@ -601,48 +604,57 @@ export function WorkbenchPage() {
     [deleteCheckin],
   );
 
-  // 飞书设置：加载已保存的 open_id
+  // 飞书设置：加载配置
   useEffect(() => {
     if (!showFeishuSetting) return;
     setFeishuStatus(null);
-    api.getSetting('feishu_open_id').then((res) => {
+    setFeishuAppId('');
+    setFeishuAppSecret('');
+    api.getFeishuConfig().then((res) => {
       if (res.success && res.data) {
-        setFeishuOpenId(res.data);
+        setFeishuOpenId(res.data.openId || '');
+        setFeishuConfigHint(res.data.appIdHint || '');
       }
     }).catch(() => {});
   }, [showFeishuSetting]);
 
-  // 飞书设置：保存 open_id
-  const handleSaveFeishuOpenId = useCallback(async () => {
+  // 飞书设置：保存配置
+  const handleSaveFeishuConfig = useCallback(async () => {
     setFeishuStatus('保存中...');
-    const res = await api.putSetting('feishu_open_id', feishuOpenId.trim());
+    const config: { appId?: string; appSecret?: string; openId?: string } = {};
+    if (feishuAppId.trim()) config.appId = feishuAppId.trim();
+    if (feishuAppSecret.trim()) config.appSecret = feishuAppSecret.trim();
+    if (feishuOpenId !== undefined) config.openId = feishuOpenId.trim();
+
+    const res = await api.putFeishuConfig(config);
     if (res.success) {
       setFeishuStatus('已保存');
+      setFeishuAppId('');
+      setFeishuAppSecret('');
+      // 重新加载配置提示
+      api.getFeishuConfig().then((r) => {
+        if (r.success && r.data) setFeishuConfigHint(r.data.appIdHint || '');
+      });
       setTimeout(() => setFeishuStatus(null), 2000);
     } else {
       setFeishuStatus('保存失败');
     }
-  }, [feishuOpenId]);
+  }, [feishuAppId, feishuAppSecret, feishuOpenId]);
 
   // 飞书设置：发送测试消息
   const handleTestFeishuNotify = useCallback(async () => {
-    if (!feishuOpenId.trim()) {
-      setFeishuStatus('请先填写 open_id');
-      return;
-    }
     setFeishuStatus('发送测试消息...');
     const res = await api.sendFeishuNotify(
-      feishuOpenId.trim(),
       '测试消息',
       '这是来自 Project Pulse 的飞书提醒测试消息',
     );
     if (res.success) {
-      setFeishuStatus('测试消息已发送');
+      setFeishuStatus('测试消息已发送，请查看飞书');
     } else {
       setFeishuStatus(`发送失败: ${res.error}`);
     }
-    setTimeout(() => setFeishuStatus(null), 3000);
-  }, [feishuOpenId]);
+    setTimeout(() => setFeishuStatus(null), 4000);
+  }, []);
 
   // 导航到进度页（日历视图）
   const handleNavigateProgress = useCallback(() => {
@@ -1126,35 +1138,67 @@ export function WorkbenchPage() {
             <i className="fab fa-feishu text-accent-cyan" />
             <span className="text-sm font-bold text-text-primary">飞书提醒设置</span>
             <span className="text-[10px] text-text-muted">FEISHU NOTIFICATION</span>
+            {feishuConfigHint && (
+              <span className="rounded-full bg-accent-green/10 px-2 py-0.5 text-[9px] text-accent-green">
+                已配置 {feishuConfigHint}
+              </span>
+            )}
           </div>
           <p className="mb-3 text-xs text-text-muted">
-            配置飞书 Open ID 后，待办提醒将同时推送到飞书。
-            <br />
+            填写飞书应用凭证和 Open ID 后，待办提醒将同时推送到飞书。
             <span className="text-text-muted/60">
-              需要在服务器配置环境变量 FEISHU_APP_ID 和 FEISHU_APP_SECRET（飞书应用凭证）。
-              Open ID 可在飞书管理后台或通过 API 获取。
+              （从飞书开放平台 https://open.feishu.cn/app 获取 App ID 和 App Secret，需开通 im:message 权限和机器人能力）
             </span>
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              type="text"
-              value={feishuOpenId}
-              onChange={(e) => setFeishuOpenId(e.target.value)}
-              placeholder="输入飞书 Open ID (ou_xxx)"
-              className="flex-1 rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
-            />
-            <button
-              onClick={handleSaveFeishuOpenId}
-              className="rounded-lg bg-accent-cyan/20 px-4 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/30 transition-colors"
-            >
-              保存
-            </button>
-            <button
-              onClick={handleTestFeishuNotify}
-              className="rounded-lg bg-bg-tertiary px-4 py-2 text-xs text-text-secondary hover:bg-bg-tertiary/80 transition-colors"
-            >
-              测试发送
-            </button>
+          <div className="flex flex-col gap-3">
+            {/* App ID */}
+            <div className="flex items-center gap-2">
+              <label className="w-24 shrink-0 text-xs text-text-muted">App ID</label>
+              <input
+                type="text"
+                value={feishuAppId}
+                onChange={(e) => setFeishuAppId(e.target.value)}
+                placeholder={feishuConfigHint ? `已配置 (${feishuConfigHint})，留空则不修改` : 'cli_xxxxxxxxxxxx'}
+                className="flex-1 rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              />
+            </div>
+            {/* App Secret */}
+            <div className="flex items-center gap-2">
+              <label className="w-24 shrink-0 text-xs text-text-muted">App Secret</label>
+              <input
+                type="password"
+                value={feishuAppSecret}
+                onChange={(e) => setFeishuAppSecret(e.target.value)}
+                placeholder="留空则不修改"
+                className="flex-1 rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              />
+            </div>
+            {/* Open ID */}
+            <div className="flex items-center gap-2">
+              <label className="w-24 shrink-0 text-xs text-text-muted">Open ID</label>
+              <input
+                type="text"
+                value={feishuOpenId}
+                onChange={(e) => setFeishuOpenId(e.target.value)}
+                placeholder="ou_xxxxxxxxxxxx"
+                className="flex-1 rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+              />
+            </div>
+            {/* 操作按钮 */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveFeishuConfig}
+                className="rounded-lg bg-accent-cyan/20 px-4 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/30 transition-colors"
+              >
+                保存配置
+              </button>
+              <button
+                onClick={handleTestFeishuNotify}
+                className="rounded-lg bg-bg-tertiary px-4 py-2 text-xs text-text-secondary hover:bg-bg-tertiary/80 transition-colors"
+              >
+                测试发送
+              </button>
+            </div>
           </div>
           {feishuStatus && (
             <p className="mt-2 text-xs text-accent-cyan">

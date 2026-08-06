@@ -1149,27 +1149,54 @@ app.get('/api/export/excel', (req, res) => {
 });
 
 // ---------- Feishu (飞书) Notification ----------
-// 飞书应用凭证：通过环境变量配置
-const FEISHU_APP_ID = process.env.FEISHU_APP_ID || '';
-const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET || '';
 const FEISHU_BASE_URL = 'https://open.feishu.cn/open-apis';
+
+/**
+ * 获取飞书凭证：环境变量优先，回退到 settings 表
+ * 返回 { appId, appSecret }
+ */
+function getFeishuCredentials() {
+  // 1. 优先环境变量
+  if (process.env.FEISHU_APP_ID && process.env.FEISHU_APP_SECRET) {
+    return { appId: process.env.FEISHU_APP_ID, appSecret: process.env.FEISHU_APP_SECRET };
+  }
+  // 2. 回退到 settings 表
+  try {
+    const appIdRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('feishu_app_id');
+    const appSecretRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('feishu_app_secret');
+    if (appIdRow?.value && appSecretRow?.value) {
+      return { appId: appIdRow.value, appSecret: appSecretRow.value };
+    }
+  } catch (e) { /* 忽略 */ }
+  return null;
+}
 
 // 缓存 tenant_access_token（有效期 2 小时，提前 5 分钟刷新）
 let cachedToken = null;
 let cachedTokenExpire = 0;
+let cachedTokenKey = ''; // 用 appId 标识，凭证变更时重新获取
 
 async function getFeishuToken() {
   const now = Date.now();
+  const cred = getFeishuCredentials();
+  if (!cred) {
+    throw new Error('飞书应用凭证未配置，请在设置面板中填写 App ID 和 App Secret');
+  }
+
+  // 凭证变更时清除缓存
+  if (cachedTokenKey !== cred.appId) {
+    cachedToken = null;
+    cachedTokenKey = cred.appId;
+  }
+
   if (cachedToken && now < cachedTokenExpire - 300000) {
     return cachedToken;
   }
-  if (!FEISHU_APP_ID || !FEISHU_APP_SECRET) {
-    throw new Error('飞书应用凭证未配置 (FEISHU_APP_ID / FEISHU_APP_SECRET)');
-  }
+
   const resp = await fetch(`${FEISHU_BASE_URL}/auth/v3/tenant_access_token/internal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ app_id: FEISHU_APP_ID, app_secret: FEISHU_APP_SECRET }),
+    body: JSON.stringify({ app_id: cred.appId, app_secret: cred.appSecret }),
   });
   const data = await resp.json();
   if (data.code !== 0) {
@@ -1181,18 +1208,59 @@ async function getFeishuToken() {
 }
 
 /**
+ * GET /api/feishu-config
+ * 获取飞书配置状态（不返回 secret 明文，仅返回是否已配置）
+ */
+app.get('/api/feishu-config', (req, res) => {
+  const cred = getFeishuCredentials();
+  const openIdRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('feishu_open_id');
+  res.json({
+    success: true,
+    data: {
+      hasAppId: !!(cred?.appId),
+      hasAppSecret: !!(cred?.appSecret),
+      appIdHint: cred?.appId ? cred.appId.slice(0, 8) + '****' : '',
+      openId: openIdRow?.value || '',
+    },
+  });
+});
+
+/**
+ * PUT /api/feishu-config
+ * 保存飞书配置到 settings 表
+ * body: { appId?, appSecret?, openId? }
+ */
+app.put('/api/feishu-config', (req, res) => {
+  const { appId, appSecret, openId } = req.body || {};
+  const upsert = db.prepare(`
+    INSERT INTO settings (key, value) VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value
+  `);
+  if (appId !== undefined) upsert.run('feishu_app_id', appId);
+  if (appSecret !== undefined) upsert.run('feishu_app_secret', appSecret);
+  if (openId !== undefined) upsert.run('feishu_open_id', openId);
+  // 清除 token 缓存，强制重新获取
+  cachedToken = null;
+  cachedTokenKey = '';
+  res.json({ success: true, data: { saved: true } });
+});
+
+/**
  * POST /api/feishu-notify
  * 发送飞书消息提醒
- * body: { open_id, title, body }
+ * body: { open_id?, title, body }
+ * 如果未传 open_id，从 settings 表读取
  */
 app.post('/api/feishu-notify', async (req, res) => {
   try {
-    const { open_id, title, body } = req.body || {};
+    let { open_id, title, body } = req.body || {};
+    // 如果未传 open_id，从 settings 读取
     if (!open_id) {
-      return res.json({ success: false, error: '缺少 open_id' });
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('feishu_open_id');
+      open_id = row?.value;
     }
-    if (!FEISHU_APP_ID || !FEISHU_APP_SECRET) {
-      return res.json({ success: false, error: '飞书应用凭证未配置' });
+    if (!open_id) {
+      return res.json({ success: false, error: '未配置飞书 Open ID' });
     }
 
     const token = await getFeishuToken();

@@ -157,7 +157,27 @@ export const api = {
   },
 
   // --- Feishu Notification ---
-  sendFeishuNotify(openId: string, title: string, body?: string): Promise<ApiResponse<{ message_id: string }>> {
+  getFeishuConfig(): Promise<ApiResponse<{
+    hasAppId: boolean;
+    hasAppSecret: boolean;
+    appIdHint: string;
+    openId: string;
+  }>> {
+    return apiFetch('/feishu-config');
+  },
+
+  putFeishuConfig(config: {
+    appId?: string;
+    appSecret?: string;
+    openId?: string;
+  }): Promise<ApiResponse<{ saved: boolean }>> {
+    return apiFetch('/feishu-config', {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    });
+  },
+
+  sendFeishuNotify(title: string, body?: string, openId?: string): Promise<ApiResponse<{ message_id: string }>> {
     return apiFetch<{ message_id: string }>('/feishu-notify', {
       method: 'POST',
       body: JSON.stringify({ open_id: openId, title, body }),

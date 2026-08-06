@@ -68,6 +68,24 @@ function isOverdue(todo: Todo): boolean {
   return todo.dueDate < today;
 }
 
+/**
+ * 判断置顶待办是否已过期（应离开「今日聚焦」）
+ * - 有 dueDate 且已过截止日 → 过期
+ * - 无 dueDate 且创建日期早于今天 → 过期
+ * - 有 dueDate 且截止日是今天或未来 → 未过期
+ * - 无 dueDate 且创建日期是今天 → 未过期
+ */
+function isPinnedExpired(todo: Todo): boolean {
+  if (todo.status === 'completed') return true;
+  const today = new Date().toISOString().slice(0, 10);
+  if (todo.dueDate) {
+    return todo.dueDate < today;
+  }
+  // 无 dueDate：用创建日期判断，非今日创建的置顶任务过期
+  const createdDate = todo.createdAt ? todo.createdAt.slice(0, 10) : today;
+  return createdDate < today;
+}
+
 function isDueToday(todo: Todo): boolean {
   if (!todo.dueDate) return false;
   const today = new Date().toISOString().slice(0, 10);
@@ -508,10 +526,10 @@ export function WorkbenchPage() {
   const progressPercent = progressStats.count > 0 ? Math.min(100, progressStats.count * 25) : 0;
   const projectPercent = projectStats.total > 0 ? Math.round((projectStats.active / projectStats.total) * 100) : 0;
 
-  // 置顶的待办（今日聚焦）— 仅显示今日及未来的置顶待办，过期置顶待办回落到下方列表
+  // 置顶的待办（今日聚焦）— 仅显示今日相关的置顶待办，过期置顶待办回落到下方列表
   const pinnedTodos = useMemo(() => {
     return todos
-      .filter((t) => t.pinned && t.status !== 'completed' && !isOverdue(t))
+      .filter((t) => t.pinned && t.status !== 'completed' && !isPinnedExpired(t))
       .sort((a, b) => {
         const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
         return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -526,7 +544,7 @@ export function WorkbenchPage() {
       // 非置顶的正常显示
       if (!t.pinned) return true;
       // 置顶但已过期的回落到下方列表
-      return isOverdue(t);
+      return isPinnedExpired(t);
     });
 
     // 隐藏已完成

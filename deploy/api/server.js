@@ -1294,6 +1294,47 @@ app.post('/api/feishu-notify', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/feishu-users
+ * 使用用户自己的应用凭证查询通讯录，获取正确的 Open ID
+ * 需要应用开通 contact:user.base:readonly 权限
+ */
+app.get('/api/feishu-users', async (req, res) => {
+  try {
+    const token = await getFeishuToken();
+
+    // 调用飞书通讯录 API，查询根部门下的用户
+    const resp = await fetch(`${FEISHU_BASE_URL}/contact/v3/users/find_by_department?department_id=0&page_size=100`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await resp.json();
+    if (data.code !== 0) {
+      console.error('Feishu contact API error:', JSON.stringify(data));
+      return res.json({
+        success: false,
+        error: `通讯录查询失败(code=${data.code}): ${data.msg}`,
+      });
+    }
+
+    const users = (data.data?.items || []).map((u) => ({
+      openId: u.open_id || '',
+      name: u.name || '',
+      enName: u.en_name || '',
+      employeeNo: u.employee_no || '',
+      departmentIds: u.department_ids || [],
+    }));
+
+    res.json({ success: true, data: { users } });
+  } catch (err) {
+    console.error('Feishu users error:', err.message);
+    res.json({ success: false, error: err.message });
+  }
+});
+
 // Serve frontend static files (production)
 const DIST_PATH = process.env.DIST_PATH || path.join(__dirname, '..', 'dist');
 if (fs.existsSync(DIST_PATH)) {

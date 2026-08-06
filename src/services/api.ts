@@ -188,6 +188,10 @@ export const api = {
     });
   },
 
+  getFeishuUsers(): Promise<ApiResponse<{ users: Array<{ openId: string; name: string; enName: string; employeeNo: string }> }>> {
+    return apiFetch('/feishu-users');
+  },
+
   // --- AI Summary ---
   generateAiSummary(type: 'daily' | 'weekly' | 'monthly', entries: unknown[], projects: unknown[], style?: string): Promise<ApiResponse<{ summary: string; model?: string }>> {
     return apiFetch<{ summary: string; model?: string }>('/ai-summary', {

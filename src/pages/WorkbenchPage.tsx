@@ -446,6 +446,8 @@ export function WorkbenchPage() {
   const [feishuOpenId, setFeishuOpenId] = useState('');
   const [feishuConfigHint, setFeishuConfigHint] = useState('');
   const [feishuStatus, setFeishuStatus] = useState<string | null>(null);
+  const [feishuUsers, setFeishuUsers] = useState<Array<{ openId: string; name: string; enName: string; employeeNo: string }>>([]);
+  const [showFeishuUserList, setShowFeishuUserList] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { editMode, toggleEditMode, loadFromServer } = useLayoutStore();
 
@@ -672,6 +674,24 @@ export function WorkbenchPage() {
       setFeishuStatus(`发送失败: ${res.error}`);
     }
     setTimeout(() => setFeishuStatus(null), 4000);
+  }, []);
+
+  // 飞书设置：自动获取 Open ID（从通讯录查询）
+  const handleFetchFeishuUsers = useCallback(async () => {
+    setFeishuStatus('正在查询飞书通讯录...');
+    setFeishuUsers([]);
+    setShowFeishuUserList(false);
+    const res = await api.getFeishuUsers();
+    if (res.success && res.data?.users?.length > 0) {
+      setFeishuUsers(res.data.users);
+      setShowFeishuUserList(true);
+      setFeishuStatus(`查询到 ${res.data.users.length} 个用户，请选择自己`);
+    } else {
+      setFeishuStatus(`查询失败: ${res.error || '未找到用户'}`);
+    }
+    setTimeout(() => {
+      if (!res.success) setFeishuStatus(null);
+    }, 6000);
   }, []);
 
   // 导航到进度页（日历视图）
@@ -1167,6 +1187,9 @@ export function WorkbenchPage() {
             <span className="text-text-muted/60">
               （从飞书开放平台 https://open.feishu.cn/app 获取 App ID 和 App Secret，需开通 im:message 权限和机器人能力）
             </span>
+            <span className="mt-1 block text-amber-400/70">
+              注意：Open ID 是每个应用独立的，不能使用其他应用的 Open ID。请先保存 App ID 和 App Secret，再点击「自动获取」。
+            </span>
           </p>
           <div className="flex flex-col gap-3">
             {/* App ID */}
@@ -1198,10 +1221,43 @@ export function WorkbenchPage() {
                 type="text"
                 value={feishuOpenId}
                 onChange={(e) => setFeishuOpenId(e.target.value)}
-                placeholder="ou_xxxxxxxxxxxx"
+                placeholder="ou_xxxxxxxxxxxx（点击右侧按钮自动获取）"
                 className="flex-1 rounded-lg border border-border-primary/30 bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
               />
+              <button
+                onClick={handleFetchFeishuUsers}
+                title="使用已保存的应用凭证查询通讯录，自动获取正确的 Open ID"
+                className="shrink-0 rounded-lg bg-accent-cyan/10 px-3 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/20 transition-colors"
+              >
+                <i className="fas fa-search mr-1 text-[10px]" />
+                自动获取
+              </button>
             </div>
+            {/* 飞书用户列表 */}
+            {showFeishuUserList && feishuUsers.length > 0 && (
+              <div className="rounded-lg border border-border-primary/20 bg-bg-primary/50 p-2 max-h-48 overflow-y-auto">
+                <div className="mb-1 text-[10px] text-text-muted">选择你自己（需开通 contact:user.base:readonly 权限）</div>
+                {feishuUsers.map((u) => (
+                  <button
+                    key={u.openId}
+                    onClick={() => {
+                      setFeishuOpenId(u.openId);
+                      setShowFeishuUserList(false);
+                      setFeishuStatus(`已选择：${u.name} (${u.openId})`);
+                      setTimeout(() => setFeishuStatus(null), 3000);
+                    }}
+                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs text-text-secondary hover:bg-accent-cyan/10 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <i className="fas fa-user text-[10px] text-text-muted" />
+                      {u.name || u.enName || '未命名'}
+                      {u.employeeNo && <span className="text-text-muted">{u.employeeNo}</span>}
+                    </span>
+                    <span className="text-[9px] text-text-muted font-mono">{u.openId.slice(0, 12)}...</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {/* 操作按钮 */}
             <div className="flex items-center gap-2">
               <button

@@ -188,8 +188,11 @@ export const api = {
     });
   },
 
-  getFeishuUsers(): Promise<ApiResponse<{ users: Array<{ openId: string; name: string; enName: string; employeeNo: string }> }>> {
-    return apiFetch('/feishu-users');
+  lookupFeishuUser(query: string): Promise<ApiResponse<{ openId: string; query: string; isActive: boolean }>> {
+    return apiFetch<{ openId: string; query: string; isActive: boolean }>('/feishu-users', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    });
   },
 
   // --- AI Summary ---

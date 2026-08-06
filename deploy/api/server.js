@@ -1295,40 +1295,64 @@ app.post('/api/feishu-notify', async (req, res) => {
 });
 
 /**
- * GET /api/feishu-users
- * 使用用户自己的应用凭证查询通讯录，获取正确的 Open ID
- * 需要应用开通 contact:user.base:readonly 权限
+ * POST /api/feishu-users
+ * 通过手机号或邮箱获取用户 Open ID（使用用户自己的应用凭证）
+ * body: { query: string } — 邮箱或手机号
+ * 需要应用开通「通过手机号或邮箱获取用户 ID」权限
  */
-app.get('/api/feishu-users', async (req, res) => {
+app.post('/api/feishu-users', async (req, res) => {
   try {
-    const token = await getFeishuToken();
+    const { query } = req.body || {};
+    if (!query || !query.trim()) {
+      return res.json({ success: false, error: '请输入邮箱或手机号' });
+    }
 
-    // 调用飞书通讯录 API，查询根部门下的用户
-    const resp = await fetch(`${FEISHU_BASE_URL}/contact/v3/users/find_by_department?department_id=0&page_size=100`, {
-      method: 'GET',
+    const token = await getFeishuToken();
+    const trimmed = query.trim();
+
+    // 判断是邮箱还是手机号
+    const isEmail = trimmed.includes('@');
+    const body = isEmail
+      ? { emails: [trimmed] }
+      : { mobiles: [trimmed] };
+
+    // 调用飞书 batch_get_id API
+    const resp = await fetch(`${FEISHU_BASE_URL}/contact/v3/users/batch_get_id?user_id_type=open_id`, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json; charset=utf-8',
         'Authorization': `Bearer ${token}`,
       },
+      body: JSON.stringify(body),
     });
 
     const data = await resp.json();
     if (data.code !== 0) {
-      console.error('Feishu contact API error:', JSON.stringify(data));
+      console.error('Feishu batch_get_id error:', JSON.stringify(data));
       return res.json({
         success: false,
-        error: `通讯录查询失败(code=${data.code}): ${data.msg}`,
+        error: `查询失败(code=${data.code}): ${data.msg}`,
       });
     }
 
-    const users = (data.data?.items || []).map((u) => ({
-      openId: u.open_id || '',
-      name: u.name || '',
-      enName: u.en_name || '',
-      employeeNo: u.employee_no || '',
-      departmentIds: u.department_ids || [],
-    }));
+    const userList = data.data?.user_list || [];
+    // 找到有 user_id 的记录（即查询成功的）
+    const found = userList.find((u) => u.user_id);
+    if (!found) {
+      return res.json({
+        success: false,
+        error: '未找到匹配的用户，请确认邮箱/手机号正确且用户在企业内',
+      });
+    }
 
-    res.json({ success: true, data: { users } });
+    res.json({
+      success: true,
+      data: {
+        openId: found.user_id,
+        query: trimmed,
+        isActive: found.status?.is_activated === true,
+      },
+    });
   } catch (err) {
     console.error('Feishu users error:', err.message);
     res.json({ success: false, error: err.message });

@@ -1236,9 +1236,9 @@ app.put('/api/feishu-config', (req, res) => {
     INSERT INTO settings (key, value) VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value
   `);
-  if (appId !== undefined) upsert.run('feishu_app_id', appId);
-  if (appSecret !== undefined) upsert.run('feishu_app_secret', appSecret);
-  if (openId !== undefined) upsert.run('feishu_open_id', openId);
+  if (appId) upsert.run('feishu_app_id', appId);
+  if (appSecret) upsert.run('feishu_app_secret', appSecret);
+  if (openId) upsert.run('feishu_open_id', openId);
   // 清除 token 缓存，强制重新获取
   cachedToken = null;
   cachedTokenKey = '';
@@ -1271,7 +1271,7 @@ app.post('/api/feishu-notify', async (req, res) => {
     const resp = await fetch(`${FEISHU_BASE_URL}/im/v1/messages?receive_id_type=open_id`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({

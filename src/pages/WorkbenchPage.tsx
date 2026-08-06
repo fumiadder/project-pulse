@@ -643,7 +643,7 @@ export function WorkbenchPage() {
     const config: { appId?: string; appSecret?: string; openId?: string } = {};
     if (feishuAppId.trim()) config.appId = feishuAppId.trim();
     if (feishuAppSecret.trim()) config.appSecret = feishuAppSecret.trim();
-    if (feishuOpenId !== undefined) config.openId = feishuOpenId.trim();
+    if (feishuOpenId.trim()) config.openId = feishuOpenId.trim();
 
     const res = await api.putFeishuConfig(config);
     if (res.success) {

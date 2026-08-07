@@ -72,7 +72,7 @@ export function NotificationCenter() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  /** 切换面板时，如果有未读通知，延迟标记为已读 */
+  /** 切换面板 */
   const handleToggle = useCallback(() => {
     setOpen((prev) => !prev);
   }, []);
@@ -91,8 +91,9 @@ export function NotificationCenter() {
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="relative flex h-8 w-8 items-center justify-center rounded-md text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors"
+        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-tertiary active:bg-bg-tertiary hover:text-text-primary transition-colors no-select-mobile"
         title="通知"
+        aria-label="通知"
       >
         <i className={`fas ${open ? 'fa-bell' : 'fa-bell'} text-sm`} />
         {/* 未读计数徽章 */}
@@ -111,7 +112,7 @@ export function NotificationCenter() {
       {open && (
         <div
           ref={panelRef}
-          className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-border-custom bg-bg-secondary shadow-2xl z-50 overflow-hidden"
+          className="fixed md:absolute left-3 right-3 md:left-auto md:right-0 top-16 md:top-full mt-0 md:mt-2 w-auto md:w-96 rounded-xl border border-border-custom bg-bg-secondary shadow-2xl z-50 overflow-hidden"
         >
           {/* 头部 */}
           <div className="flex items-center justify-between border-b border-border-custom px-4 py-3">
@@ -149,7 +150,7 @@ export function NotificationCenter() {
           </div>
 
           {/* 通知列表 */}
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-[60vh] md:max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 px-4">
                 <i className="far fa-bell-slash text-3xl text-text-muted/40 mb-2" />
@@ -163,7 +164,7 @@ export function NotificationCenter() {
                     <div
                       key={notif.id}
                       onClick={() => handleClickNotification(notif)}
-                      className={`group relative flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-border-custom/50 transition-colors hover:bg-bg-tertiary/50 ${
+                      className={`group relative flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-border-custom/50 transition-colors hover:bg-bg-tertiary/50 active:bg-bg-tertiary/70 ${
                         !notif.read ? 'bg-accent-cyan/5' : ''
                       }`}
                     >
@@ -211,7 +212,7 @@ export function NotificationCenter() {
                           e.stopPropagation();
                           removeNotification(notif.id);
                         }}
-                        className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded text-text-muted opacity-0 group-hover:opacity-100 hover:text-accent-red transition-all"
+                        className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded text-text-muted opacity-0 group-hover:opacity-100 group-active:opacity-100 hover:text-accent-red transition-all"
                         title="删除"
                       >
                         <i className="fas fa-times text-[10px]" />

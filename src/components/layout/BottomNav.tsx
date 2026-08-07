@@ -12,34 +12,35 @@ export function BottomNav() {
   const { activePage, setActivePage } = useUIStore();
 
   const handleNavClick = (key: string) => {
-    if (key === 'more') {
-      // For "more", navigate to a default page like history
-      setActivePage('history');
-    } else {
-      setActivePage(key);
-    }
+    setActivePage(key);
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-border-custom bg-bg-secondary/95 backdrop-blur-md md:hidden">
+    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-30 flex items-stretch justify-around border-t border-border-custom bg-bg-secondary/95 backdrop-blur-md shadow-[0_-4px_12px_rgba(0,0,0,0.3)] md:hidden">
       {bottomNavItems.map((item) => {
-        const isActive = activePage === item.key || (item.key === 'more' && !['dashboard', 'calendar', 'projects', 'workbench', 'daily-report'].includes(activePage));
+        const isActive = activePage === item.key;
         return (
           <button
             key={item.key}
             onClick={() => handleNavClick(item.key)}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors ${
+            className={`group relative flex flex-1 flex-col items-center justify-center gap-0.5 pt-2 pb-2.5 text-[10px] transition-all no-select-mobile ${
               isActive
                 ? 'text-accent-cyan'
-                : 'text-text-muted hover:text-text-secondary'
+                : 'text-text-secondary/70 active:text-text-primary'
             }`}
           >
+            {/* Active indicator bar at top */}
+            {isActive && (
+              <span className="absolute top-0 left-1/2 h-[3px] w-10 -translate-x-1/2 rounded-full bg-accent-cyan shadow-[0_0_8px_rgba(0,212,255,0.5)]" />
+            )}
             <i
-              className={`fas ${item.icon} text-base ${
-                isActive ? 'text-accent-cyan' : ''
+              className={`fas ${item.icon} transition-transform duration-200 ${
+                isActive ? 'text-[17px] scale-110' : 'text-[15px]'
               }`}
             />
-            <span>{item.label}</span>
+            <span className={`leading-none ${isActive ? 'font-medium' : ''}`}>
+              {item.label}
+            </span>
           </button>
         );
       })}

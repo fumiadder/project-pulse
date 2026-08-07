@@ -253,6 +253,60 @@
 }
 
 /* ============================================
+   Mobile-First Responsive Enhancements
+   ============================================ */
+
+/* --- Safe area insets for notched phones --- */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* --- Mobile touch target optimization --- */
+@media (max-width: 767px) {
+  /* Larger touch targets on mobile */
+  button, [role="button"], a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent text selection on button taps */
+  .no-select-mobile {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Horizontal scroll containers for filter bars */
+  .mobile-scroll-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .mobile-scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Compact card spacing on mobile */
+  .mobile-compact-pad {
+    padding: 0.75rem !important;
+  }
+
+  /* Mobile-optimized header height */
+  .mobile-header-h {
+    height: 3.25rem !important;
+  }
+
+  /* Bottom nav safe area */
+  .mobile-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* ============================================
    Mobile Preview Mode
    Force mobile layout within a 375px phone frame
    on desktop by overriding Tailwind md: breakpoints
@@ -288,9 +342,16 @@
   display: inline !important;
 }
 
+/* Force hide sm:flex/sm:block in mobile preview for truly mobile-only elements */
+.mobile-preview-container .sm\:flex,
+.mobile-preview-container .sm\:block,
+.mobile-preview-container .sm\:inline-flex {
+  display: none !important;
+}
+
 /* In mobile preview, main padding should be mobile (p-4 not p-6) */
 .mobile-preview-container .md\:p-6 {
-  padding: 1rem !important;
+  padding: 0.875rem !important;
 }
 
 /* lg: and xl: grid columns should collapse in mobile preview */
@@ -299,6 +360,7 @@
 .mobile-preview-container .lg\:grid-cols-4,
 .mobile-preview-container .lg\:grid-cols-5,
 .mobile-preview-container .lg\:grid-cols-6,
+.mobile-preview-container .xl\:grid-cols-2,
 .mobile-preview-container .xl\:grid-cols-3,
 .mobile-preview-container .xl\:grid-cols-4,
 .mobile-preview-container .xl\:grid-cols-5,
@@ -307,6 +369,198 @@
 }
 
 .mobile-preview-container .sm\:grid-cols-2,
-.mobile-preview-container .sm\:grid-cols-3 {
+.mobile-preview-container .sm\:grid-cols-3,
+.mobile-preview-container .sm\:grid-cols-4 {
   grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+/* Force mobile scroll-x in preview */
+.mobile-preview-container .mobile-scroll-x {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  flex-wrap: nowrap !important;
+}
+
+/* Mobile preview: shrink notification panel width */
+.mobile-preview-container .w-80,
+.mobile-preview-container .sm\:w-96 {
+  width: 20rem !important;
+  max-width: calc(100vw - 2rem) !important;
+}
+
+/* Mobile preview: make filter bar scroll horizontally */
+.mobile-preview-container .filter-bar-mobile {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+}
+.mobile-preview-container .filter-bar-mobile::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Mobile preview: bottom nav gets safe area look */
+.mobile-preview-container .mobile-bottom-nav {
+  padding-bottom: 0 !important;
+}
+
+/* Mobile preview: force sm:grid-cols-2 to stay single column */
+.mobile-preview-container .sm\:grid-cols-2 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+/* Mobile preview: force sm:gap styles to mobile values */
+.mobile-preview-container .sm\:gap-2\.5 {
+  gap: 0.5rem !important;
+}
+
+.mobile-preview-container .sm\:gap-3 {
+  gap: 0.625rem !important;
+}
+
+/* Mobile preview: hide sm:inline elements that should only show on larger screens */
+.mobile-preview-container .sm\:inline {
+  display: none !important;
+}
+
+/* Mobile preview: optimize main content padding */
+.mobile-preview-container main {
+  padding: 0.625rem !important;
+  padding-bottom: 5rem !important;
+}
+
+/* Mobile preview: reduce card border radius slightly for compact feel */
+.mobile-preview-container .rounded-xl {
+  border-radius: 0.625rem !important;
+}
+
+/* Mobile preview: improve text rendering for small screens */
+.mobile-preview-container {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Mobile preview: optimize circular progress size */
+.mobile-preview-container .CircularProgress__wrapper {
+  transform: scale(0.9);
+}
+
+/* --- Real mobile device optimizations --- */
+@media (max-width: 767px) {
+  /* Optimize main content padding for real mobile */
+  main {
+    padding: 0.625rem;
+    padding-bottom: 5rem; /* Space for bottom nav */
+  }
+
+  /* Reduce card border radius on mobile */
+  .rounded-xl {
+    border-radius: 0.625rem;
+  }
+
+  /* Improve tap feedback */
+  button:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+
+  /* Better text rendering */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Prevent layout shift from scrollbar */
+  html {
+    scrollbar-gutter: stable;
+  }
+}
+
+/* ============================================
+   Mobile Polish Enhancements
+   ============================================ */
+
+/* Hide scrollbar in mobile preview for immersive feel */
+.mobile-preview-container main {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.mobile-preview-container main::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Add gradient fade on filter bar right edge to indicate scrollability */
+.mobile-preview-container .filter-bar-mobile {
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+/* Improve card separation with subtle shadows on mobile */
+.mobile-preview-container .rounded-xl {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Increase gap between draggable widgets on mobile for better breathing room */
+.mobile-preview-container .grid.grid-cols-1 {
+  gap: 0.75rem !important;
+}
+
+/* Make section headers more prominent on mobile */
+.mobile-preview-container h1 {
+  letter-spacing: 0.02em;
+}
+
+/* Improve search input touch target on mobile */
+.mobile-preview-container input[type="text"] {
+  min-height: 2.5rem;
+}
+
+/* Ensure filter pills have adequate touch targets */
+.mobile-preview-container .filter-bar-mobile button {
+  min-height: 2rem;
+  padding-top: 0.375rem !important;
+  padding-bottom: 0.375rem !important;
+}
+
+/* Add subtle bottom shadow to header for depth separation */
+.mobile-preview-container header {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Real mobile: hide scrollbar for immersive feel */
+@media (max-width: 767px) {
+  main {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  main::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Add gradient fade on filter bar for real mobile too */
+  .filter-bar-mobile {
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+
+  /* Improve card shadows on real mobile */
+  .rounded-xl {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Add subtle header shadow */
+  header {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Ensure filter pills have adequate touch targets */
+  .filter-bar-mobile button {
+    min-height: 2rem;
+  }
+
+  /* Improve search input touch target */
+  input[type="text"] {
+    min-height: 2.5rem;
+  }
 }

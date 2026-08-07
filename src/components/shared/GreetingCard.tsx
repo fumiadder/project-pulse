@@ -62,29 +62,30 @@ export function GreetingCard({ children }: GreetingCardProps) {
   const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${getWeekday(now)} · 第${getWeekNumber(now)}周`;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary via-bg-secondary to-bg-tertiary p-4">
+    <div className="relative overflow-hidden rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary via-bg-secondary to-bg-tertiary p-3 md:p-4">
       {/* 装饰光效 */}
       <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-accent-cyan/5 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-accent-purple/5 blur-3xl" />
 
-      <div className="relative flex flex-col gap-3">
+      <div className="relative flex flex-col gap-2 md:gap-3">
         {/* 问候 + 激励语 */}
         <div>
-          <h2 className="text-lg font-bold text-text-primary font-display">
+          <h2 className="text-base md:text-lg font-bold text-text-primary font-display">
             {greeting}，{userName}
           </h2>
-          <p className="text-xs text-text-secondary mt-1">{motivation}</p>
+          <p className="text-[11px] md:text-xs text-text-secondary mt-0.5 md:mt-1">{motivation}</p>
         </div>
 
         {/* 时钟 + 日期 */}
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="text-3xl font-bold text-text-primary font-mono tracking-tight tabular-nums">
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-2xl md:text-3xl font-bold text-text-primary font-mono tracking-tight tabular-nums">
               {timeStr}
             </div>
-            <div className="text-xs text-text-muted mt-1">{dateStr}</div>
+            {/* Improve date text contrast: use text-secondary instead of text-muted on mobile */}
+            <div className="text-[11px] md:text-xs text-text-secondary/80 mt-0.5 md:mt-1">{dateStr}</div>
           </div>
-          {children}
+          {children && <div className="shrink-0">{children}</div>}
         </div>
       </div>
     </div>

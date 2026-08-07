@@ -60,22 +60,23 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
   };
 
   return (
-    <header className="flex h-14 shrink-0 items-center border-b border-border-custom bg-bg-secondary/80 backdrop-blur-md px-4 md:px-6">
-      {/* Left: Menu Toggle (mobile) */}
+    <header className="mobile-header-h flex h-14 shrink-0 items-center border-b border-border-custom bg-bg-secondary/80 backdrop-blur-md px-3 md:px-6 safe-area-top">
+      {/* Left: Menu Toggle (mobile only) */}
       <button
         onClick={onMenuToggle}
-        className="mr-3 flex h-9 w-9 items-center justify-center rounded-md text-text-secondary hover:bg-bg-tertiary hover:text-text-primary transition-colors md:hidden"
+        className="mr-1 flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-tertiary active:bg-bg-tertiary hover:text-text-primary transition-colors md:hidden no-select-mobile"
+        aria-label="打开菜单"
       >
         <i className="fas fa-bars text-base" />
       </button>
 
       {/* Center: Page Title */}
-      <h1 className="flex-1 text-base font-semibold text-text-primary font-display tracking-wide truncate">
+      <h1 className="flex-1 text-base font-semibold text-text-primary font-display tracking-wide truncate min-w-0">
         {title}
       </h1>
 
-      {/* Right: Datetime + Actions */}
-      <div className="flex items-center gap-3">
+      {/* Right: Actions */}
+      <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
         {/* Mobile Preview Toggle (desktop only) */}
         <button
           onClick={toggleMobilePreview}
@@ -90,20 +91,21 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
           <span className="hidden sm:inline">{mobilePreview ? '桌面' : '移动端'}</span>
         </button>
 
-        {/* Current Time */}
-        <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-text-muted font-mono">
+        {/* Current Time (desktop only) */}
+        <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-text-muted font-mono">
           <i className="far fa-clock text-accent-cyan/60" />
           {formatDate(currentTime)}
         </span>
 
-        {/* Export Button */}
+        {/* Export Button - icon only on mobile */}
         <button
           onClick={handleExport}
-          className="flex h-8 items-center gap-1.5 rounded-md border border-border-custom bg-bg-tertiary/50 px-3 text-xs text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan transition-all"
+          className="flex h-9 w-9 md:w-auto items-center justify-center gap-1.5 rounded-lg border border-border-custom bg-bg-tertiary/50 md:px-3 text-xs text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan transition-all no-select-mobile"
           title="导出数据"
+          aria-label="导出数据"
         >
           <i className="fas fa-file-export text-[10px]" />
-          <span className="hidden sm:inline">导出</span>
+          <span className="hidden md:inline">导出</span>
         </button>
 
         {/* Notification Center (Bell Icon) */}

@@ -181,7 +181,7 @@ function TodoCard({
     >
       <div className={`absolute left-0 top-0 h-full w-1 ${barColor} ${todo.status === 'completed' ? 'opacity-30' : ''}`} />
 
-      <div className="flex flex-col gap-2 p-4 pl-5">
+      <div className="flex flex-col gap-2 p-3 md:p-4 pl-4 md:pl-5">
         {/* 顶部：复选框 + 标题 + 操作按钮 */}
         <div className="flex items-start gap-2.5">
           <button
@@ -751,17 +751,17 @@ export function WorkbenchPage() {
         span: 'full',
         render: () =>
           pinnedTodos.length > 0 ? (
-            <div className="h-full rounded-xl border border-accent-orange/20 bg-gradient-to-br from-accent-orange/5 to-bg-secondary p-4">
-              <div className="mb-3 flex items-center justify-between">
+            <div className="h-full rounded-xl border border-accent-orange/20 bg-gradient-to-br from-accent-orange/5 to-bg-secondary p-2.5 md:p-4">
+              <div className="mb-2 md:mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <i className="fas fa-star text-accent-orange text-xs" />
                   <span className="text-xs font-bold text-text-primary">今日聚焦</span>
-                  <span className="text-[9px] text-text-muted">TODAY'S FOCUS</span>
+                  <span className="hidden md:inline text-[9px] text-text-muted">TODAY'S FOCUS</span>
                   <span className="rounded-full bg-accent-orange/15 px-2 py-0.5 text-[9px] text-accent-orange">{pinnedTodos.length}项置顶</span>
                 </div>
-                <span className="text-[10px] text-text-muted">点击星标可取消置顶</span>
+                <span className="hidden md:inline text-[10px] text-text-muted">点击星标可取消置顶</span>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-3 xl:grid-cols-4">
                 {pinnedTodos.map((todo) => (
                   <TodoCard
                     key={todo.id}
@@ -782,34 +782,34 @@ export function WorkbenchPage() {
         id: 'overview',
         span: 'full',
         render: () => (
-          <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-3">
+          <div className="grid h-full grid-cols-1 gap-2.5 md:gap-3 lg:grid-cols-3">
             {/* 左列：问候卡（上）+ 今日概览（下） */}
-            <div className="lg:col-span-2 flex flex-col gap-3">
+            <div className="lg:col-span-2 flex flex-col gap-2.5 md:gap-3">
               {/* 问候卡 */}
               <GreetingCard>
-                <div className="flex gap-3 text-center">
+                <div className="flex gap-2 md:gap-3 text-center">
                   <div>
-                    <div className="text-xl font-bold text-accent-cyan">{stats.pending}</div>
-                    <div className="text-[9px] text-text-muted">待开始</div>
+                    <div className="text-lg md:text-xl font-bold text-accent-cyan">{stats.pending}</div>
+                    <div className="text-[10px] md:text-[9px] text-text-secondary/80">待开始</div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-accent-orange">{stats.inProgress}</div>
-                    <div className="text-[9px] text-text-muted">进行中</div>
+                    <div className="text-lg md:text-xl font-bold text-accent-orange">{stats.inProgress}</div>
+                    <div className="text-[10px] md:text-[9px] text-text-secondary/80">进行中</div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-accent-green">{stats.completed}</div>
-                    <div className="text-[9px] text-text-muted">已完成</div>
+                    <div className="text-lg md:text-xl font-bold text-accent-green">{stats.completed}</div>
+                    <div className="text-[10px] md:text-[9px] text-text-secondary/80">已完成</div>
                   </div>
                 </div>
               </GreetingCard>
               {/* 今日概览 */}
-              <div className="flex-1 rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-                <div className="mb-3 flex items-center gap-1.5">
+              <div className="flex-1 rounded-xl border border-border-primary/30 bg-bg-secondary p-2.5 md:p-4">
+                <div className="mb-2 md:mb-3 flex items-center gap-1.5">
                   <i className="fas fa-chart-pie text-accent-cyan text-xs" />
                   <span className="text-xs font-bold text-text-primary">今日概览</span>
-                  <span className="text-[9px] text-text-muted">DAILY VITALS</span>
+                  <span className="hidden md:inline text-[9px] text-text-muted">DAILY VITALS</span>
                 </div>
-                <div className="flex items-center justify-around gap-2 overflow-x-auto pb-1">
+                <div className="grid grid-cols-2 gap-2 md:gap-3 md:flex md:items-center md:justify-around md:gap-2 md:overflow-x-auto md:pb-1">
                   <CircularProgress percent={todoPercent} color="#00d4ff" icon="fa-list-check" label="待办完成" subtext={`${stats.completed}/${stats.total}项`} />
                   <CircularProgress percent={checkinPercent} color="#4a9a7a" icon="fa-check-circle" label="每日打卡" subtext={`${checkinStats.doneToday}/${checkinStats.total}项`} />
                   <CircularProgress percent={progressPercent} color="#c4945a" icon="fa-chart-line" label="进度更新" subtext={`${progressStats.count}条`} />
@@ -818,15 +818,15 @@ export function WorkbenchPage() {
               </div>
             </div>
             {/* 右列：快速记录（上）+ 数据汇总（下） */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5 md:gap-3">
               {/* 快速记录 */}
-              <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-3">
+              <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-2.5 md:p-3">
                 <div className="mb-2 flex items-center gap-1.5">
                   <i className="fas fa-bolt text-accent-cyan text-xs" />
                   <span className="text-xs font-bold text-text-primary">快速记录</span>
-                  <span className="text-[9px] text-text-muted">QUICK ADD</span>
+                  <span className="hidden md:inline text-[9px] text-text-muted">QUICK ADD</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1.5 md:gap-2">
                   <QuickAddButton icon="fa-list-check" label="记待办" color="bg-accent-cyan/10 text-accent-cyan" onClick={handleAdd} />
                   <QuickAddButton icon="fa-check-circle" label="记打卡" color="bg-accent-green/10 text-accent-green" onClick={handleAddCheckin} />
                   <QuickAddButton icon="fa-chart-line" label="记进度" color="bg-accent-orange/10 text-accent-orange" onClick={handleNavigateProgress} />
@@ -834,38 +834,38 @@ export function WorkbenchPage() {
                 </div>
               </div>
               {/* 数据汇总 */}
-              <div className="flex-1 rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-3">
+              <div className="flex-1 rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-2.5 md:p-3">
                 <div className="mb-2 flex items-center gap-1.5">
                   <i className="fas fa-database text-accent-purple text-xs" />
                   <span className="text-xs font-bold text-text-primary">数据汇总</span>
-                  <span className="text-[9px] text-text-muted">SUMMARY</span>
+                  <span className="hidden md:inline text-[9px] text-text-muted">SUMMARY</span>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 md:flex md:flex-col md:gap-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 md:gap-2">
                       <i className="fas fa-layer-group text-accent-cyan text-xs w-4" />
-                      <span className="text-xs text-text-secondary">累计待办</span>
+                      <span className="text-[11px] md:text-xs text-text-secondary">累计待办</span>
                     </div>
                     <span className="text-sm font-bold text-text-primary">{stats.total}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 md:gap-2">
                       <i className="fas fa-star text-accent-orange text-xs w-4" />
-                      <span className="text-xs text-text-secondary">今日聚焦</span>
+                      <span className="text-[11px] md:text-xs text-text-secondary">今日聚焦</span>
                     </div>
                     <span className="text-sm font-bold text-accent-orange">{stats.pinned}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 md:gap-2">
                       <i className="fas fa-fire text-accent-green text-xs w-4" />
-                      <span className="text-xs text-text-secondary">打卡项</span>
+                      <span className="text-[11px] md:text-xs text-text-secondary">打卡项</span>
                     </div>
                     <span className="text-sm font-bold text-text-primary">{checkinStats.total}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 md:gap-2">
                       <i className="fas fa-exclamation-triangle text-accent-red text-xs w-4" />
-                      <span className="text-xs text-text-secondary">已逾期</span>
+                      <span className="text-[11px] md:text-xs text-text-secondary">已逾期</span>
                     </div>
                     <span className="text-sm font-bold text-accent-red">{stats.overdue}</span>
                   </div>
@@ -880,14 +880,14 @@ export function WorkbenchPage() {
         id: 'activity',
         span: 'full',
         render: () => (
-          <div className="grid h-full grid-cols-1 gap-3 lg:grid-cols-3">
+          <div className="grid h-full grid-cols-1 gap-2.5 md:gap-3 lg:grid-cols-3">
             {/* 左列：每日打卡 */}
-            <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-              <div className="mb-3 flex items-center justify-between">
+            <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-3 md:p-4">
+              <div className="mb-2 md:mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <i className="fas fa-check-circle text-accent-green text-xs" />
                   <span className="text-xs font-bold text-text-primary">每日打卡</span>
-                  <span className="text-[9px] text-text-muted">CHECKIN</span>
+                  <span className="hidden md:inline text-[9px] text-text-muted">CHECKIN</span>
                 </div>
                 <button
                   onClick={handleAddCheckin}
@@ -898,7 +898,7 @@ export function WorkbenchPage() {
                 </button>
               </div>
               {checkins.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-4 text-center">
+                <div className="flex flex-col items-center gap-2 py-3 md:py-4 text-center">
                   <i className="fas fa-fire text-2xl text-text-muted/20" />
                   <p className="text-xs text-text-muted">还没有打卡项</p>
                 </div>
@@ -917,45 +917,45 @@ export function WorkbenchPage() {
               )}
             </div>
             {/* 中列：生产力洞察 */}
-            <div className="rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-4">
-              <div className="mb-3 flex items-center gap-1.5">
+            <div className="rounded-xl border border-border-primary/30 bg-gradient-to-br from-bg-tertiary to-bg-secondary p-3 md:p-4">
+              <div className="mb-2 md:mb-3 flex items-center gap-1.5">
                 <i className="fas fa-lightbulb text-accent-orange text-xs" />
                 <span className="text-xs font-bold text-text-primary">生产力洞察</span>
-                <span className="text-[9px] text-text-muted">INSIGHTS</span>
+                <span className="hidden md:inline text-[9px] text-text-muted">INSIGHTS</span>
               </div>
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2 md:gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-text-secondary">总体完成率</span>
+                  <span className="text-[11px] md:text-xs text-text-secondary">总体完成率</span>
                   <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-16 rounded-full bg-bg-tertiary overflow-hidden">
+                    <div className="h-1.5 w-12 md:w-16 rounded-full bg-bg-tertiary overflow-hidden">
                       <div className="h-full rounded-full bg-accent-cyan transition-all duration-500" style={{ width: `${insights.completionRate}%` }} />
                     </div>
                     <span className="text-sm font-bold text-accent-cyan">{insights.completionRate}%</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     <i className="fas fa-check-double text-accent-green text-xs w-4" />
-                    <span className="text-xs text-text-secondary">今日完成</span>
+                    <span className="text-[11px] md:text-xs text-text-secondary">今日完成</span>
                   </div>
                   <span className="text-sm font-bold text-accent-green">{insights.todayCompleted} 项</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     <i className="fas fa-calendar-week text-accent-cyan text-xs w-4" />
-                    <span className="text-xs text-text-secondary">本周完成</span>
+                    <span className="text-[11px] md:text-xs text-text-secondary">本周完成</span>
                   </div>
                   <span className="text-sm font-bold text-accent-cyan">{insights.weekCompleted} 项</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     <i className="fas fa-exclamation-circle text-accent-red text-xs w-4" />
-                    <span className="text-xs text-text-secondary">紧急重要完成</span>
+                    <span className="text-[11px] md:text-xs text-text-secondary">紧急重要完成</span>
                   </div>
                   <span className="text-sm font-bold text-accent-red">{insights.highPriorityDone}/{insights.highPriorityTotal}</span>
                 </div>
-                <div className="rounded-lg bg-accent-orange/5 border border-accent-orange/20 px-3 py-2">
-                  <p className="text-[11px] text-accent-orange/90 flex items-start gap-1.5">
+                <div className="rounded-lg bg-accent-orange/5 border border-accent-orange/20 px-2.5 md:px-3 py-1.5 md:py-2">
+                  <p className="text-[10px] md:text-[11px] text-accent-orange/90 flex items-start gap-1.5">
                     <i className="fas fa-quote-left text-[9px] mt-0.5 shrink-0" />
                     <span>{insights.tip}</span>
                   </p>
@@ -963,11 +963,11 @@ export function WorkbenchPage() {
               </div>
             </div>
             {/* 右列：活动热力图 */}
-            <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-4">
-              <div className="mb-3 flex items-center gap-1.5">
+            <div className="rounded-xl border border-border-primary/30 bg-bg-secondary p-3 md:p-4">
+              <div className="mb-2 md:mb-3 flex items-center gap-1.5">
                 <i className="fas fa-fire text-accent-green text-xs" />
                 <span className="text-xs font-bold text-text-primary">活动热力图</span>
-                <span className="text-[9px] text-text-muted">ACTIVITY</span>
+                <span className="hidden md:inline text-[9px] text-text-muted">ACTIVITY</span>
               </div>
               <WeeklyHeatmap todos={todos} weeks={8} />
             </div>
@@ -979,7 +979,7 @@ export function WorkbenchPage() {
         id: 'todos',
         span: 'full',
         render: () => (
-          <div className="flex h-full flex-col gap-3">
+          <div className="flex h-full flex-col gap-2.5 md:gap-3">
             {/* 搜索和过滤栏 */}
             <div className="relative">
               <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-xs" />
@@ -988,7 +988,7 @@ export function WorkbenchPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="搜索待办标题、描述或标签... (按 / 快速聚焦)"
+                placeholder="搜索待办..."
                 className="w-full rounded-lg border border-border-custom bg-bg-secondary py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
               />
               {searchQuery && (
@@ -997,13 +997,14 @@ export function WorkbenchPage() {
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] text-text-muted">
-                <i className="fas fa-sort-amount-down mr-1" />
-                按优先级高→低 · 创建时间近→远
+            {/* Filter bar: horizontal scroll on mobile, wrap on desktop */}
+            <div className="filter-bar-mobile flex items-center gap-1.5 overflow-x-auto md:overflow-visible md:flex-wrap no-select-mobile pb-1 md:pb-0">
+              <span className="shrink-0 text-[10px] text-text-muted flex items-center gap-1">
+                <i className="fas fa-sort-amount-down" />
+                <span className="hidden md:inline">优先级·时间</span>
               </span>
-              <div className="h-4 w-px bg-border-custom" />
-              <div className="flex items-center gap-1">
+              <div className="hidden md:block h-4 w-px bg-border-custom shrink-0" />
+              <div className="flex items-center gap-1 shrink-0">
                 {[
                   { v: 'all', l: '全部' },
                   { v: 'pending', l: '待开始' },
@@ -1014,20 +1015,20 @@ export function WorkbenchPage() {
                   <button
                     key={opt.v}
                     onClick={() => setFilterStatus(opt.v)}
-                    className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                      filterStatus === opt.v ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] md:text-xs transition-colors ${
+                      filterStatus === opt.v ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                     }`}
                   >
                     {opt.l}
                   </button>
                 ))}
               </div>
-              <div className="h-4 w-px bg-border-custom" />
-              <div className="flex items-center gap-1">
+              <div className="hidden md:block h-4 w-px bg-border-custom shrink-0" />
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => setFilterCategory('all')}
-                  className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                    filterCategory === 'all' ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] md:text-xs transition-colors ${
+                    filterCategory === 'all' ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                   }`}
                 >
                   全部分类
@@ -1036,23 +1037,23 @@ export function WorkbenchPage() {
                   <button
                     key={cat.value}
                     onClick={() => setFilterCategory(cat.value)}
-                    className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-                      filterCategory === cat.value ? 'bg-accent-cyan/15 text-accent-cyan' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] md:text-xs transition-colors ${
+                      filterCategory === cat.value ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                     }`}
                   >
                     {cat.label}
                   </button>
                 ))}
               </div>
-              <div className="h-4 w-px bg-border-custom" />
+              <div className="hidden md:block h-4 w-px bg-border-custom shrink-0" />
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors ${
-                  showCompleted ? 'text-text-muted hover:text-text-primary' : 'text-accent-cyan bg-accent-cyan/10'
+                className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] md:text-xs transition-colors ${
+                  showCompleted ? 'text-text-muted hover:text-text-primary' : 'text-accent-cyan bg-accent-cyan/15 font-medium'
                 }`}
               >
                 <i className={`fas ${showCompleted ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`} />
-                {showCompleted ? '隐藏已完成' : '显示已完成'}
+                <span className="hidden md:inline">{showCompleted ? '隐藏已完成' : '显示已完成'}</span>
               </button>
             </div>
 
@@ -1062,13 +1063,13 @@ export function WorkbenchPage() {
                 <i className="fas fa-spinner fa-spin text-2xl text-accent-cyan" />
               </div>
             ) : filteredTodos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border-custom py-16">
-                <i className="fas fa-clipboard-list text-4xl text-text-muted/30" />
-                <p className="text-sm text-text-muted">
-                  {todos.length === 0 ? '还没有待办事项，点击右上角创建第一个吧' : '没有匹配的待办事项'}
+              <div className="flex flex-col items-center justify-center gap-2.5 rounded-xl border border-dashed border-border-custom py-8 md:py-16">
+                <i className="fas fa-clipboard-list text-3xl md:text-4xl text-text-muted/30" />
+                <p className="text-xs md:text-sm text-text-muted text-center px-4">
+                  {todos.length === 0 ? '还没有待办事项' : '没有匹配的待办事项'}
                 </p>
                 {todos.length === 0 && (
-                  <button onClick={handleAdd} className="rounded-lg bg-accent-cyan/10 px-4 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/20 transition-colors">
+                  <button onClick={handleAdd} className="rounded-lg bg-accent-cyan/10 px-4 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/20 transition-colors mt-1">
                     <i className="fas fa-plus mr-1" />
                     新建待办
                   </button>
@@ -1076,7 +1077,7 @@ export function WorkbenchPage() {
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between text-xs text-text-muted">
+                <div className="flex items-center justify-between text-[11px] md:text-xs text-text-muted">
                   <span>共 {filteredTodos.length} 条结果</span>
                   {(filterStatus !== 'all' || filterCategory !== 'all' || searchQuery) && (
                     <button
@@ -1087,7 +1088,7 @@ export function WorkbenchPage() {
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredTodos.map((todo) => (
                     <TodoCard
                       key={todo.id}
@@ -1118,54 +1119,56 @@ export function WorkbenchPage() {
   ]);
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in-up">
+    <div className="flex flex-col gap-3 md:gap-4 animate-fade-in-up">
       {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-text-primary font-display flex items-center gap-2">
-            <span className="inline-block h-5 w-1 rounded-full bg-accent-cyan" />
-            今日工作
-            <span className="text-[10px] font-normal text-text-muted ml-1">TODAY · WORK</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-sm md:text-lg font-bold text-text-primary font-display flex items-center gap-2">
+            <span className="inline-block h-4 md:h-5 w-1 rounded-full bg-accent-cyan shrink-0" />
+            <span className="truncate">今日工作</span>
+            <span className="hidden md:inline text-[10px] font-normal text-text-muted ml-1">TODAY · WORK</span>
           </h1>
-          <p className="text-xs text-text-muted mt-0.5 ml-3">
+          <p className="hidden md:block text-xs text-text-muted mt-0.5 ml-3">
             管理你的待办事项、每日打卡和完成进度
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* 飞书提醒设置按钮 */}
           <button
             onClick={() => setShowFeishuSetting(!showFeishuSetting)}
-            className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs transition-all ${
+            className={`flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 rounded-lg border sm:px-3 text-xs transition-all no-select-mobile ${
               showFeishuSetting
                 ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
                 : 'border-border-custom bg-bg-tertiary/50 text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan'
             }`}
             title="飞书提醒设置"
+            aria-label="飞书提醒设置"
           >
-            <i className="fab fa-feishu text-[10px]" />
+            <i className="fab fa-feishu text-xs" />
             <span className="hidden sm:inline">飞书提醒</span>
           </button>
           {/* 编辑布局按钮 */}
           <button
             onClick={toggleEditMode}
-            className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs transition-all ${
+            className={`flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 rounded-lg border sm:px-3 text-xs transition-all no-select-mobile ${
               editMode
                 ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
                 : 'border-border-custom bg-bg-tertiary/50 text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan'
             }`}
             title="编辑卡片布局"
+            aria-label="编辑卡片布局"
           >
-            <i className={`fas ${editMode ? 'fa-check' : 'fa-grip-vertical'} text-[10px]`} />
+            <i className={`fas ${editMode ? 'fa-check' : 'fa-grip-vertical'} text-xs`} />
             <span className="hidden sm:inline">{editMode ? '完成编辑' : '编辑布局'}</span>
           </button>
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 rounded-lg bg-accent-cyan px-4 py-2 text-sm font-medium text-bg-primary transition-colors hover:bg-accent-cyan/80"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-accent-cyan px-3 sm:px-4 text-sm font-medium text-bg-primary transition-colors hover:bg-accent-cyan/80 no-select-mobile shadow-[0_0_12px_rgba(0,212,255,0.2)]"
             title="新建待办 (快捷键: N)"
           >
             <i className="fas fa-plus" />
             <span className="hidden sm:inline">新建待办</span>
-            <kbd className="hidden sm:inline rounded bg-bg-primary/20 px-1.5 py-0.5 text-[9px] font-mono">N</kbd>
+            <kbd className="hidden md:inline rounded bg-bg-primary/20 px-1.5 py-0.5 text-[9px] font-mono">N</kbd>
           </button>
         </div>
       </div>
@@ -1278,19 +1281,19 @@ export function WorkbenchPage() {
       <div className="rounded-xl border border-border-primary/20 bg-bg-secondary/50 overflow-hidden">
         <button
           onClick={() => setShowFeatureGuide(!showFeatureGuide)}
-          className="flex w-full items-center justify-between p-4 transition-colors hover:bg-bg-tertiary/30"
+          className="flex w-full items-center justify-between p-3 md:p-4 transition-colors hover:bg-bg-tertiary/30"
         >
           <div className="flex items-center gap-1.5">
             <i className="fas fa-circle-info text-accent-cyan text-xs" />
             <span className="text-xs font-bold text-text-primary">功能说明 & 使用指南</span>
-            <span className="text-[9px] text-text-muted">FEATURE GUIDE</span>
+            <span className="hidden md:inline text-[9px] text-text-muted">FEATURE GUIDE</span>
           </div>
           <i className={`fas fa-chevron-down text-xs text-text-muted transition-transform ${showFeatureGuide ? 'rotate-180' : ''}`} />
         </button>
 
         {showFeatureGuide && (
-          <div className="border-t border-border-custom/50 p-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="border-t border-border-custom/50 p-3 md:p-4">
+            <div className="grid grid-cols-1 gap-2.5 md:gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-cyan/10">

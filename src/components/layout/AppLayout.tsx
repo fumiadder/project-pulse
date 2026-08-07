@@ -63,7 +63,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar onMenuToggle={() => setMobileSidebarOpen((prev) => !prev)} />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-20 md:pb-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 pb-24 md:pb-6">
           {children}
         </main>
       </div>
@@ -81,11 +81,11 @@ export function AppLayout({ children }: AppLayoutProps) {
         <MobilePreviewExitBar />
 
         <div
-          className="relative flex flex-col overflow-hidden rounded-[2rem] border-4 border-bg-secondary shadow-2xl"
-          style={{ width: '375px', height: '750px', maxWidth: '100vw', maxHeight: 'calc(100vh - 60px)', transform: 'translateZ(0)' }}
+          className="relative flex flex-col overflow-hidden rounded-[2.2rem] border-[3px] border-bg-secondary shadow-2xl"
+          style={{ width: '390px', height: '780px', maxWidth: '100vw', maxHeight: 'calc(100vh - 60px)', transform: 'translateZ(0)' }}
         >
           {/* Notch indicator */}
-          <div className="absolute left-1/2 top-0 z-[60] h-5 w-28 -translate-x-1/2 rounded-b-xl bg-bg-secondary" />
+          <div className="absolute left-1/2 top-0 z-[60] h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-bg-secondary" />
 
           {/* App content forced into mobile mode */}
           <div className="flex h-full w-full overflow-hidden bg-bg-primary font-body">

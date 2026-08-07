@@ -16,10 +16,12 @@ const pageTitles: Record<string, string> = {
   'monthly-report': '月报',
   history: '更新记录',
   users: '用户管理',
+  'private-zone': '私密空间',
+  profile: '个人中心',
 };
 
 export function TopBar({ onMenuToggle }: TopBarProps) {
-  const { activePage } = useUIStore();
+  const { activePage, mobilePreview, toggleMobilePreview } = useUIStore();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -74,6 +76,20 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
 
       {/* Right: Datetime + Actions */}
       <div className="flex items-center gap-3">
+        {/* Mobile Preview Toggle (desktop only) */}
+        <button
+          onClick={toggleMobilePreview}
+          className={`hidden md:flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs transition-all ${
+            mobilePreview
+              ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
+              : 'border-border-custom bg-bg-tertiary/50 text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan'
+          }`}
+          title={mobilePreview ? '退出移动端预览' : '移动端预览'}
+        >
+          <i className={`fas ${mobilePreview ? 'fa-desktop' : 'fa-mobile-alt'} text-[10px]`} />
+          <span className="hidden sm:inline">{mobilePreview ? '桌面' : '移动端'}</span>
+        </button>
+
         {/* Current Time */}
         <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-text-muted font-mono">
           <i className="far fa-clock text-accent-cyan/60" />

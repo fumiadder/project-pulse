@@ -251,3 +251,62 @@
     box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
   }
 }
+
+/* ============================================
+   Mobile Preview Mode
+   Force mobile layout within a 375px phone frame
+   on desktop by overriding Tailwind md: breakpoints
+   ============================================ */
+.mobile-preview-container .mobile-hide-in-preview {
+  display: none !important;
+}
+
+/* Force show md:hidden elements in mobile preview */
+.mobile-preview-container .md\:hidden {
+  display: flex !important;
+}
+
+/* Force hide md:flex/md:block/md:inline elements in mobile preview */
+.mobile-preview-container .md\:flex {
+  display: none !important;
+}
+.mobile-preview-container .md\:block {
+  display: none !important;
+}
+.mobile-preview-container .md\:inline {
+  display: none !important;
+}
+.mobile-preview-container .md\:inline-flex {
+  display: none !important;
+}
+.mobile-preview-container .md\:grid {
+  display: none !important;
+}
+
+/* Force show sm:hidden elements too */
+.mobile-preview-container .sm\:hidden {
+  display: inline !important;
+}
+
+/* In mobile preview, main padding should be mobile (p-4 not p-6) */
+.mobile-preview-container .md\:p-6 {
+  padding: 1rem !important;
+}
+
+/* lg: and xl: grid columns should collapse in mobile preview */
+.mobile-preview-container .lg\:grid-cols-2,
+.mobile-preview-container .lg\:grid-cols-3,
+.mobile-preview-container .lg\:grid-cols-4,
+.mobile-preview-container .lg\:grid-cols-5,
+.mobile-preview-container .lg\:grid-cols-6,
+.mobile-preview-container .xl\:grid-cols-3,
+.mobile-preview-container .xl\:grid-cols-4,
+.mobile-preview-container .xl\:grid-cols-5,
+.mobile-preview-container .xl\:grid-cols-6 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+.mobile-preview-container .sm\:grid-cols-2,
+.mobile-preview-container .sm\:grid-cols-3 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}

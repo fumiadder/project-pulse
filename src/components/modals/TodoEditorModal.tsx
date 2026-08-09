@@ -110,14 +110,27 @@ interface SortableSubtaskItemProps {
   onStartEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
-  onProgressChange: (v: number) => void;
   isNoteEditing: boolean;
   noteText: string;
+  noteColor: string;
   onNoteChange: (v: string) => void;
+  onNoteColorChange: (v: string) => void;
   onSaveNote: () => void;
   onCancelNote: () => void;
   onStartNote: () => void;
 }
+
+/** 备注可选颜色列表 */
+const NOTE_COLORS = [
+  { value: '', label: '默认', css: 'text-text-muted/80' },
+  { value: '#00d4ff', label: '青', css: 'text-[#00d4ff]' },
+  { value: '#00ff88', label: '绿', css: 'text-[#00ff88]' },
+  { value: '#ff8c00', label: '橙', css: 'text-[#ff8c00]' },
+  { value: '#ff3366', label: '红', css: 'text-[#ff3366]' },
+  { value: '#a855f7', label: '紫', css: 'text-[#a855f7]' },
+  { value: '#f1f5f9', label: '白', css: 'text-[#f1f5f9]' },
+  { value: '#fbbf24', label: '黄', css: 'text-[#fbbf24]' },
+];
 
 function SortableSubtaskItem({
   subtask: st,
@@ -129,10 +142,11 @@ function SortableSubtaskItem({
   onStartEdit,
   onToggle,
   onDelete,
-  onProgressChange,
   isNoteEditing,
   noteText,
+  noteColor,
   onNoteChange,
+  onNoteColorChange,
   onSaveNote,
   onCancelNote,
   onStartNote,
@@ -151,8 +165,6 @@ function SortableSubtaskItem({
     transform: CSS.Transform.toString(transform),
     transition,
   };
-
-  const progress = st.progress ?? (st.done ? 100 : 0);
 
   return (
     <div
@@ -224,7 +236,7 @@ function SortableSubtaskItem({
         ) : (
           <>
             <span className="text-[9px] text-text-muted shrink-0">
-              {progress > 0 && progress < 100 ? `${progress}%` : st.done ? '已完成' : '待完成'}
+              {st.done ? '已完成' : '待完成'}
             </span>
             <button type="button" onClick={onStartNote} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-purple/10 hover:text-accent-purple group-hover:opacity-100" title="备注">
               <i className="fas fa-comment-dots text-[9px]" />
@@ -239,60 +251,58 @@ function SortableSubtaskItem({
         )}
       </div>
 
-      {/* 进度条 */}
-      {!isEditing && (
-        <div className="flex items-center gap-1.5 pl-6">
-          <div className="h-1 flex-1 rounded-full bg-bg-tertiary/60 overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${progress}%`,
-                backgroundColor: progress >= 100 ? 'var(--accent-green)' : progress > 0 ? 'var(--accent-cyan)' : 'transparent',
-              }}
-            />
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={5}
-            value={progress}
-            onChange={(e) => onProgressChange(Number(e.target.value))}
-            className="subtask-progress-slider w-16 h-1 cursor-pointer"
-            title="调整进度"
-          />
-        </div>
-      )}
-
       {/* 备注编辑 */}
       {isNoteEditing && (
-        <div className="flex gap-1.5 pl-6">
-          <input
-            type="text"
-            value={noteText}
-            onChange={(e) => onNoteChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); onSaveNote(); }
-              else if (e.key === 'Escape') { e.preventDefault(); onCancelNote(); }
-            }}
-            autoFocus
-            placeholder="输入备注..."
-            className="flex-1 rounded-md border border-accent-purple/40 bg-bg-primary px-2 py-1 text-[11px] text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-1 focus:ring-accent-purple/50"
-          />
-          <button type="button" onClick={onSaveNote} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-accent-green hover:bg-accent-green/10" title="保存备注">
-            <i className="fas fa-check text-[10px]" />
-          </button>
-          <button type="button" onClick={onCancelNote} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-text-primary" title="取消">
-            <i className="fas fa-times text-[10px]" />
-          </button>
+        <div className="flex flex-col gap-1.5 pl-6">
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={noteText}
+              onChange={(e) => onNoteChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); onSaveNote(); }
+                else if (e.key === 'Escape') { e.preventDefault(); onCancelNote(); }
+              }}
+              autoFocus
+              placeholder="输入备注..."
+              className="flex-1 rounded-md border border-accent-purple/40 bg-bg-primary px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-accent-purple/50"
+              style={{ color: noteColor || undefined }}
+            />
+            <button type="button" onClick={onSaveNote} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-accent-green hover:bg-accent-green/10" title="保存备注">
+              <i className="fas fa-check text-[10px]" />
+            </button>
+            <button type="button" onClick={onCancelNote} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-text-primary" title="取消">
+              <i className="fas fa-times text-[10px]" />
+            </button>
+          </div>
+          {/* 颜色选择器 */}
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-text-muted shrink-0">颜色</span>
+            {NOTE_COLORS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => onNoteColorChange(c.value)}
+                className={`h-4 w-4 shrink-0 rounded-full border transition-all ${
+                  noteColor === c.value
+                    ? 'border-text-primary scale-125 ring-1 ring-text-primary/30'
+                    : 'border-border-hover hover:scale-110'
+                }`}
+                style={{ backgroundColor: c.value || 'transparent' }}
+                title={c.label}
+              >
+                {!c.value && <i className="fas fa-font text-[7px] text-text-muted" />}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* 备注展示 */}
       {!isNoteEditing && st.note && (
         <div className="flex items-start gap-1 pl-6">
-          <i className="fas fa-comment-dots text-[8px] text-accent-purple/50 mt-0.5 shrink-0" />
-          <span className="text-[10px] text-text-muted/80">{st.note}</span>
+          <i className="fas fa-comment-dots text-[8px] mt-0.5 shrink-0" style={{ color: st.noteColor || 'var(--accent-purple)' }} />
+          <span className="text-[10px]" style={{ color: st.noteColor || undefined }}>{st.note}</span>
         </div>
       )}
     </div>
@@ -328,6 +338,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [editingSubtaskText, setEditingSubtaskText] = useState('');
   const [noteEditingId, setNoteEditingId] = useState<string | null>(null);
   const [noteEditingText, setNoteEditingText] = useState('');
+  const [noteEditingColor, setNoteEditingColor] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const descriptionRef = useRef<AutoResizeTextareaHandle>(null);
@@ -415,31 +426,24 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
     });
   }, []);
 
-  /** 更新子任务进度 */
-  const handleUpdateProgress = useCallback((id: string, progress: number) => {
-    const clamped = Math.max(0, Math.min(100, Math.round(progress)));
-    setSubtasks((prev) => prev.map((st) => {
-      if (st.id !== id) return st;
-      // 进度100%自动标记完成，进度<100取消完成
-      const autoDone = clamped >= 100;
-      return { ...st, progress: clamped, done: autoDone };
-    }));
-  }, []);
-
   /** 保存子任务备注 */
   const handleSaveNote = useCallback(() => {
     if (!noteEditingId) return;
     setSubtasks((prev) => prev.map((st) =>
-      st.id === noteEditingId ? { ...st, note: noteEditingText.trim() || undefined } : st
+      st.id === noteEditingId
+        ? { ...st, note: noteEditingText.trim() || undefined, noteColor: noteEditingColor || undefined }
+        : st
     ));
     setNoteEditingId(null);
     setNoteEditingText('');
-  }, [noteEditingId, noteEditingText]);
+    setNoteEditingColor('');
+  }, [noteEditingId, noteEditingText, noteEditingColor]);
 
   /** 取消子任务备注编辑 */
   const handleCancelNote = useCallback(() => {
     setNoteEditingId(null);
     setNoteEditingText('');
+    setNoteEditingColor('');
   }, []);
 
   // 打开时初始化表单
@@ -750,13 +754,14 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
                         onStartEdit={() => handleStartEditSubtask(st.id, st.title)}
                         onToggle={() => handleToggleSubtask(st.id)}
                         onDelete={() => handleDeleteSubtask(st.id)}
-                        onProgressChange={(v) => handleUpdateProgress(st.id, v)}
                         isNoteEditing={noteEditingId === st.id}
                         noteText={noteEditingId === st.id ? noteEditingText : ''}
+                        noteColor={noteEditingId === st.id ? noteEditingColor : ''}
                         onNoteChange={setNoteEditingText}
+                        onNoteColorChange={setNoteEditingColor}
                         onSaveNote={handleSaveNote}
                         onCancelNote={handleCancelNote}
-                        onStartNote={() => { setNoteEditingId(st.id); setNoteEditingText(st.note ?? ''); }}
+                        onStartNote={() => { setNoteEditingId(st.id); setNoteEditingText(st.note ?? ''); setNoteEditingColor(st.noteColor ?? ''); }}
                       />
                     ))}
                   </SortableContext>
@@ -768,7 +773,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
                     {subtasks.filter((s) => s.done).length}/{subtasks.length} 已完成
                   </span>
                   <span>
-                    进度 {Math.round((subtasks.reduce((sum, s) => sum + (s.progress ?? (s.done ? 100 : 0)), 0) / subtasks.length))}%
+                    进度 {Math.round((subtasks.filter((s) => s.done).length / subtasks.length) * 100)}%
                   </span>
                 </div>
               </div>

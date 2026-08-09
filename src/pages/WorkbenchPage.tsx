@@ -118,10 +118,10 @@ function isReminderSoon(todo: Todo): boolean {
   return diff > 0 && diff < 30 * 60 * 1000;
 }
 
-function getProgressPercent(status: string, subtasks?: { done: boolean; progress?: number }[]): number {
+function getProgressPercent(status: string, subtasks?: { done: boolean }[]): number {
   if (subtasks && subtasks.length > 0) {
-    const totalProgress = subtasks.reduce((sum, s) => sum + (s.progress ?? (s.done ? 100 : 0)), 0);
-    return Math.round(totalProgress / subtasks.length);
+    const doneCount = subtasks.filter((s) => s.done).length;
+    return Math.round((doneCount / subtasks.length) * 100);
   }
   switch (status) {
     case 'completed': return 100;
@@ -249,7 +249,6 @@ function TodoCard({
               />
             </div>
             {todo.subtasks.slice(0, 3).map((st) => {
-              const stProgress = st.progress ?? (st.done ? 100 : 0);
               return (
                 <div key={st.id} className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
@@ -264,15 +263,12 @@ function TodoCard({
                     <span className={`text-[10px] flex-1 ${st.done ? 'line-through text-text-muted' : 'text-text-secondary'}`}>
                       {st.title}
                     </span>
-                    {stProgress > 0 && stProgress < 100 && (
-                      <span className="text-[9px] text-accent-cyan shrink-0">{stProgress}%</span>
-                    )}
                   </div>
                   {/* 子任务备注 */}
                   {st.note && (
                     <div className="flex items-start gap-1 pl-5">
-                      <i className="fas fa-comment-dots text-[7px] text-accent-purple/50 mt-0.5 shrink-0" />
-                      <span className="text-[9px] text-text-muted/70">{st.note}</span>
+                      <i className="fas fa-comment-dots text-[7px] mt-0.5 shrink-0" style={{ color: st.noteColor || 'var(--accent-purple)' }} />
+                      <span className="text-[9px]" style={{ color: st.noteColor || undefined }}>{st.note}</span>
                     </div>
                   )}
                 </div>
@@ -1340,7 +1336,7 @@ export function WorkbenchPage() {
                 </div>
                 <p className="text-[11px] text-text-secondary leading-relaxed">
                   在编辑器中添加子任务细化步骤，勾选完成自动更新进度。
-                  子任务进度条实时反映完成比例，帮助追踪复杂任务的执行情况。
+                  支持拖拽排序、为每个子任务添加备注并选择字体颜色，帮助追踪复杂任务的执行情况。
                 </p>
               </div>
               <div className="rounded-lg border border-border-custom/50 bg-bg-primary/30 p-3">

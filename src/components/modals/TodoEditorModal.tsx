@@ -107,6 +107,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [images, setImages] = useState<string[]>([]);
   const [subtasks, setSubtasks] = useState<SubTask[]>([]);
   const [newSubtaskText, setNewSubtaskText] = useState('');
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [editingSubtaskText, setEditingSubtaskText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const descriptionRef = useRef<AutoResizeTextareaHandle>(null);
@@ -148,6 +150,33 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   /** 删除子任务 */
   const handleDeleteSubtask = useCallback((id: string) => {
     setSubtasks((prev) => prev.filter((st) => st.id !== id));
+    if (editingSubtaskId === id) {
+      setEditingSubtaskId(null);
+      setEditingSubtaskText('');
+    }
+  }, [editingSubtaskId]);
+
+  /** 进入子任务编辑模式 */
+  const handleStartEditSubtask = useCallback((id: string, currentTitle: string) => {
+    setEditingSubtaskId(id);
+    setEditingSubtaskText(currentTitle);
+  }, []);
+
+  /** 保存子任务编辑 */
+  const handleSaveEditSubtask = useCallback(() => {
+    if (!editingSubtaskId) return;
+    const trimmed = editingSubtaskText.trim();
+    if (trimmed) {
+      setSubtasks((prev) => prev.map((st) => (st.id === editingSubtaskId ? { ...st, title: trimmed } : st)));
+    }
+    setEditingSubtaskId(null);
+    setEditingSubtaskText('');
+  }, [editingSubtaskId, editingSubtaskText]);
+
+  /** 取消子任务编辑 */
+  const handleCancelEditSubtask = useCallback(() => {
+    setEditingSubtaskId(null);
+    setEditingSubtaskText('');
   }, []);
 
   // 打开时初始化表单
@@ -456,23 +485,80 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
                     >
                       {st.done && <i className="fas fa-check" />}
                     </button>
-                    <span
-                      className={`flex-1 text-xs ${
-                        st.done ? 'line-through text-text-muted' : 'text-text-primary'
-                      }`}
-                    >
-                      {st.title}
-                    </span>
-                    <span className="text-[9px] text-text-muted shrink-0">
-                      {st.done ? '已完成' : '待完成'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteSubtask(st.id)}
-                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100"
-                    >
-                      <i className="fas fa-times text-[10px]" />
-                    </button>
+                    {editingSubtaskId === st.id ? (
+                      /* 编辑模式：显示输入框 */
+                      <input
+                        type="text"
+                        value={editingSubtaskText}
+                        onChange={(e) => setEditingSubtaskText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveEditSubtask();
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            handleCancelEditSubtask();
+                          }
+                        }}
+                        autoFocus
+                        className="flex-1 rounded-md border border-accent-cyan/40 bg-bg-primary px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-cyan/50"
+                      />
+                    ) : (
+                      /* 正常模式：显示文本，双击可编辑 */
+                      <span
+                        className={`flex-1 text-xs cursor-text ${
+                          st.done ? 'line-through text-text-muted' : 'text-text-primary'
+                        }`}
+                        onDoubleClick={() => handleStartEditSubtask(st.id, st.title)}
+                        title="双击编辑"
+                      >
+                        {st.title}
+                      </span>
+                    )}
+                    {editingSubtaskId === st.id ? (
+                      /* 编辑模式操作按钮 */
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleSaveEditSubtask}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-accent-green transition-all hover:bg-accent-green/10"
+                          title="保存"
+                        >
+                          <i className="fas fa-check text-[10px]" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelEditSubtask}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted transition-all hover:bg-bg-tertiary hover:text-text-primary"
+                          title="取消"
+                        >
+                          <i className="fas fa-times text-[10px]" />
+                        </button>
+                      </>
+                    ) : (
+                      /* 正常模式操作按钮 */
+                      <>
+                        <span className="text-[9px] text-text-muted shrink-0">
+                          {st.done ? '已完成' : '待完成'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditSubtask(st.id, st.title)}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-cyan/10 hover:text-accent-cyan group-hover:opacity-100"
+                          title="编辑"
+                        >
+                          <i className="fas fa-pen text-[9px]" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSubtask(st.id)}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100"
+                          title="删除"
+                        >
+                          <i className="fas fa-times text-[10px]" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))}
                 <div className="flex items-center justify-between text-[10px] text-text-muted px-1">

@@ -106,6 +106,8 @@ export interface SubTask {
   id: string;
   title: string;
   done: boolean;
+  note?: string;        // 备注
+  progress?: number;     // 进度 0-100
 }
 
 /** CheckIn / 每日打卡实体 */

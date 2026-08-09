@@ -118,10 +118,10 @@ function isReminderSoon(todo: Todo): boolean {
   return diff > 0 && diff < 30 * 60 * 1000;
 }
 
-function getProgressPercent(status: string, subtasks?: { done: boolean }[]): number {
+function getProgressPercent(status: string, subtasks?: { done: boolean; progress?: number }[]): number {
   if (subtasks && subtasks.length > 0) {
-    const done = subtasks.filter(s => s.done).length;
-    return Math.round((done / subtasks.length) * 100);
+    const totalProgress = subtasks.reduce((sum, s) => sum + (s.progress ?? (s.done ? 100 : 0)), 0);
+    return Math.round(totalProgress / subtasks.length);
   }
   switch (status) {
     case 'completed': return 100;
@@ -236,23 +236,48 @@ function TodoCard({
           <div className="flex flex-col gap-1 rounded-md bg-bg-primary/50 px-2.5 py-1.5">
             <div className="flex items-center justify-between text-[10px] text-text-muted">
               <span><i className="fas fa-list-check mr-1" />子任务</span>
-              <span>{completedSubtasks}/{todo.subtasks.length}</span>
+              <span>{completedSubtasks}/{todo.subtasks.length} · {progress}%</span>
             </div>
-            {todo.subtasks.slice(0, 3).map((st) => (
-              <div key={st.id} className="flex items-center gap-1.5">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onToggleSubtask(st.id); }}
-                  className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border text-[8px] ${
-                    st.done ? 'border-accent-green bg-accent-green/20 text-accent-green' : 'border-border-hover text-transparent'
-                  }`}
-                >
-                  {st.done && <i className="fas fa-check" />}
-                </button>
-                <span className={`text-[10px] ${st.done ? 'line-through text-text-muted' : 'text-text-secondary'}`}>
-                  {st.title}
-                </span>
-              </div>
-            ))}
+            {/* 总进度条 */}
+            <div className="h-1 rounded-full bg-bg-tertiary/60 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${progress}%`,
+                  backgroundColor: progress >= 100 ? 'var(--accent-green)' : 'var(--accent-cyan)',
+                }}
+              />
+            </div>
+            {todo.subtasks.slice(0, 3).map((st) => {
+              const stProgress = st.progress ?? (st.done ? 100 : 0);
+              return (
+                <div key={st.id} className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onToggleSubtask(st.id); }}
+                      className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border text-[8px] ${
+                        st.done ? 'border-accent-green bg-accent-green/20 text-accent-green' : 'border-border-hover text-transparent'
+                      }`}
+                    >
+                      {st.done && <i className="fas fa-check" />}
+                    </button>
+                    <span className={`text-[10px] flex-1 ${st.done ? 'line-through text-text-muted' : 'text-text-secondary'}`}>
+                      {st.title}
+                    </span>
+                    {stProgress > 0 && stProgress < 100 && (
+                      <span className="text-[9px] text-accent-cyan shrink-0">{stProgress}%</span>
+                    )}
+                  </div>
+                  {/* 子任务备注 */}
+                  {st.note && (
+                    <div className="flex items-start gap-1 pl-5">
+                      <i className="fas fa-comment-dots text-[7px] text-accent-purple/50 mt-0.5 shrink-0" />
+                      <span className="text-[9px] text-text-muted/70">{st.note}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {todo.subtasks.length > 3 && (
               <span className="text-[10px] text-text-muted pl-5">还有 {todo.subtasks.length - 3} 项...</span>
             )}

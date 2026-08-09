@@ -36,15 +36,24 @@ function safeParseImages(val: any): string[] {
 function safeParseSubtasks(val: any): import('@/types').SubTask[] {
   if (Array.isArray(val)) return val;
   if (!val) return [];
+  let parsed: any[] = [];
   if (typeof val === 'string') {
     try {
-      const parsed = JSON.parse(val);
-      return Array.isArray(parsed) ? parsed : [];
+      parsed = JSON.parse(val);
     } catch {
       return [];
     }
+  } else if (Array.isArray(val)) {
+    parsed = val;
   }
-  return [];
+  // 规范化：确保每个子任务都有 note 和 progress 字段
+  return parsed.map((s: any) => ({
+    id: String(s.id ?? ''),
+    title: String(s.title ?? ''),
+    done: Boolean(s.done),
+    note: s.note ?? undefined,
+    progress: typeof s.progress === 'number' ? s.progress : undefined,
+  }));
 }
 
 interface TodoStore {
@@ -139,7 +148,14 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     const updated: Todo = {
       ...todo,
       subtasks: todo.subtasks.map((st) =>
-        st.id === subtaskId ? { ...st, done: !st.done } : st,
+        st.id === subtaskId
+          ? {
+              ...st,
+              done: !st.done,
+              // 同步 progress：标记完成时设为100，取消完成时重置为0
+              progress: !st.done ? 100 : 0,
+            }
+          : st,
       ),
       updatedAt: new Date().toISOString(),
     };

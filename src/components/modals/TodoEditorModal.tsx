@@ -14,6 +14,21 @@ import { AutoResizeTextarea, type AutoResizeTextareaHandle } from '@/components/
 import { ImageEditorModal } from '@/components/modals/ImageEditorModal';
 import type { Todo, SubTask } from '@/types';
 import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   type ReminderType,
   type ReminderConfig,
   parseReminderConfig,
@@ -82,6 +97,208 @@ function compressImage(dataUrl: string, maxDim = 1280, quality = 0.8): Promise<s
   });
 }
 
+/* ============================================
+   SortableSubtaskItem — 可拖拽排序的子任务行
+   ============================================ */
+interface SortableSubtaskItemProps {
+  subtask: SubTask;
+  isEditing: boolean;
+  editingText: string;
+  onEditChange: (v: string) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onStartEdit: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
+  onProgressChange: (v: number) => void;
+  isNoteEditing: boolean;
+  noteText: string;
+  onNoteChange: (v: string) => void;
+  onSaveNote: () => void;
+  onCancelNote: () => void;
+  onStartNote: () => void;
+}
+
+function SortableSubtaskItem({
+  subtask: st,
+  isEditing,
+  editingText,
+  onEditChange,
+  onSaveEdit,
+  onCancelEdit,
+  onStartEdit,
+  onToggle,
+  onDelete,
+  onProgressChange,
+  isNoteEditing,
+  noteText,
+  onNoteChange,
+  onSaveNote,
+  onCancelNote,
+  onStartNote,
+}: SortableSubtaskItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: st.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const progress = st.progress ?? (st.done ? 100 : 0);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex flex-col gap-1 rounded-lg bg-bg-primary/60 px-2.5 py-2 ${
+        isDragging ? 'z-50 opacity-60 shadow-lg ring-1 ring-accent-cyan/40' : ''
+      }`}
+      {...attributes}
+    >
+      <div className="flex items-center gap-2">
+        {/* 拖拽手柄 */}
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...listeners}
+          className="flex h-4 w-3 shrink-0 cursor-grab items-center justify-center text-text-muted/40 hover:text-text-secondary active:cursor-grabbing"
+          title="拖拽排序"
+        >
+          <i className="fas fa-grip-vertical text-[10px]" />
+        </button>
+
+        {/* 完成状态复选框 */}
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[8px] transition-all ${
+            st.done
+              ? 'border-accent-green bg-accent-green/20 text-accent-green'
+              : 'border-border-hover text-transparent hover:border-accent-cyan'
+          }`}
+        >
+          {st.done && <i className="fas fa-check" />}
+        </button>
+
+        {/* 标题 / 编辑输入框 */}
+        {isEditing ? (
+          <input
+            type="text"
+            value={editingText}
+            onChange={(e) => onEditChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); onSaveEdit(); }
+              else if (e.key === 'Escape') { e.preventDefault(); onCancelEdit(); }
+            }}
+            autoFocus
+            className="flex-1 rounded-md border border-accent-cyan/40 bg-bg-primary px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-cyan/50"
+          />
+        ) : (
+          <span
+            className={`flex-1 text-xs cursor-text ${st.done ? 'line-through text-text-muted' : 'text-text-primary'}`}
+            onDoubleClick={onStartEdit}
+            title="双击编辑"
+          >
+            {st.title}
+          </span>
+        )}
+
+        {/* 操作按钮 */}
+        {isEditing ? (
+          <>
+            <button type="button" onClick={onSaveEdit} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-accent-green hover:bg-accent-green/10" title="保存">
+              <i className="fas fa-check text-[10px]" />
+            </button>
+            <button type="button" onClick={onCancelEdit} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-text-primary" title="取消">
+              <i className="fas fa-times text-[10px]" />
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="text-[9px] text-text-muted shrink-0">
+              {progress > 0 && progress < 100 ? `${progress}%` : st.done ? '已完成' : '待完成'}
+            </span>
+            <button type="button" onClick={onStartNote} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-purple/10 hover:text-accent-purple group-hover:opacity-100" title="备注">
+              <i className="fas fa-comment-dots text-[9px]" />
+            </button>
+            <button type="button" onClick={onStartEdit} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-cyan/10 hover:text-accent-cyan group-hover:opacity-100" title="编辑">
+              <i className="fas fa-pen text-[9px]" />
+            </button>
+            <button type="button" onClick={onDelete} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100" title="删除">
+              <i className="fas fa-times text-[10px]" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* 进度条 */}
+      {!isEditing && (
+        <div className="flex items-center gap-1.5 pl-6">
+          <div className="h-1 flex-1 rounded-full bg-bg-tertiary/60 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${progress}%`,
+                backgroundColor: progress >= 100 ? 'var(--accent-green)' : progress > 0 ? 'var(--accent-cyan)' : 'transparent',
+              }}
+            />
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={progress}
+            onChange={(e) => onProgressChange(Number(e.target.value))}
+            className="subtask-progress-slider w-16 h-1 cursor-pointer"
+            title="调整进度"
+          />
+        </div>
+      )}
+
+      {/* 备注编辑 */}
+      {isNoteEditing && (
+        <div className="flex gap-1.5 pl-6">
+          <input
+            type="text"
+            value={noteText}
+            onChange={(e) => onNoteChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); onSaveNote(); }
+              else if (e.key === 'Escape') { e.preventDefault(); onCancelNote(); }
+            }}
+            autoFocus
+            placeholder="输入备注..."
+            className="flex-1 rounded-md border border-accent-purple/40 bg-bg-primary px-2 py-1 text-[11px] text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-1 focus:ring-accent-purple/50"
+          />
+          <button type="button" onClick={onSaveNote} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-accent-green hover:bg-accent-green/10" title="保存备注">
+            <i className="fas fa-check text-[10px]" />
+          </button>
+          <button type="button" onClick={onCancelNote} className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted hover:bg-bg-tertiary hover:text-text-primary" title="取消">
+            <i className="fas fa-times text-[10px]" />
+          </button>
+        </div>
+      )}
+
+      {/* 备注展示 */}
+      {!isNoteEditing && st.note && (
+        <div className="flex items-start gap-1 pl-6">
+          <i className="fas fa-comment-dots text-[8px] text-accent-purple/50 mt-0.5 shrink-0" />
+          <span className="text-[10px] text-text-muted/80">{st.note}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface TodoEditorModalProps {
   open: boolean;
   onClose: () => void;
@@ -109,6 +326,8 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const [newSubtaskText, setNewSubtaskText] = useState('');
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editingSubtaskText, setEditingSubtaskText] = useState('');
+  const [noteEditingId, setNoteEditingId] = useState<string | null>(null);
+  const [noteEditingText, setNoteEditingText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const descriptionRef = useRef<AutoResizeTextareaHandle>(null);
@@ -177,6 +396,50 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
   const handleCancelEditSubtask = useCallback(() => {
     setEditingSubtaskId(null);
     setEditingSubtaskText('');
+  }, []);
+
+  /** 拖拽排序：传感器配置 */
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  /** 拖拽排序结束 */
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setSubtasks((prev) => {
+      const oldIndex = prev.findIndex((s) => s.id === active.id);
+      const newIndex = prev.findIndex((s) => s.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }, []);
+
+  /** 更新子任务进度 */
+  const handleUpdateProgress = useCallback((id: string, progress: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(progress)));
+    setSubtasks((prev) => prev.map((st) => {
+      if (st.id !== id) return st;
+      // 进度100%自动标记完成，进度<100取消完成
+      const autoDone = clamped >= 100;
+      return { ...st, progress: clamped, done: autoDone };
+    }));
+  }, []);
+
+  /** 保存子任务备注 */
+  const handleSaveNote = useCallback(() => {
+    if (!noteEditingId) return;
+    setSubtasks((prev) => prev.map((st) =>
+      st.id === noteEditingId ? { ...st, note: noteEditingText.trim() || undefined } : st
+    ));
+    setNoteEditingId(null);
+    setNoteEditingText('');
+  }, [noteEditingId, noteEditingText]);
+
+  /** 取消子任务备注编辑 */
+  const handleCancelNote = useCallback(() => {
+    setNoteEditingId(null);
+    setNoteEditingText('');
   }, []);
 
   // 打开时初始化表单
@@ -469,105 +732,43 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
             </div>
             {subtasks.length > 0 && (
               <div className="mt-1.5 flex flex-col gap-1.5">
-                {subtasks.map((st) => (
-                  <div
-                    key={st.id}
-                    className="group flex items-center gap-2 rounded-lg bg-bg-primary/60 px-2.5 py-2"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleToggleSubtask(st.id)}
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[8px] transition-all ${
-                        st.done
-                          ? 'border-accent-green bg-accent-green/20 text-accent-green'
-                          : 'border-border-hover text-transparent hover:border-accent-cyan'
-                      }`}
-                    >
-                      {st.done && <i className="fas fa-check" />}
-                    </button>
-                    {editingSubtaskId === st.id ? (
-                      /* 编辑模式：显示输入框 */
-                      <input
-                        type="text"
-                        value={editingSubtaskText}
-                        onChange={(e) => setEditingSubtaskText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleSaveEditSubtask();
-                          } else if (e.key === 'Escape') {
-                            e.preventDefault();
-                            handleCancelEditSubtask();
-                          }
-                        }}
-                        autoFocus
-                        className="flex-1 rounded-md border border-accent-cyan/40 bg-bg-primary px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-cyan/50"
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={subtasks.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                    {subtasks.map((st) => (
+                      <SortableSubtaskItem
+                        key={st.id}
+                        subtask={st}
+                        isEditing={editingSubtaskId === st.id}
+                        editingText={editingSubtaskId === st.id ? editingSubtaskText : ''}
+                        onEditChange={setEditingSubtaskText}
+                        onSaveEdit={handleSaveEditSubtask}
+                        onCancelEdit={handleCancelEditSubtask}
+                        onStartEdit={() => handleStartEditSubtask(st.id, st.title)}
+                        onToggle={() => handleToggleSubtask(st.id)}
+                        onDelete={() => handleDeleteSubtask(st.id)}
+                        onProgressChange={(v) => handleUpdateProgress(st.id, v)}
+                        isNoteEditing={noteEditingId === st.id}
+                        noteText={noteEditingId === st.id ? noteEditingText : ''}
+                        onNoteChange={setNoteEditingText}
+                        onSaveNote={handleSaveNote}
+                        onCancelNote={handleCancelNote}
+                        onStartNote={() => { setNoteEditingId(st.id); setNoteEditingText(st.note ?? ''); }}
                       />
-                    ) : (
-                      /* 正常模式：显示文本，双击可编辑 */
-                      <span
-                        className={`flex-1 text-xs cursor-text ${
-                          st.done ? 'line-through text-text-muted' : 'text-text-primary'
-                        }`}
-                        onDoubleClick={() => handleStartEditSubtask(st.id, st.title)}
-                        title="双击编辑"
-                      >
-                        {st.title}
-                      </span>
-                    )}
-                    {editingSubtaskId === st.id ? (
-                      /* 编辑模式操作按钮 */
-                      <>
-                        <button
-                          type="button"
-                          onClick={handleSaveEditSubtask}
-                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-accent-green transition-all hover:bg-accent-green/10"
-                          title="保存"
-                        >
-                          <i className="fas fa-check text-[10px]" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCancelEditSubtask}
-                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted transition-all hover:bg-bg-tertiary hover:text-text-primary"
-                          title="取消"
-                        >
-                          <i className="fas fa-times text-[10px]" />
-                        </button>
-                      </>
-                    ) : (
-                      /* 正常模式操作按钮 */
-                      <>
-                        <span className="text-[9px] text-text-muted shrink-0">
-                          {st.done ? '已完成' : '待完成'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditSubtask(st.id, st.title)}
-                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-cyan/10 hover:text-accent-cyan group-hover:opacity-100"
-                          title="编辑"
-                        >
-                          <i className="fas fa-pen text-[9px]" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSubtask(st.id)}
-                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100"
-                          title="删除"
-                        >
-                          <i className="fas fa-times text-[10px]" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
+                    ))}
+                  </SortableContext>
+                </DndContext>
+                {/* 总进度统计 */}
                 <div className="flex items-center justify-between text-[10px] text-text-muted px-1">
                   <span>
                     <i className="fas fa-chart-simple mr-1" />
                     {subtasks.filter((s) => s.done).length}/{subtasks.length} 已完成
                   </span>
                   <span>
-                    进度 {Math.round((subtasks.filter((s) => s.done).length / subtasks.length) * 100)}%
+                    进度 {Math.round((subtasks.reduce((sum, s) => sum + (s.progress ?? (s.done ? 100 : 0)), 0) / subtasks.length))}%
                   </span>
                 </div>
               </div>

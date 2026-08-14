@@ -115,7 +115,7 @@ export function WeeklyHeatmap({ todos, weeks = 8 }: WeeklyHeatmapProps) {
   return (
     <div className="flex flex-col gap-1.5 md:gap-2">
       {/* 统计摘要 */}
-      <div className="flex items-center gap-3 md:gap-4 text-[9px] md:text-[10px] text-text-muted flex-wrap">
+      <div className="flex items-center gap-3 md:gap-4 text-[10px] md:text-[10px] text-text-muted flex-wrap">
         <span>
           <i className="fas fa-check-circle text-accent-green mr-1" />
           近 {weeks} 周完成 <span className="font-bold text-accent-green">{totalCompleted}</span> 项
@@ -135,11 +135,11 @@ export function WeeklyHeatmap({ todos, weeks = 8 }: WeeklyHeatmapProps) {
       {/* 热力图 */}
       <div className="flex gap-1 md:gap-1.5">
         {/* 星期标签 */}
-        <div className="flex flex-col gap-0.5 md:gap-1 pt-3 md:pt-4">
+        <div className="flex flex-col gap-1 md:gap-1 pt-3 md:pt-4">
           {weekdayLabels.map((d, i) => (
             <div
               key={i}
-              className="flex h-3 w-2.5 md:h-3.5 md:w-3 items-center justify-center text-[7px] md:text-[8px] text-text-muted"
+              className="flex h-3.5 w-3 md:h-3.5 md:w-3 items-center justify-center text-[8px] md:text-[8px] text-text-muted"
             >
               {i % 2 === 0 ? d : ''}
             </div>
@@ -165,13 +165,13 @@ export function WeeklyHeatmap({ todos, weeks = 8 }: WeeklyHeatmapProps) {
           </div>
 
           {/* 日期格子 */}
-          <div className="flex gap-0.5 md:gap-1">
+          <div className="flex gap-1 md:gap-1">
             {grid.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-0.5 md:gap-1">
+              <div key={wi} className="flex flex-col gap-1 md:gap-1">
                 {week.map((cell) => (
                   <div
                     key={cell.date}
-                    className={`h-3 w-3 md:h-3.5 md:w-3.5 rounded-sm transition-all hover:ring-1 hover:ring-accent-cyan/50 ${getCellColor(cell)} ${
+                    className={`h-3.5 w-3.5 md:h-3.5 md:w-3.5 rounded-sm transition-all hover:ring-1 hover:ring-accent-cyan/50 ${getCellColor(cell)} ${
                       cell.isToday ? 'ring-1 ring-accent-cyan' : ''
                     }`}
                     title={`${cell.date}${cell.count > 0 ? ` · 完成 ${cell.count} 项` : ''}`}
@@ -186,11 +186,11 @@ export function WeeklyHeatmap({ todos, weeks = 8 }: WeeklyHeatmapProps) {
       {/* 图例 */}
       <div className="flex items-center justify-end gap-1 md:gap-1.5 text-[7px] md:text-[8px] text-text-muted">
         <span>少</span>
-        <div className="h-2 md:h-2.5 w-2 md:w-2.5 rounded-sm bg-bg-tertiary/50" />
-        <div className="h-2 md:h-2.5 w-2 md:w-2.5 rounded-sm bg-accent-green/30" />
-        <div className="h-2 md:h-2.5 w-2 md:w-2.5 rounded-sm bg-accent-green/50" />
-        <div className="h-2 md:h-2.5 w-2 md:w-2.5 rounded-sm bg-accent-green/70" />
-        <div className="h-2 md:h-2.5 w-2 md:w-2.5 rounded-sm bg-accent-green" />
+        <div className="h-2.5 md:h-2.5 w-2.5 md:w-2.5 rounded-sm bg-bg-tertiary/50" />
+        <div className="h-2.5 md:h-2.5 w-2.5 md:w-2.5 rounded-sm bg-accent-green/30" />
+        <div className="h-2.5 md:h-2.5 w-2.5 md:w-2.5 rounded-sm bg-accent-green/50" />
+        <div className="h-2.5 md:h-2.5 w-2.5 md:w-2.5 rounded-sm bg-accent-green/70" />
+        <div className="h-2.5 md:h-2.5 w-2.5 md:w-2.5 rounded-sm bg-accent-green" />
         <span>多</span>
       </div>
     </div>

@@ -63,7 +63,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar onMenuToggle={() => setMobileSidebarOpen((prev) => !prev)} />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 pb-24 md:pb-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 pb-28 md:pb-6">
           {children}
         </main>
       </div>

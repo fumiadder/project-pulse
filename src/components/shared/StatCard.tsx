@@ -46,23 +46,23 @@ export function StatCard({ title, value, icon, color, onClick }: StatCardProps) 
   return (
     <div
       onClick={onClick}
-      className={`card-glass relative overflow-hidden flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] ${c.glow} ${clickable ? 'cursor-pointer hover:border-accent-cyan/30' : ''}`}
+      className={`card-glass relative overflow-hidden flex items-center gap-2 md:gap-4 p-2.5 md:p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] ${c.glow} ${clickable ? 'cursor-pointer hover:border-accent-cyan/30' : ''}`}
     >
       {/* 背景装饰图标 - 半透明大字号 */}
       <i
-        className={`fas ${icon} absolute -right-2 -bottom-2 text-6xl opacity-[0.06] ${c.icon}`}
+        className={`fas ${icon} absolute -right-2 -bottom-2 text-4xl md:text-6xl opacity-[0.06] ${c.icon}`}
         aria-hidden="true"
       />
       <div
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-bg-tertiary ${c.icon}`}
+        className={`flex h-8 w-8 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-lg bg-bg-tertiary ${c.icon}`}
       >
-        <i className={`fas ${icon} text-xl`} />
+        <i className={`fas ${icon} text-sm md:text-xl`} />
       </div>
-      <div className="flex flex-col">
-        <span className={`text-2xl font-bold font-display ${c.value}`}>
+      <div className="flex flex-col min-w-0">
+        <span className={`text-lg md:text-2xl font-bold font-display ${c.value}`}>
           {value}
         </span>
-        <span className="text-xs text-text-muted">{title}</span>
+        <span className="text-[10px] md:text-xs text-text-muted">{title}</span>
       </div>
     </div>
   );

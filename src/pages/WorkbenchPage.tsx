@@ -186,7 +186,7 @@ function TodoCard({
         <div className="flex items-start gap-2.5">
           <button
             onClick={(e) => { e.stopPropagation(); onToggle(); }}
-            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${
+            className={`mt-0.5 flex h-6 w-6 md:h-5 md:w-5 shrink-0 items-center justify-center rounded border transition-all ${
               todo.status === 'completed'
                 ? 'border-accent-green bg-accent-green/20 text-accent-green'
                 : 'border-border-hover text-transparent hover:border-accent-cyan hover:text-accent-cyan/50'
@@ -202,19 +202,19 @@ function TodoCard({
           {/* 置顶按钮 — 始终可见 */}
           <button
             onClick={(e) => { e.stopPropagation(); onPin(); }}
-            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded transition-all ${
+            className={`flex h-8 w-8 md:h-6 md:w-6 shrink-0 items-center justify-center rounded transition-all ${
               todo.pinned
                 ? 'text-accent-orange bg-accent-orange/10'
                 : 'text-text-muted hover:text-accent-orange hover:bg-accent-orange/10'
             }`}
             title={todo.pinned ? '取消置顶' : '置顶到今日聚焦'}
           >
-            <i className={`fas fa-star text-xs ${todo.pinned ? 'animate-pulse' : ''}`} />
+            <i className={`fas fa-star text-xs md:text-xs ${todo.pinned ? 'animate-pulse' : ''}`} />
           </button>
 
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100"
+            className="flex h-8 w-8 md:h-6 md:w-6 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100 md:group-hover:opacity-100 max-md:opacity-60"
             title="删除"
           >
             <i className="fas fa-trash text-xs" />
@@ -254,13 +254,13 @@ function TodoCard({
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={(e) => { e.stopPropagation(); onToggleSubtask(st.id); }}
-                      className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border text-[8px] ${
+                      className={`flex h-4 w-4 md:h-3.5 md:w-3.5 shrink-0 items-center justify-center rounded border text-[8px] ${
                         st.done ? 'border-accent-green bg-accent-green/20 text-accent-green' : 'border-border-hover text-transparent'
                       }`}
                     >
                       {st.done && <i className="fas fa-check" />}
                     </button>
-                    <span className={`text-[10px] flex-1 ${st.done ? 'line-through text-text-muted' : 'text-text-secondary'}`}>
+                    <span className={`text-[11px] md:text-[10px] flex-1 ${st.done ? 'line-through text-text-muted' : 'text-text-secondary'}`}>
                       {st.title}
                     </span>
                   </div>
@@ -412,11 +412,11 @@ function CheckinCard({
       </div>
 
       {/* 操作按钮 */}
-      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button onClick={onEdit} className="flex h-6 w-6 items-center justify-center rounded text-text-muted hover:text-accent-cyan" title="编辑">
+      <div className="flex items-center gap-1 opacity-60 md:opacity-0 transition-opacity md:group-hover:opacity-100">
+        <button onClick={onEdit} className="flex h-8 w-8 md:h-6 md:w-6 items-center justify-center rounded text-text-muted hover:text-accent-cyan active:scale-95" title="编辑">
           <i className="fas fa-pen text-[10px]" />
         </button>
-        <button onClick={onDelete} className="flex h-6 w-6 items-center justify-center rounded text-text-muted hover:text-accent-red" title="删除">
+        <button onClick={onDelete} className="flex h-8 w-8 md:h-6 md:w-6 items-center justify-center rounded text-text-muted hover:text-accent-red active:scale-95" title="删除">
           <i className="fas fa-trash text-[10px]" />
         </button>
       </div>
@@ -431,12 +431,12 @@ function QuickAddButton({ icon, label, color, onClick }: { icon: string; label: 
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-1.5 rounded-lg border border-border-custom bg-bg-secondary p-3 transition-all hover:border-border-hover hover:shadow-md"
+      className="flex flex-col items-center gap-1.5 rounded-lg border border-border-custom bg-bg-secondary p-2.5 md:p-3 min-h-[48px] transition-all hover:border-border-hover hover:shadow-md active:scale-95 no-select-mobile"
     >
-      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${color}`}>
-        <i className={`fas ${icon} text-sm`} />
+      <div className={`flex h-9 w-9 md:h-9 md:w-9 items-center justify-center rounded-lg ${color}`}>
+        <i className={`fas ${icon} text-base md:text-sm`} />
       </div>
-      <span className="text-[11px] font-medium text-text-secondary">{label}</span>
+      <span className="text-[11px] md:text-[11px] font-medium text-text-secondary">{label}</span>
     </button>
   );
 }
@@ -808,18 +808,18 @@ export function WorkbenchPage() {
             <div className="lg:col-span-2 flex flex-col gap-2.5 md:gap-3">
               {/* 问候卡 */}
               <GreetingCard>
-                <div className="flex gap-2 md:gap-3 text-center">
+                <div className="flex flex-wrap gap-2 md:gap-3 text-center">
                   <div>
                     <div className="text-lg md:text-xl font-bold text-accent-cyan">{stats.pending}</div>
-                    <div className="text-[10px] md:text-[9px] text-text-secondary/80">待开始</div>
+                    <div className="text-[10px] md:text-[9px] text-text-secondary">待开始</div>
                   </div>
                   <div>
                     <div className="text-lg md:text-xl font-bold text-accent-orange">{stats.inProgress}</div>
-                    <div className="text-[10px] md:text-[9px] text-text-secondary/80">进行中</div>
+                    <div className="text-[10px] md:text-[9px] text-text-secondary">进行中</div>
                   </div>
                   <div>
                     <div className="text-lg md:text-xl font-bold text-accent-green">{stats.completed}</div>
-                    <div className="text-[10px] md:text-[9px] text-text-secondary/80">已完成</div>
+                    <div className="text-[10px] md:text-[9px] text-text-secondary">已完成</div>
                   </div>
                 </div>
               </GreetingCard>
@@ -847,7 +847,7 @@ export function WorkbenchPage() {
                   <span className="text-xs font-bold text-text-primary">快速记录</span>
                   <span className="hidden md:inline text-[9px] text-text-muted">QUICK ADD</span>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 md:gap-2">
+                <div className="grid grid-cols-2 gap-2 md:gap-2">
                   <QuickAddButton icon="fa-list-check" label="记待办" color="bg-accent-cyan/10 text-accent-cyan" onClick={handleAdd} />
                   <QuickAddButton icon="fa-check-circle" label="记打卡" color="bg-accent-green/10 text-accent-green" onClick={handleAddCheckin} />
                   <QuickAddButton icon="fa-chart-line" label="记进度" color="bg-accent-orange/10 text-accent-orange" onClick={handleNavigateProgress} />
@@ -912,7 +912,7 @@ export function WorkbenchPage() {
                 </div>
                 <button
                   onClick={handleAddCheckin}
-                  className="flex items-center gap-1 rounded-md bg-accent-green/10 px-2 py-1 text-[10px] text-accent-green transition-colors hover:bg-accent-green/20"
+                  className="flex items-center gap-1 rounded-md bg-accent-green/10 px-3 py-2 md:py-1.5 text-[11px] text-accent-green transition-colors hover:bg-accent-green/20 active:scale-95 no-select-mobile"
                 >
                   <i className="fas fa-plus text-[9px]" />
                   新增
@@ -1010,17 +1010,17 @@ export function WorkbenchPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜索待办..."
-                className="w-full rounded-lg border border-border-custom bg-bg-secondary py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
+                className="w-full rounded-lg border border-border-custom bg-bg-secondary h-11 md:h-10 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan/50"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center text-text-muted hover:text-text-primary">
                   <i className="fas fa-times text-xs" />
                 </button>
               )}
             </div>
             {/* Filter bar: horizontal scroll on mobile, wrap on desktop */}
             <div className="filter-bar-mobile flex items-center gap-1.5 overflow-x-auto md:overflow-visible md:flex-wrap no-select-mobile pb-1 md:pb-0">
-              <span className="shrink-0 text-[10px] text-text-muted flex items-center gap-1">
+              <span className="shrink-0 text-[10px] md:text-[10px] text-text-muted flex items-center gap-1">
                 <i className="fas fa-sort-amount-down" />
                 <span className="hidden md:inline">优先级·时间</span>
               </span>
@@ -1036,7 +1036,7 @@ export function WorkbenchPage() {
                   <button
                     key={opt.v}
                     onClick={() => setFilterStatus(opt.v)}
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] md:text-xs transition-colors ${
+                    className={`shrink-0 rounded-full px-3.5 py-2 md:px-2.5 md:py-1 text-xs md:text-xs transition-colors ${
                       filterStatus === opt.v ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                     }`}
                   >
@@ -1048,7 +1048,7 @@ export function WorkbenchPage() {
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => setFilterCategory('all')}
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] md:text-xs transition-colors ${
+                  className={`shrink-0 rounded-full px-3.5 py-2 md:px-2.5 md:py-1 text-xs md:text-xs transition-colors ${
                     filterCategory === 'all' ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                   }`}
                 >
@@ -1058,7 +1058,7 @@ export function WorkbenchPage() {
                   <button
                     key={cat.value}
                     onClick={() => setFilterCategory(cat.value)}
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] md:text-xs transition-colors ${
+                    className={`shrink-0 rounded-full px-3.5 py-2 md:px-2.5 md:py-1 text-xs md:text-xs transition-colors ${
                       filterCategory === cat.value ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                     }`}
                   >
@@ -1069,12 +1069,12 @@ export function WorkbenchPage() {
               <div className="hidden md:block h-4 w-px bg-border-custom shrink-0" />
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
-                className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] md:text-xs transition-colors ${
+                className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 md:px-2.5 md:py-1 text-xs md:text-xs transition-colors ${
                   showCompleted ? 'text-text-muted hover:text-text-primary' : 'text-accent-cyan bg-accent-cyan/15 font-medium'
                 }`}
               >
                 <i className={`fas ${showCompleted ? 'fa-eye-slash' : 'fa-eye'} text-[10px]`} />
-                <span className="hidden md:inline">{showCompleted ? '隐藏已完成' : '显示已完成'}</span>
+                <span>{showCompleted ? '隐藏已完成' : '显示已完成'}</span>
               </button>
             </div>
 
@@ -1084,14 +1084,14 @@ export function WorkbenchPage() {
                 <i className="fas fa-spinner fa-spin text-2xl text-accent-cyan" />
               </div>
             ) : filteredTodos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2.5 rounded-xl border border-dashed border-border-custom py-8 md:py-16">
-                <i className="fas fa-clipboard-list text-3xl md:text-4xl text-text-muted/30" />
-                <p className="text-xs md:text-sm text-text-muted text-center px-4">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border-custom py-12 md:py-16">
+                <i className="fas fa-clipboard-list text-4xl md:text-5xl text-text-muted/30" />
+                <p className="text-sm md:text-base text-text-muted text-center px-4">
                   {todos.length === 0 ? '还没有待办事项' : '没有匹配的待办事项'}
                 </p>
                 {todos.length === 0 && (
-                  <button onClick={handleAdd} className="rounded-lg bg-accent-cyan/10 px-4 py-2 text-xs text-accent-cyan hover:bg-accent-cyan/20 transition-colors mt-1">
-                    <i className="fas fa-plus mr-1" />
+                  <button onClick={handleAdd} className="flex items-center gap-1.5 rounded-lg bg-accent-cyan/10 px-5 py-2.5 text-sm text-accent-cyan hover:bg-accent-cyan/20 transition-colors mt-1 active:scale-95">
+                    <i className="fas fa-plus text-xs" />
                     新建待办
                   </button>
                 )}
@@ -1109,7 +1109,7 @@ export function WorkbenchPage() {
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredTodos.map((todo) => (
                     <TodoCard
                       key={todo.id}
@@ -1142,7 +1142,7 @@ export function WorkbenchPage() {
   return (
     <div className="flex flex-col gap-3 md:gap-4 animate-fade-in-up">
       {/* 页面标题 */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 md:gap-3">
         <div className="min-w-0">
           <h1 className="text-sm md:text-lg font-bold text-text-primary font-display flex items-center gap-2">
             <span className="inline-block h-4 md:h-5 w-1 rounded-full bg-accent-cyan shrink-0" />
@@ -1153,11 +1153,11 @@ export function WorkbenchPage() {
             管理你的待办事项、每日打卡和完成进度
           </p>
         </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           {/* 飞书提醒设置按钮 */}
           <button
             onClick={() => setShowFeishuSetting(!showFeishuSetting)}
-            className={`flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 rounded-lg border sm:px-3 text-xs transition-all no-select-mobile ${
+            className={`flex h-10 w-10 md:h-9 md:w-auto items-center justify-center gap-1.5 rounded-lg border md:px-3 text-xs transition-all no-select-mobile active:scale-95 shrink-0 ${
               showFeishuSetting
                 ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
                 : 'border-border-custom bg-bg-tertiary/50 text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan'
@@ -1165,13 +1165,13 @@ export function WorkbenchPage() {
             title="飞书提醒设置"
             aria-label="飞书提醒设置"
           >
-            <i className="fab fa-feishu text-xs" />
-            <span className="hidden sm:inline">飞书提醒</span>
+            <i className="fab fa-feishu text-sm md:text-xs" />
+            <span className="hidden md:inline">飞书提醒</span>
           </button>
           {/* 编辑布局按钮 */}
           <button
             onClick={toggleEditMode}
-            className={`flex h-9 w-9 sm:w-auto items-center justify-center gap-1.5 rounded-lg border sm:px-3 text-xs transition-all no-select-mobile ${
+            className={`flex h-10 w-10 md:h-9 md:w-auto items-center justify-center gap-1.5 rounded-lg border md:px-3 text-xs transition-all no-select-mobile active:scale-95 shrink-0 ${
               editMode
                 ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
                 : 'border-border-custom bg-bg-tertiary/50 text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan'
@@ -1179,16 +1179,16 @@ export function WorkbenchPage() {
             title="编辑卡片布局"
             aria-label="编辑卡片布局"
           >
-            <i className={`fas ${editMode ? 'fa-check' : 'fa-grip-vertical'} text-xs`} />
-            <span className="hidden sm:inline">{editMode ? '完成编辑' : '编辑布局'}</span>
+            <i className={`fas ${editMode ? 'fa-check' : 'fa-grip-vertical'} text-sm md:text-xs`} />
+            <span className="hidden md:inline">{editMode ? '完成编辑' : '编辑布局'}</span>
           </button>
           <button
             onClick={handleAdd}
-            className="flex h-9 items-center gap-1.5 rounded-lg bg-accent-cyan px-3 sm:px-4 text-sm font-medium text-bg-primary transition-colors hover:bg-accent-cyan/80 no-select-mobile shadow-[0_0_12px_rgba(0,212,255,0.2)]"
+            className="flex h-10 md:h-9 items-center gap-1.5 rounded-lg bg-accent-cyan px-4 md:px-4 text-sm font-medium text-bg-primary transition-colors hover:bg-accent-cyan/80 no-select-mobile shadow-[0_0_12px_rgba(0,212,255,0.2)] active:scale-95 shrink-0"
             title="新建待办 (快捷键: N)"
           >
-            <i className="fas fa-plus" />
-            <span className="hidden sm:inline">新建待办</span>
+            <i className="fas fa-plus text-sm" />
+            <span className="hidden md:inline">新建待办</span>
             <kbd className="hidden md:inline rounded bg-bg-primary/20 px-1.5 py-0.5 text-[9px] font-mono">N</kbd>
           </button>
         </div>

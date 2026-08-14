@@ -277,31 +277,33 @@ export function CalendarPage() {
   }, [currentYear, currentMonth, daysInMonth]);
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in-up">
+    <div className="flex flex-col h-full gap-2 md:gap-4 animate-fade-in-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-display font-bold text-text-primary">
-            <i className="fas fa-calendar-alt mr-2 text-accent-cyan" />
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <h2 className="text-sm md:text-lg font-display font-bold text-text-primary truncate">
+            <i className="fas fa-calendar-alt mr-1.5 md:mr-2 text-accent-cyan text-xs md:text-base" />
             {monthLabel}
           </h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           <button
             onClick={goToToday}
-            className="rounded-lg border border-accent-cyan/30 bg-accent-cyan/5 px-3 py-1.5 text-xs font-medium text-accent-cyan transition-all hover:bg-accent-cyan/10"
+            className="rounded-lg border border-accent-cyan/30 bg-accent-cyan/5 px-2.5 md:px-3 h-9 md:h-auto md:py-1.5 text-xs font-medium text-accent-cyan transition-all hover:bg-accent-cyan/10 active:scale-95"
           >
             今天
           </button>
           <button
             onClick={goToPrevMonth}
-            className="rounded-lg border border-border-primary/30 bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary transition-all hover:bg-bg-tertiary"
+            className="flex h-9 w-9 md:h-auto md:w-auto items-center justify-center rounded-lg border border-border-primary/30 bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary transition-all hover:bg-bg-tertiary active:scale-95"
+            aria-label="上个月"
           >
             <i className="fas fa-chevron-left" />
           </button>
           <button
             onClick={goToNextMonth}
-            className="rounded-lg border border-border-primary/30 bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary transition-all hover:bg-bg-tertiary"
+            className="flex h-9 w-9 md:h-auto md:w-auto items-center justify-center rounded-lg border border-border-primary/30 bg-bg-secondary px-3 py-1.5 text-xs font-medium text-text-secondary transition-all hover:bg-bg-tertiary active:scale-95"
+            aria-label="下个月"
           >
             <i className="fas fa-chevron-right" />
           </button>
@@ -309,24 +311,24 @@ export function CalendarPage() {
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-t-lg overflow-hidden">
+      <div className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-t-lg overflow-hidden shrink-0">
         {WEEKDAYS.map((wd, i) => (
           <div
             key={i}
-            className="bg-bg-secondary py-2 text-center text-xs font-medium text-text-muted"
+            className="bg-bg-secondary py-1.5 md:py-2 text-center text-[10px] md:text-xs font-medium text-text-muted"
           >
             {wd}
           </div>
         ))}
       </div>
 
-      {/* 周别图例 */}
-      <div className="flex flex-wrap items-center gap-2 px-1">
-        <span className="text-[10px] text-text-muted">周别图例:</span>
+      {/* 周别图例 - 移动端水平滚动 */}
+      <div className="filter-bar-mobile flex md:flex-wrap items-center gap-1.5 md:gap-2 px-1 overflow-x-auto scrollbar-none shrink-0">
+        <span className="text-[10px] text-text-muted shrink-0">周别图例:</span>
         {weekRows.map(row => (
           <span
             key={row.weekLabel}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0 whitespace-nowrap"
             style={{
               backgroundColor: getWeekColor(row.weekLabel),
               border: `1px solid ${getWeekBorderColor(row.weekLabel)}`,
@@ -338,24 +340,23 @@ export function CalendarPage() {
               style={{ backgroundColor: getWeekBorderColor(row.weekLabel).replace('0.15', '0.6') }}
             />
             {row.weekLabel}
-            <span className="text-text-muted/60">
+            <span className="text-text-muted/60 hidden md:inline">
               ({row.dates[0]?.slice(5)} ~ {row.dates[row.dates.length - 1]?.slice(5)})
             </span>
           </span>
         ))}
       </div>
 
-      {/* Calendar grid - 固定高度，超出部分内联滚动 */}
+      {/* Calendar grid - flex-1 to fill remaining space, scrollable */}
       <div
-        className="grid grid-cols-7 gap-px bg-border-primary/20 rounded-b-lg overflow-hidden"
-        style={{ maxHeight: 'calc(100vh - 260px)', minHeight: '400px' }}
+        className="calendar-grid-mobile grid grid-cols-7 gap-px bg-border-primary/20 rounded-b-lg overflow-y-auto overflow-x-hidden flex-1 min-h-0"
       >
         {cells.map((day, idx) => {
           if (day === null) {
             return (
               <div
                 key={`empty-${idx}`}
-                className="h-[180px] bg-bg-primary/50"
+                className="h-[90px] md:h-[180px] bg-bg-primary/50"
               />
             );
           }
@@ -369,7 +370,7 @@ export function CalendarPage() {
           return (
             <div
               key={day}
-              className={`h-[180px] p-1.5 flex flex-col gap-0.5 relative ${
+              className={`h-[90px] md:h-[180px] p-1 md:p-1.5 flex flex-col gap-0.5 relative ${
                 isToday ? 'ring-2 ring-accent-cyan' : ''
               }`}
               style={{
@@ -419,7 +420,7 @@ export function CalendarPage() {
                     className={`border-l-2 ${colorClasses} rounded-r px-1 py-px text-[10px] leading-tight cursor-pointer transition-colors hover:bg-white/5`}>
                     <div className="font-medium truncate">{owner}</div>
                     <div className="text-text-muted truncate">{entry.content.slice(0, 12)}</div>
-                    <div className="text-text-muted/60 truncate text-[8px]">{projectPath}</div>
+                    <div className="text-text-muted/60 truncate text-[8px] hidden md:block">{projectPath}</div>
                     <span className="inline-block mt-px rounded bg-bg-primary/50 px-1 py-px text-[8px] font-medium">
                       {entry.percent}%
                     </span>
@@ -447,14 +448,14 @@ export function CalendarPage() {
         const owner = project?.owner ?? '';
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-0">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60"
               onClick={closeModal}
             />
             {/* Modal Card */}
-            <div className="relative w-full max-w-lg mx-4 rounded-xl bg-bg-secondary border border-border-primary/30 p-6 shadow-2xl animate-fade-in-up">
+            <div className="relative w-full max-w-lg mx-0 md:mx-4 rounded-xl bg-bg-secondary border border-border-primary/30 p-4 md:p-6 shadow-2xl animate-fade-in-up max-h-[90vh] overflow-y-auto">
               {/* Close button */}
               <button
                 onClick={closeModal}

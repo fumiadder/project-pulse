@@ -325,7 +325,7 @@ export function DashboardPage() {
 
   // 筛选栏通用样式
   const filterBtnClass = (active: boolean) =>
-    `rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+    `rounded-lg h-9 md:h-auto px-3 py-1.5 md:px-3 md:py-1.5 text-xs font-medium transition-all duration-200 ${
       active
         ? 'bg-accent-cyan/15 text-accent-cyan shadow-[0_0_10px_rgba(0,212,255,0.15)]'
         : 'bg-bg-tertiary text-text-muted hover:bg-bg-tertiary/80 hover:text-text-secondary'
@@ -333,7 +333,7 @@ export function DashboardPage() {
 
   return (
     <div
-      className="flex flex-col p-4 md:p-6 animate-fade-in-up"
+      className="flex flex-col p-2.5 md:p-6 animate-fade-in-up"
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (target.tagName === 'IMG' && !target.closest('[contenteditable]')) {
@@ -343,9 +343,9 @@ export function DashboardPage() {
       }}
     >
       {/* 主内容区域：统计卡片 + 筛选栏 + 主项目区块一起滚动 */}
-      <div ref={scrollContainerRef} className="flex flex-col gap-6 overflow-y-auto scrollbar-thin" style={{ maxHeight: 'calc(100vh - 120px)', minHeight: '300px' }}>
+      <div ref={scrollContainerRef} className="flex flex-col gap-3 md:gap-6 overflow-y-auto scrollbar-thin" style={{ maxHeight: 'calc(100vh - 120px)', minHeight: '300px' }}>
         {/* 统计卡片行 */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="stat-cards-grid grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 pb-1">
           <StatCard title="项目总数" value={stats.total} icon="fa-th-large" color="cyan" />
           <StatCard title="进行中" value={stats.inProgress} icon="fa-spinner" color="yellow" />
           <StatCard title="已完成" value={stats.completed} icon="fa-check-circle" color="green" />
@@ -365,15 +365,15 @@ export function DashboardPage() {
             }}
           />
         </div>
-        {/* 筛选栏 - 所有筛选项统一一行 */}
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-3">
+        {/* 筛选栏 - 桌面端所有筛选项统一一行，移动端水平滚动 */}
+        <div className="dashboard-filter-bar filter-bar-mobile flex md:flex-wrap items-center gap-2 rounded-xl border border-border-custom/50 bg-bg-tertiary/30 p-2 md:p-3 overflow-x-auto scrollbar-none md:scrollbar-thin">
         {/* 负责人 */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="text-[10px] text-text-muted whitespace-nowrap">负责人:</span>
           <select
             value={ownerFilter}
             onChange={(e) => setOwnerFilter(e.target.value)}
-            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+            className="rounded-lg border border-border-custom bg-bg-tertiary h-9 md:h-auto px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
           >
             <option value="__me__">{currentUser?.name ?? '我'}</option>
             <option value="all">所有</option>
@@ -383,10 +383,10 @@ export function DashboardPage() {
           </select>
         </div>
 
-        <div className="w-px h-4 bg-border-custom/50" />
+        <div className="w-px h-5 bg-border-custom/50 shrink-0" />
 
         {/* 状态 */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0 whitespace-nowrap">
           <span className="text-[10px] text-text-muted">状态:</span>
           {[
             { value: 'all', label: '全部' },
@@ -406,15 +406,15 @@ export function DashboardPage() {
           ))}
         </div>
 
-        <div className="w-px h-4 bg-border-custom/50" />
+        <div className="w-px h-5 bg-border-custom/50 shrink-0" />
 
         {/* 主项目 */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="text-[10px] text-text-muted whitespace-nowrap">主项目:</span>
           <select
             value={parentFilter}
             onChange={(e) => setParentFilter(e.target.value)}
-            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+            className="rounded-lg border border-border-custom bg-bg-tertiary h-9 md:h-auto px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
           >
             <option value="all">所有</option>
             {filterOptions.allParents.map((p) => (
@@ -423,15 +423,15 @@ export function DashboardPage() {
           </select>
         </div>
 
-        <div className="w-px h-4 bg-border-custom/50" />
+        <div className="w-px h-5 bg-border-custom/50 shrink-0" />
 
         {/* 周别 */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="text-[10px] text-text-muted">周别:</span>
           <select
             value={weekFilter}
             onChange={(e) => setWeekFilter(e.target.value)}
-            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+            className="rounded-lg border border-border-custom bg-bg-tertiary h-9 md:h-auto px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
           >
             <option value="all">所有</option>
             {filterOptions.allWeeks.map((wk) => (
@@ -441,12 +441,12 @@ export function DashboardPage() {
         </div>
 
         {/* 日期 */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="text-[10px] text-text-muted">日期:</span>
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+            className="rounded-lg border border-border-custom bg-bg-tertiary h-9 md:h-auto px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
           >
             <option value="all">所有</option>
             {filterOptions.allDates.map((d) => (
@@ -456,12 +456,12 @@ export function DashboardPage() {
         </div>
 
         {/* 优先级 */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <span className="text-[10px] text-text-muted">优先级:</span>
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="rounded-lg border border-border-custom bg-bg-tertiary px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
+            className="rounded-lg border border-border-custom bg-bg-tertiary h-9 md:h-auto px-2 py-1 text-xs text-text-primary focus:border-accent-cyan/50 focus:outline-none"
           >
             <option value="all">所有</option>
             {filterOptions.allPriorities.map((p) => (
@@ -474,7 +474,7 @@ export function DashboardPage() {
         {hasFilter && (
           <button
             onClick={clearAllFilters}
-            className="flex items-center gap-1 rounded-lg border border-accent-red/20 bg-accent-red/5 px-2 py-1 text-xs text-accent-red transition-all hover:bg-accent-red/10 hover:border-accent-red/30 ml-auto"
+            className="flex items-center gap-1 rounded-lg border border-accent-red/20 bg-accent-red/5 h-9 md:h-auto px-2 py-1 text-xs text-accent-red transition-all hover:bg-accent-red/10 hover:border-accent-red/30 ml-auto shrink-0"
           >
             <i className="fas fa-times text-[10px]" />
             <span>清除</span>
@@ -483,9 +483,9 @@ export function DashboardPage() {
       </div>
 
         {projectSections.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16">
-            <i className="fas fa-inbox text-3xl text-text-muted/40 mb-3" />
-            <p className="text-sm text-text-muted">暂无匹配的项目</p>
+          <div className="flex flex-col items-center justify-center px-4 py-12 md:py-16 text-center">
+            <i className="fas fa-inbox text-2xl md:text-3xl text-text-muted/40 mb-3" />
+            <p className="text-xs md:text-sm text-text-muted">暂无匹配的项目</p>
           </div>
         )}
 
@@ -497,21 +497,28 @@ export function DashboardPage() {
               key={section.parent.id}
               className="flex flex-col gap-0 rounded-xl border border-border-custom/50"
             >
-              {/* 主项目标题栏（含进度条） */}
+              {/* 主项目标题栏（含进度条）— 移动端垂直堆叠 */}
               <div
-                className="flex items-center gap-3 bg-bg-secondary/50 px-4 py-3 cursor-pointer select-none"
+                className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 bg-bg-secondary/50 px-3 md:px-4 py-2.5 md:py-3 cursor-pointer select-none"
                 style={{ borderLeft: `4px solid ${section.parent.color || '#00d4ff'}` }}
                 onClick={() => toggleCollapse(section.parent.id)}
               >
-                <div
-                  className="h-3 w-3 rounded-full shrink-0"
-                  style={{ backgroundColor: section.parent.color || '#00d4ff' }}
-                />
-                <h2 className="text-lg font-display font-bold text-text-primary flex-1 pl-2 border-l-[3px]" style={{ borderLeftColor: section.parent.color || '#00d4ff' }}>
-                  {section.parent.name}
-                </h2>
-                {/* 主项目进度条 - 加粗 */}
-                <div className="flex items-center gap-2 min-w-[160px] max-w-[240px]">
+                {/* 第一行：色点 + 标题 + 折叠按钮 */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  <div
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: section.parent.color || '#00d4ff' }}
+                  />
+                  <h2 className="text-sm md:text-lg font-display font-bold text-text-primary flex-1 min-w-0 truncate" style={{ paddingLeft: '0' }}>
+                    {section.parent.name}
+                  </h2>
+                  <span className="rounded-full bg-accent-cyan/10 px-2 py-0.5 text-[10px] md:text-xs font-medium text-accent-cyan whitespace-nowrap shrink-0">
+                    {section.subProjects.length} 个子项目
+                  </span>
+                  <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'} text-text-muted text-[10px] md:text-xs shrink-0`} />
+                </div>
+                {/* 第二行（移动端）/ 同行（桌面端）：进度条 */}
+                <div className="flex items-center gap-2 md:min-w-[160px] md:max-w-[240px]">
                   <div className="flex-1 h-[4px] rounded-full bg-bg-primary overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
@@ -523,20 +530,15 @@ export function DashboardPage() {
                       }}
                     />
                   </div>
-                  <span className="text-xs font-medium text-text-secondary min-w-[36px] text-right">
+                  <span className="text-[10px] md:text-xs font-medium text-text-secondary min-w-[28px] md:min-w-[36px] text-right shrink-0">
                     {section.progress}%
                   </span>
                 </div>
-                <span className="rounded-full bg-accent-cyan/10 px-2 py-0.5 text-xs font-medium text-accent-cyan whitespace-nowrap">
-                  {section.subProjects.length} 个子项目
-                </span>
-                {/* 折叠/展开图标 */}
-                <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'} text-text-muted text-xs ml-1`} />
               </div>
 
-              {/* 子项目卡片区域 */}
+              {/* 子项目卡片区域 — 移动端垂直堆叠，桌面端水平滚动 */}
               {!isCollapsed && (
-                <div className="flex gap-5 items-stretch overflow-x-auto p-4 scrollbar-thin">
+                <div className="flex flex-col md:flex-row md:gap-5 md:items-stretch md:overflow-x-auto gap-2.5 p-2.5 md:p-4 scrollbar-thin">
                   {section.subProjects.map((sub, subIndex) => {
                     const latest = getLatestByProject(sub.id);
                     const percent = latest?.percent ?? 0;
@@ -568,7 +570,7 @@ export function DashboardPage() {
                       <div
                         key={sub.id}
                         id={`sub-card-${sub.id}`}
-                        className={`flex min-w-[300px] max-w-[340px] flex-1 flex-col gap-3 p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] ${
+                        className={`flex md:min-w-[300px] md:max-w-[340px] flex-1 flex-col gap-2.5 md:gap-3 p-3 md:p-4 rounded-xl border transition-all duration-300 hover:scale-[1.01] ${
                           isScrollTarget ? 'ring-2 ring-accent-cyan/60 shadow-[0_0_20px_rgba(0,212,255,0.2)]' : ''
                         } ${
                           isFirstIncomplete ? 'border-accent-orange/60 shadow-[0_0_12px_rgba(255,140,0,0.15)]' : ''
@@ -579,7 +581,7 @@ export function DashboardPage() {
                         {/* 子项目名称 + 操作按钮 */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex flex-col gap-1 flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold text-text-primary leading-tight truncate">
+                            <h3 className="text-xs md:text-sm font-semibold text-text-primary leading-tight line-clamp-2 md:truncate">
                               {sub.name}
                             </h3>
                             <div className="flex items-center gap-2">
@@ -590,10 +592,10 @@ export function DashboardPage() {
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => handleAddProgress(sub.id)}
-                              className="flex h-6 w-6 items-center justify-center rounded-md text-text-muted hover:text-accent-cyan hover:bg-accent-cyan/10 transition-all"
+                              className="flex h-9 w-9 md:h-7 md:w-7 items-center justify-center rounded-md text-text-muted hover:text-accent-cyan hover:bg-accent-cyan/10 transition-all active:scale-95"
                               title="添加进度"
                             >
-                              <Plus className="h-3.5 w-3.5" />
+                              <Plus className="h-4 w-4 md:h-3.5 md:w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -639,7 +641,7 @@ export function DashboardPage() {
                                         }}
                                       >
                                         <div className="flex items-center justify-between">
-                                          <span className="text-xs font-medium text-text-secondary">
+                                          <span className="text-[13px] md:text-xs font-medium text-text-secondary">
                                             <i className="far fa-calendar mr-1" />
                                             {entry.date}
                                             {/* 周别标签 - 在日别进度记录上醒目显示 */}
@@ -663,39 +665,37 @@ export function DashboardPage() {
                                           {/* 编辑按钮 */}
                                           <button
                                             onClick={(e) => { e.stopPropagation(); handleEditProgress(entry.id); }}
-                                            className="text-text-muted/50 hover:text-accent-cyan transition-colors"
+                                            className="flex h-9 w-9 md:h-7 md:w-7 items-center justify-center rounded-md text-text-muted/50 hover:text-accent-cyan hover:bg-accent-cyan/10 transition-colors active:scale-95"
                                             title="编辑进度"
                                           >
-                                            <i className="fas fa-pen text-[10px]" />
+                                            <i className="fas fa-pen text-[12px] md:text-[10px]" />
                                           </button>
                                         </div>
                                         {/* 内容 */}
                                         <div
-                                          className={`text-xs text-text-muted leading-relaxed whitespace-pre-wrap ${isToday ? '' : 'line-clamp-2'}`}
-                                          style={{ fontSize: '12px' }}
+                                          className={`text-[13px] md:text-xs text-text-muted leading-relaxed whitespace-pre-wrap ${isToday ? '' : 'line-clamp-2'}`}
                                         >
                                           <div
-                                            className="[&_*]:!text-[12px] [&_*]:!leading-relaxed"
+                                            className="[&_*]:!text-[13px] md:[&_*]:!text-[12px] [&_*]:!leading-relaxed"
                                             dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }}
                                           />
                                         </div>
                                         {/* 当天额外展示计划 */}
                                         {isToday && entry.plan && (
                                           <div className="mt-1 pt-1 border-t border-border-custom/30">
-                                            <span className="text-[10px] font-medium text-accent-orange">计划:</span>
+                                            <span className="text-[11px] md:text-[10px] font-medium text-accent-orange">计划:</span>
                                             <div
-                                              className="text-xs text-accent-cyan leading-relaxed whitespace-pre-wrap mt-0.5"
-                                              style={{ fontSize: '12px' }}
+                                              className="text-[13px] md:text-xs text-accent-cyan leading-relaxed whitespace-pre-wrap mt-0.5"
                                             >
                                               <div
-                                                className="[&_*]:!text-[12px] [&_*]:!leading-relaxed [&_*]:!text-accent-cyan"
+                                                className="[&_*]:!text-[13px] md:[&_*]:!text-[12px] [&_*]:!leading-relaxed [&_*]:!text-accent-cyan"
                                                 dangerouslySetInnerHTML={{ __html: entry.plan }}
                                               />
                                             </div>
                                           </div>
                                         )}
                                         {sub.owner && (
-                                          <span className="text-[10px] text-text-muted/60">
+                                          <span className="text-[11px] md:text-[10px] text-text-muted/60">
                                             <i className="far fa-user mr-1" />
                                             {sub.owner}
                                           </span>
@@ -708,12 +708,12 @@ export function DashboardPage() {
                                       className="max-w-xs bg-bg-secondary border border-border-custom p-3 text-text-primary whitespace-pre-wrap"
                                       onPointerDown={(e) => e.stopPropagation()}
                                     >
-                                      <div className="text-xs leading-relaxed">
-                                        <div className="[&_*]:!text-[12px] [&_*]:!leading-relaxed" dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }} />
+                                      <div className="text-[13px] md:text-xs leading-relaxed">
+                                        <div className="[&_*]:!text-[13px] md:[&_*]:!text-[12px] [&_*]:!leading-relaxed" dangerouslySetInnerHTML={{ __html: entry.content || '暂无更新内容' }} />
                                         {entry.plan && (
                                           <div className="mt-2 pt-2 border-t border-border-custom/30">
-                                            <span className="text-[10px] font-medium text-accent-orange">计划:</span>
-                                            <div className="mt-0.5 [&_*]:!text-[12px] [&_*]:!leading-relaxed [&_*]:!text-accent-cyan" dangerouslySetInnerHTML={{ __html: entry.plan }} />
+                                            <span className="text-[11px] md:text-[10px] font-medium text-accent-orange">计划:</span>
+                                            <div className="mt-0.5 [&_*]:!text-[13px] md:[&_*]:!text-[12px] [&_*]:!leading-relaxed [&_*]:!text-accent-cyan" dangerouslySetInnerHTML={{ __html: entry.plan }} />
                                           </div>
                                         )}
                                       </div>

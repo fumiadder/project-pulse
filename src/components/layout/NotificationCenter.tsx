@@ -91,7 +91,7 @@ export function NotificationCenter() {
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-tertiary active:bg-bg-tertiary hover:text-text-primary transition-colors no-select-mobile"
+        className="relative flex h-11 w-11 md:h-8 md:w-8 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-tertiary active:bg-bg-tertiary hover:text-text-primary transition-colors no-select-mobile active:scale-95 shrink-0"
         title="通知"
         aria-label="通知"
       >

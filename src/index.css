@@ -76,6 +76,30 @@
 }
 
 /* ============================================
+   Calendar Page Mobile Optimizations
+   ============================================ */
+
+/* Mobile preview: calendar grid scrolling */
+.mobile-preview-container .calendar-grid-mobile {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  max-height: 500px !important;
+  min-height: 200px !important;
+}
+
+/* Real mobile: calendar grid scrolling */
+@media (max-width: 767px) {
+  .calendar-grid-mobile {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 280px) !important;
+    min-height: 200px !important;
+  }
+}
+
+/* ============================================
    Base Layer
    ============================================ */
 @layer base {
@@ -290,6 +314,15 @@
     display: none;
   }
 
+  /* Hide scrollbar utility */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Compact card spacing on mobile */
   .mobile-compact-pad {
     padding: 0.75rem !important;
@@ -425,7 +458,7 @@
 /* Mobile preview: optimize main content padding */
 .mobile-preview-container main {
   padding: 0.625rem !important;
-  padding-bottom: 5rem !important;
+  padding-bottom: 6rem !important;
 }
 
 /* Mobile preview: reduce card border radius slightly for compact feel */
@@ -445,12 +478,63 @@
   transform: scale(0.9);
 }
 
+/* ============================================
+   Mobile Polish Enhancements
+   ============================================ */
+
+/* Hide scrollbar in mobile preview for immersive feel */
+.mobile-preview-container main {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.mobile-preview-container main::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Add subtle gradient fade on filter bar right edge to indicate scrollability */
+.mobile-preview-container .filter-bar-mobile {
+  -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+  mask-image: linear-gradient(to right, black 90%, transparent 100%);
+}
+
+/* Improve card separation with subtle shadows on mobile */
+.mobile-preview-container .rounded-xl {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Increase gap between draggable widgets on mobile for better breathing room */
+.mobile-preview-container .grid.grid-cols-1 {
+  gap: 0.75rem !important;
+}
+
+/* Make section headers more prominent on mobile */
+.mobile-preview-container h1 {
+  letter-spacing: 0.02em;
+}
+
+/* Improve search input touch target on mobile */
+.mobile-preview-container input[type="text"] {
+  min-height: 2.75rem;
+}
+
+/* Ensure filter pills have adequate touch targets */
+.mobile-preview-container .filter-bar-mobile button {
+  min-height: 2.25rem;
+  padding-top: 0.375rem !important;
+  padding-bottom: 0.375rem !important;
+}
+
+/* Add subtle bottom shadow to header for depth separation */
+.mobile-preview-container header {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 /* --- Real mobile device optimizations --- */
 @media (max-width: 767px) {
   /* Optimize main content padding for real mobile */
   main {
     padding: 0.625rem;
-    padding-bottom: 5rem; /* Space for bottom nav */
+    padding-bottom: 6rem; /* Space for bottom nav */
   }
 
   /* Reduce card border radius on mobile */
@@ -475,61 +559,8 @@
   html {
     scrollbar-gutter: stable;
   }
-}
 
-/* ============================================
-   Mobile Polish Enhancements
-   ============================================ */
-
-/* Hide scrollbar in mobile preview for immersive feel */
-.mobile-preview-container main {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-.mobile-preview-container main::-webkit-scrollbar {
-  display: none !important;
-}
-
-/* Add gradient fade on filter bar right edge to indicate scrollability */
-.mobile-preview-container .filter-bar-mobile {
-  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-}
-
-/* Improve card separation with subtle shadows on mobile */
-.mobile-preview-container .rounded-xl {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-/* Increase gap between draggable widgets on mobile for better breathing room */
-.mobile-preview-container .grid.grid-cols-1 {
-  gap: 0.75rem !important;
-}
-
-/* Make section headers more prominent on mobile */
-.mobile-preview-container h1 {
-  letter-spacing: 0.02em;
-}
-
-/* Improve search input touch target on mobile */
-.mobile-preview-container input[type="text"] {
-  min-height: 2.5rem;
-}
-
-/* Ensure filter pills have adequate touch targets */
-.mobile-preview-container .filter-bar-mobile button {
-  min-height: 2rem;
-  padding-top: 0.375rem !important;
-  padding-bottom: 0.375rem !important;
-}
-
-/* Add subtle bottom shadow to header for depth separation */
-.mobile-preview-container header {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* Real mobile: hide scrollbar for immersive feel */
-@media (max-width: 767px) {
+  /* Hide scrollbar for immersive feel */
   main {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -538,10 +569,10 @@
     display: none;
   }
 
-  /* Add gradient fade on filter bar for real mobile too */
+  /* Add subtle gradient fade on filter bar for real mobile too */
   .filter-bar-mobile {
-    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
-    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
   }
 
   /* Improve card shadows on real mobile */
@@ -556,12 +587,238 @@
 
   /* Ensure filter pills have adequate touch targets */
   .filter-bar-mobile button {
-    min-height: 2rem;
+    min-height: 2.25rem;
   }
 
   /* Improve search input touch target */
   input[type="text"] {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
+  }
+
+  /* Force sm: breakpoints to mobile values on real mobile */
+  .sm\:hidden {
+    display: inline !important;
+  }
+
+  .sm\:flex,
+  .sm\:block,
+  .sm\:inline-flex {
+    display: none !important;
+  }
+
+  .sm\:inline {
+    display: none !important;
+  }
+
+  .sm\:grid-cols-2,
+  .sm\:grid-cols-3,
+  .sm\:grid-cols-4 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+
+  .sm\:gap-2\.5 {
+    gap: 0.5rem !important;
+  }
+
+  .sm\:gap-3 {
+    gap: 0.625rem !important;
+  }
+}
+
+/* ============================================
+   Comprehensive Mobile Responsive Improvements
+   Addresses: safe-area, touch targets, filter bar,
+   stat grid, dropdowns, font scaling, card spacing,
+   text contrast, greeting stats, circular progress.
+   Applied to BOTH preview mode and real devices.
+   ============================================ */
+
+/* --- Shared base classes (used by both contexts) --- */
+
+/* 3. Dashboard filter bar base layout */
+.dashboard-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 4. Stat cards grid: 2 columns on mobile, 4 on desktop */
+.stat-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+/* 9. Greeting stats base layout */
+.greeting-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Desktop expansion: stat cards become 4 columns */
+@media (min-width: 768px) {
+  .stat-cards-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ============================================
+   A) Preview Mode (.mobile-preview-container)
+   ============================================ */
+
+/* 1. Bottom nav safe area (env resolves to 0 on desktop preview) */
+.mobile-preview-container .mobile-bottom-nav {
+  padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* 3. Dashboard filter bar: horizontal scroll, nowrap, hidden scrollbar */
+.mobile-preview-container .dashboard-filter-bar {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.mobile-preview-container .dashboard-filter-bar::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* 4. Stat cards: force 2-column grid in preview */
+.mobile-preview-container .stat-cards-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.625rem !important;
+}
+
+/* 2. Touch targets: ALL filter bar buttons >= 44px (2.75rem) */
+.mobile-preview-container .dashboard-filter-bar button,
+.mobile-preview-container .filter-bar-mobile button,
+.mobile-preview-container .filter-bar button {
+  min-height: 2.75rem !important;
+  min-width: 2.75rem;
+}
+
+/* 5. Dropdown touch targets: select >= 40px (2.5rem) */
+.mobile-preview-container select {
+  min-height: 2.5rem !important;
+}
+
+/* 6. Responsive font scaling for headings (clamp) - exclude header/nav titles */
+.mobile-preview-container main h1:not([class*="text-sm"]):not([class*="text-xs"]) {
+  font-size: clamp(1.25rem, 5vw, 1.75rem) !important;
+}
+.mobile-preview-container main h2:not([class*="text-sm"]):not([class*="text-xs"]) {
+  font-size: clamp(1.1rem, 4.5vw, 1.4rem) !important;
+}
+.mobile-preview-container main h3:not([class*="text-sm"]):not([class*="text-xs"]) {
+  font-size: clamp(1rem, 4vw, 1.2rem) !important;
+}
+.mobile-preview-container main h4:not([class*="text-sm"]):not([class*="text-xs"]) {
+  font-size: clamp(0.9rem, 3.5vw, 1.05rem) !important;
+}
+
+/* 7. Card spacing: consistent 0.625rem gap */
+.mobile-preview-container .grid.grid-cols-1 {
+  gap: 0.625rem !important;
+}
+
+/* 8. Text contrast: lighten text-muted for readability */
+.mobile-preview-container .text-muted {
+  color: #7c8ba3 !important;
+}
+
+/* 9. Greeting stats: flex-wrap on mobile */
+.mobile-preview-container .greeting-stats {
+  flex-wrap: wrap !important;
+  gap: 0.5rem !important;
+}
+
+/* 10. Circular progress: scale down on small screens */
+.mobile-preview-container .CircularProgress__wrapper,
+.mobile-preview-container .circular-progress,
+.mobile-preview-container [class*="CircularProgress"] {
+  transform: scale(0.85);
+  transform-origin: center;
+}
+
+/* ============================================
+   B) Real Mobile Devices (@media max-width: 767px)
+   ============================================ */
+@media (max-width: 767px) {
+  /* 1. Bottom nav safe area for notched phones */
+  .mobile-bottom-nav {
+    padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* 3. Dashboard filter bar: horizontal scroll, nowrap, hidden scrollbar */
+  .dashboard-filter-bar {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  .dashboard-filter-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* 4. Stat cards: 2-column grid on mobile */
+  .stat-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.625rem !important;
+  }
+
+  /* 2. Touch targets: ALL filter bar buttons >= 44px (2.75rem) */
+  .dashboard-filter-bar button,
+  .filter-bar-mobile button,
+  .filter-bar button {
+    min-height: 2.75rem !important;
+    min-width: 2.75rem;
+  }
+
+  /* 5. Dropdown touch targets: select >= 40px (2.5rem) */
+  select {
+    min-height: 2.5rem !important;
+  }
+
+  /* 6. Responsive font scaling for headings (clamp) - exclude header/nav titles */
+  main h1:not([class*="text-sm"]):not([class*="text-xs"]) {
+    font-size: clamp(1.25rem, 5vw, 1.75rem) !important;
+  }
+  main h2:not([class*="text-sm"]):not([class*="text-xs"]) {
+    font-size: clamp(1.1rem, 4.5vw, 1.4rem) !important;
+  }
+  main h3:not([class*="text-sm"]):not([class*="text-xs"]) {
+    font-size: clamp(1rem, 4vw, 1.2rem) !important;
+  }
+  main h4:not([class*="text-sm"]):not([class*="text-xs"]) {
+    font-size: clamp(0.9rem, 3.5vw, 1.05rem) !important;
+  }
+
+  /* 7. Card spacing: consistent 0.625rem gap */
+  .grid.grid-cols-1 {
+    gap: 0.625rem !important;
+  }
+
+  /* 8. Text contrast: lighten text-muted for readability */
+  .text-muted {
+    color: #7c8ba3 !important;
+  }
+
+  /* 9. Greeting stats: flex-wrap on mobile */
+  .greeting-stats {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+
+  /* 10. Circular progress: scale down on small screens */
+  .CircularProgress__wrapper,
+  .circular-progress,
+  [class*="CircularProgress"] {
+    transform: scale(0.85);
+    transform-origin: center;
   }
 }
 

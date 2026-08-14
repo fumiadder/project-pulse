@@ -60,23 +60,23 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
   };
 
   return (
-    <header className="mobile-header-h flex h-14 shrink-0 items-center border-b border-border-custom bg-bg-secondary/80 backdrop-blur-md px-3 md:px-6 safe-area-top">
+    <header className="mobile-header-h flex h-14 shrink-0 items-center border-b border-border-custom bg-bg-secondary/80 backdrop-blur-md px-1.5 md:px-6 safe-area-top">
       {/* Left: Menu Toggle (mobile only) */}
       <button
         onClick={onMenuToggle}
-        className="mr-1 flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-tertiary active:bg-bg-tertiary hover:text-text-primary transition-colors md:hidden no-select-mobile"
+        className="mr-0.5 flex h-11 w-11 md:h-9 md:w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-tertiary active:bg-bg-tertiary hover:text-text-primary transition-colors md:hidden no-select-mobile shrink-0"
         aria-label="打开菜单"
       >
         <i className="fas fa-bars text-base" />
       </button>
 
       {/* Center: Page Title */}
-      <h1 className="flex-1 text-base font-semibold text-text-primary font-display tracking-wide truncate min-w-0">
+      <h1 className="flex-1 text-sm md:text-base font-semibold text-text-primary font-display tracking-wide truncate min-w-0 px-1">
         {title}
       </h1>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+      <div className="flex items-center gap-1 md:gap-3 shrink-0">
         {/* Mobile Preview Toggle (desktop only) */}
         <button
           onClick={toggleMobilePreview}
@@ -100,7 +100,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
         {/* Export Button - icon only on mobile */}
         <button
           onClick={handleExport}
-          className="flex h-9 w-9 md:w-auto items-center justify-center gap-1.5 rounded-lg border border-border-custom bg-bg-tertiary/50 md:px-3 text-xs text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan transition-all no-select-mobile"
+          className="flex h-11 w-11 md:h-9 md:w-auto items-center justify-center gap-1.5 rounded-lg border border-border-custom bg-bg-tertiary/50 md:px-3 text-xs text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan transition-all no-select-mobile active:scale-95 shrink-0"
           title="导出数据"
           aria-label="导出数据"
         >

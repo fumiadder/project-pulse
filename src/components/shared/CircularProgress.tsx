@@ -1,8 +1,12 @@
+import { useState, useEffect } from 'react';
+
 interface CircularProgressProps {
   /** 进度百分比 0-100 */
   percent: number;
   /** 圆环大小（px） */
   size?: number;
+  /** 移动端圆环大小（px） */
+  mobileSize?: number;
   /** 线条粗细 */
   strokeWidth?: number;
   /** 进度颜色 */
@@ -22,6 +26,7 @@ interface CircularProgressProps {
 export function CircularProgress({
   percent,
   size = 80,
+  mobileSize = 64,
   strokeWidth = 6,
   color = 'var(--accent-cyan, #00d4ff)',
   trackColor = 'rgba(255,255,255,0.08)',
@@ -30,37 +35,49 @@ export function CircularProgress({
   label,
   subtext,
 }: CircularProgressProps) {
-  const radius = (size - strokeWidth) / 2;
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = () => setIsMobile(mq.matches);
+    handler();
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const actualSize = isMobile ? (mobileSize ?? Math.min(size, 64)) : size;
+  const actualStrokeWidth = isMobile ? Math.max(4, strokeWidth - 2) : strokeWidth;
+
+  const radius = (actualSize - actualStrokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedPercent = Math.max(0, Math.min(100, percent));
   const offset = circumference - (clampedPercent / 100) * circumference;
 
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <div className="relative" style={{ width: size, height: size }}>
+      <div className="relative" style={{ width: actualSize, height: actualSize }}>
         <svg
-          width={size}
-          height={size}
+          width={actualSize}
+          height={actualSize}
           className="transform -rotate-90"
           style={{ display: 'block' }}
         >
           {/* 轨道 */}
           <circle
-            cx={size / 2}
-            cy={size / 2}
+            cx={actualSize / 2}
+            cy={actualSize / 2}
             r={radius}
             fill="none"
             stroke={trackColor}
-            strokeWidth={strokeWidth}
+            strokeWidth={actualStrokeWidth}
           />
           {/* 进度 */}
           <circle
-            cx={size / 2}
-            cy={size / 2}
+            cx={actualSize / 2}
+            cy={actualSize / 2}
             r={radius}
             fill="none"
             stroke={color}
-            strokeWidth={strokeWidth}
+            strokeWidth={actualStrokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
@@ -75,12 +92,12 @@ export function CircularProgress({
             <>
               {icon && (
                 <i
-                  className={`fas ${icon} text-sm mb-0.5`}
+                  className={`fas ${icon} ${isMobile ? 'text-xs' : 'text-sm'} mb-0.5`}
                   style={{ color }}
                 />
               )}
               <span
-                className="text-base font-bold"
+                className={`${isMobile ? 'text-sm' : 'text-base'} font-bold`}
                 style={{ color }}
               >
                 {Math.round(clampedPercent)}%

@@ -14,8 +14,11 @@ cd "$REPO_DIR" && git pull origin main
 # 2. 安装前端依赖
 echo "[2/8] 安装前端依赖..."
 cd "$REPO_DIR"
+# 清理可能残留的 node_modules 避免 ENOTEMPTY 错误
+rm -rf node_modules package-lock.json
 if ! npm install --fetch-timeout=60000 --fetch-retries=3; then
   echo "❌ npm install 失败，尝试使用淘宝镜像重试..."
+  rm -rf node_modules
   npm install --registry=https://registry.npmmirror.com --fetch-timeout=60000 --fetch-retries=3
 fi
 
@@ -43,11 +46,11 @@ mkdir -p "$DB_DIR"
 # 7. 安装 API 依赖
 echo "[7/8] 安装 API 依赖..."
 cd "$DEPLOY_DIR/api"
-if [ ! -d node_modules ] || [ package.json -nt node_modules ]; then
-  if ! npm install --production --fetch-timeout=60000 --fetch-retries=3; then
-    echo "❌ API npm install 失败，尝试使用淘宝镜像重试..."
-    npm install --production --registry=https://registry.npmmirror.com --fetch-timeout=60000 --fetch-retries=3
-  fi
+rm -rf node_modules package-lock.json
+if ! npm install --production --fetch-timeout=60000 --fetch-retries=3; then
+  echo "❌ API npm install 失败，尝试使用淘宝镜像重试..."
+  rm -rf node_modules
+  npm install --production --registry=https://registry.npmmirror.com --fetch-timeout=60000 --fetch-retries=3
 fi
 
 # 8. 重启服务

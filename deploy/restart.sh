@@ -8,24 +8,28 @@ DB_DIR="$DEPLOY_DIR/db"
 DB_PATH="$DB_DIR/project-pulse.db"
 
 # 1. 拉取最新代码
-echo "[1/7] 拉取最新代码..."
+echo "[1/8] 拉取最新代码..."
 cd "$REPO_DIR" && git pull origin main
 
 # 2. 安装前端依赖
-echo "[2/7] 安装前端依赖..."
-cd "$REPO_DIR" && npm install --silent 2>/dev/null
+echo "[2/8] 安装前端依赖..."
+cd "$REPO_DIR"
+if ! npm install --fetch-timeout=60000 --fetch-retries=3; then
+  echo "❌ npm install 失败，尝试使用淘宝镜像重试..."
+  npm install --registry=https://registry.npmmirror.com --fetch-timeout=60000 --fetch-retries=3
+fi
 
 # 3. 构建前端
-echo "[3/7] 构建前端..."
+echo "[3/8] 构建前端..."
 cd "$REPO_DIR" && npm run build
 
 # 4. 复制前端产物
-echo "[4/7] 复制 dist..."
+echo "[4/8] 复制 dist..."
 rm -rf "$DEPLOY_DIR/dist"
 cp -r "$REPO_DIR/dist" "$DEPLOY_DIR/dist"
 
 # 5. 复制 API（代码可以安全删除，数据库在独立目录）
-echo "[5/7] 复制 api..."
+echo "[5/8] 复制 api..."
 rm -rf "$DEPLOY_DIR/api"
 mkdir -p "$DEPLOY_DIR/api"
 for f in "$REPO_DIR"/deploy/api/*; do
@@ -33,25 +37,33 @@ for f in "$REPO_DIR"/deploy/api/*; do
 done
 
 # 6. 确保数据库目录存在
-echo "[6/7] 检查数据库..."
+echo "[6/8] 检查数据库..."
 mkdir -p "$DB_DIR"
 
-# 7. 安装 API 依赖 + 重启服务
-echo "[7/7] 重启服务..."
+# 7. 安装 API 依赖
+echo "[7/8] 安装 API 依赖..."
 cd "$DEPLOY_DIR/api"
-npm install --production --silent 2>/dev/null
+if [ ! -d node_modules ] || [ package.json -nt node_modules ]; then
+  if ! npm install --production --fetch-timeout=60000 --fetch-retries=3; then
+    echo "❌ API npm install 失败，尝试使用淘宝镜像重试..."
+    npm install --production --registry=https://registry.npmmirror.com --fetch-timeout=60000 --fetch-retries=3
+  fi
+fi
+
+# 8. 重启服务
+echo "[8/8] 重启服务..."
 
 # 停掉旧进程
 kill $(lsof -t -i:3080) 2>/dev/null 2>&1 || true
 sleep 1
 
-# 启动新进程（通过 DB_PATH 环境变量指定数据库，加载飞书凭证）
-# 飞书凭证从 .env 文件读取（如不存在则忽略，飞书提醒功能不可用）
+# 加载飞书凭证（从 .env 文件读取，如不存在则忽略）
 if [ -f "$DEPLOY_DIR/api/.env" ]; then
   set -a
   source "$DEPLOY_DIR/api/.env"
   set +a
 fi
+
 DB_PATH="$DB_PATH" FEISHU_APP_ID="$FEISHU_APP_ID" FEISHU_APP_SECRET="$FEISHU_APP_SECRET" \
   nohup node server.js > /var/log/pp-api.log 2>&1 &
 sleep 3

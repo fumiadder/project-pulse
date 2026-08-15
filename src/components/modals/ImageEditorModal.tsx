@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ImageEditorModalProps {
   src: string;
@@ -191,8 +192,8 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
 
   const hasValidSelection = selection && selection.w >= 5 && selection.h >= 5;
 
-  return (
-    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in">
       {/* 工具栏 */}
       <div className="mb-3 flex flex-wrap items-center justify-center gap-2 px-4">
         <span className="mr-2 text-xs text-white/50">
@@ -278,6 +279,7 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
           选区：{Math.round(selection!.w)} × {Math.round(selection!.h)} px
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

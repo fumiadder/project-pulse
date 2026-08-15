@@ -193,13 +193,26 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
   const hasValidSelection = selection && selection.w >= 5 && selection.h >= 5;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm animate-fade-in"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        // 点击背景区域关闭，但不让事件冒泡到 Radix Dialog
+        if (e.target === e.currentTarget) onClose();
+        e.stopPropagation();
+      }}
+    >
+      {/* 右上角关闭按钮 */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20 active:scale-95"
+        aria-label="关闭"
+      >
+        <i className="fas fa-times text-base" />
+      </button>
+
       {/* 工具栏 */}
       <div className="mb-3 flex flex-wrap items-center justify-center gap-2 px-4">
-        <span className="mr-2 text-xs text-white/50">
-          <i className="fas fa-vector-square mr-1" />
-          在图片上拖拽框选区域
-        </span>
         <button
           onClick={handleDeleteSelection}
           disabled={!hasValidSelection || isProcessing}
@@ -224,15 +237,13 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
           <i className="fas fa-trash" />
           删除图片
         </button>
-        <div className="mx-1 h-5 w-px bg-white/20" />
-        <button
-          onClick={onClose}
-          className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/20"
-        >
-          <i className="fas fa-times" />
-          关闭
-        </button>
       </div>
+
+      {/* 提示文字 */}
+      <p className="mb-2 text-[10px] text-white/40">
+        <i className="fas fa-vector-square mr-1" />
+        在图片上拖拽框选区域进行编辑
+      </p>
 
       {/* 图片容器（含框选叠层） */}
       <div

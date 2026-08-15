@@ -7,20 +7,18 @@ DEPLOY_DIR="/opt/project-pulse"
 DB_DIR="$DEPLOY_DIR/db"
 DB_PATH="$DB_DIR/project-pulse.db"
 
+# 使用淘宝镜像加速（国内服务器）
+NPM_REGISTRY="https://registry.npmmirror.com"
+
 # 1. 拉取最新代码
 echo "[1/8] 拉取最新代码..."
 cd "$REPO_DIR" && git pull origin main
 
 # 2. 安装前端依赖
-echo "[2/8] 安装前端依赖..."
+echo "[2/8] 安装前端依赖（使用淘宝镜像）..."
 cd "$REPO_DIR"
-# 清理可能残留的 node_modules 避免 ENOTEMPTY 错误
 rm -rf node_modules package-lock.json
-if ! npm install --fetch-timeout=60000 --fetch-retries=3; then
-  echo "❌ npm install 失败，尝试使用淘宝镜像重试..."
-  rm -rf node_modules
-  npm install --registry=https://registry.npmmirror.com --fetch-timeout=60000 --fetch-retries=3
-fi
+npm install --registry="$NPM_REGISTRY" --fetch-timeout=120000 --fetch-retries=5 --no-audit --no-fund
 
 # 3. 构建前端
 echo "[3/8] 构建前端..."
@@ -44,14 +42,10 @@ echo "[6/8] 检查数据库..."
 mkdir -p "$DB_DIR"
 
 # 7. 安装 API 依赖
-echo "[7/8] 安装 API 依赖..."
+echo "[7/8] 安装 API 依赖（使用淘宝镜像）..."
 cd "$DEPLOY_DIR/api"
 rm -rf node_modules package-lock.json
-if ! npm install --production --fetch-timeout=60000 --fetch-retries=3; then
-  echo "❌ API npm install 失败，尝试使用淘宝镜像重试..."
-  rm -rf node_modules
-  npm install --production --registry=https://registry.npmmirror.com --fetch-timeout=60000 --fetch-retries=3
-fi
+npm install --production --registry="$NPM_REGISTRY" --fetch-timeout=120000 --fetch-retries=5 --no-audit --no-fund
 
 # 8. 重启服务
 echo "[8/8] 重启服务..."

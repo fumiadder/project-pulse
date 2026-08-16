@@ -13,7 +13,11 @@ NPM_FLAGS="--registry=$NPM_REGISTRY --fetch-timeout=120000 --fetch-retries=5 --n
 
 # 1. 拉取最新代码
 echo "[1/8] 拉取最新代码..."
-cd "$REPO_DIR" && git pull origin main
+cd "$REPO_DIR"
+# 丢弃 npm install 产生的本地修改，避免 git pull 冲突
+git checkout -- . 2>/dev/null || true
+git clean -fd node_modules 2>/dev/null || true
+git pull origin main
 
 # 2. 安装前端依赖
 echo "[2/8] 安装前端依赖..."

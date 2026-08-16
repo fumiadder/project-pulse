@@ -1028,6 +1028,7 @@ export function TodoEditorModal({ open, onClose, todoId }: TodoEditorModalProps)
       {previewImage && (
         <ImageEditorModal
           src={previewImage}
+          mode="view"
           onClose={() => setPreviewImage(null)}
           onUpdateImage={handleUpdateImage}
           onDeleteImage={handleDeleteImage}

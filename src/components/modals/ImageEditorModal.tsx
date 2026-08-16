@@ -6,6 +6,7 @@ interface ImageEditorModalProps {
   onClose: () => void;
   onUpdateImage: (oldSrc: string, newSrc: string) => void;
   onDeleteImage: (src: string) => void;
+  mode?: 'view' | 'edit';
 }
 
 interface SelectionRect {
@@ -15,7 +16,7 @@ interface SelectionRect {
   h: number;
 }
 
-export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }: ImageEditorModalProps) {
+export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage, mode: initialMode = 'view' }: ImageEditorModalProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentSrc, setCurrentSrc] = useState(src);
@@ -23,6 +24,7 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [mode, setMode] = useState<'view' | 'edit'>(initialMode);
 
   // 鼠标按下：开始框选
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -205,65 +207,69 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
       {/* 右上角关闭按钮 */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}
-        className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20 active:scale-95"
+        className="absolute top-4 right-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white transition-all hover:bg-white/30 active:scale-95 shadow-lg"
         aria-label="关闭"
       >
-        <i className="fas fa-times text-base" />
+        <i className="fas fa-times text-lg" />
       </button>
 
-      {/* 工具栏 */}
-      <div className="mb-3 flex flex-wrap items-center justify-center gap-2 px-4">
-        <button
-          onClick={handleDeleteSelection}
-          disabled={!hasValidSelection || isProcessing}
-          className="flex items-center gap-1.5 rounded-lg bg-accent-red/20 px-3 py-1.5 text-xs text-accent-red transition-colors hover:bg-accent-red/30 disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          <i className="fas fa-eraser" />
-          删除选区
-        </button>
-        <button
-          onClick={handleCropSelection}
-          disabled={!hasValidSelection || isProcessing}
-          className="flex items-center gap-1.5 rounded-lg bg-accent-cyan/20 px-3 py-1.5 text-xs text-accent-cyan transition-colors hover:bg-accent-cyan/30 disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          <i className="fas fa-crop" />
-          裁剪选区
-        </button>
-        <button
-          onClick={handleDeleteImage}
-          disabled={isProcessing}
-          className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/20 disabled:opacity-30"
-        >
-          <i className="fas fa-trash" />
-          删除图片
-        </button>
-      </div>
+      {/* 工具栏（仅编辑模式显示） */}
+      {mode === 'edit' && (
+        <div className="mb-3 flex flex-wrap items-center justify-center gap-2 px-4">
+          <button
+            onClick={handleDeleteSelection}
+            disabled={!hasValidSelection || isProcessing}
+            className="flex items-center gap-1.5 rounded-lg bg-accent-red/20 px-3 py-1.5 text-xs text-accent-red transition-colors hover:bg-accent-red/30 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <i className="fas fa-eraser" />
+            删除选区
+          </button>
+          <button
+            onClick={handleCropSelection}
+            disabled={!hasValidSelection || isProcessing}
+            className="flex items-center gap-1.5 rounded-lg bg-accent-cyan/20 px-3 py-1.5 text-xs text-accent-cyan transition-colors hover:bg-accent-cyan/30 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <i className="fas fa-crop" />
+            裁剪选区
+          </button>
+          <button
+            onClick={handleDeleteImage}
+            disabled={isProcessing}
+            className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/20 disabled:opacity-30"
+          >
+            <i className="fas fa-trash" />
+            删除图片
+          </button>
+        </div>
+      )}
 
-      {/* 提示文字 */}
-      <p className="mb-2 text-[10px] text-white/40">
-        <i className="fas fa-vector-square mr-1" />
-        在图片上拖拽框选区域进行编辑
-      </p>
+      {/* 提示文字（仅编辑模式显示） */}
+      {mode === 'edit' && (
+        <p className="mb-2 text-[10px] text-white/40">
+          <i className="fas fa-vector-square mr-1" />
+          在图片上拖拽框选区域进行编辑
+        </p>
+      )}
 
       {/* 图片容器（含框选叠层） */}
       <div
         ref={containerRef}
         className="relative max-h-[75vh] max-w-[90vw] select-none"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{ cursor: 'crosshair' }}
+        onMouseDown={mode === 'edit' ? handleMouseDown : undefined}
+        onMouseMove={mode === 'edit' ? handleMouseMove : undefined}
+        onMouseUp={mode === 'edit' ? handleMouseUp : undefined}
+        onMouseLeave={mode === 'edit' ? handleMouseUp : undefined}
+        style={{ cursor: mode === 'edit' ? 'crosshair' : 'default' }}
       >
         <img
           ref={imgRef}
           src={currentSrc}
-          alt="编辑图片"
+          alt={mode === 'edit' ? '编辑图片' : '查看图片'}
           className="max-h-[75vh] max-w-full rounded-lg pointer-events-none"
           draggable={false}
         />
         {/* 框选叠层 */}
-        {selection && (
+        {mode === 'edit' && selection && (
           <div
             className="pointer-events-none absolute border-2 border-accent-cyan bg-accent-cyan/20"
             style={{
@@ -276,6 +282,19 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
         )}
       </div>
 
+      {/* 查看模式：底部操作按钮 */}
+      {mode === 'view' && (
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); setMode('edit'); }}
+            className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm text-white transition-all hover:bg-white/20 active:scale-95"
+          >
+            <i className="fas fa-pen text-xs" />
+            编辑图片
+          </button>
+        </div>
+      )}
+
       {/* 处理中提示 */}
       {isProcessing && (
         <div className="mt-3 flex items-center gap-2 text-xs text-white/60">
@@ -285,7 +304,7 @@ export function ImageEditorModal({ src, onClose, onUpdateImage, onDeleteImage }:
       )}
 
       {/* 选区信息 */}
-      {hasValidSelection && !isProcessing && (
+      {mode === 'edit' && hasValidSelection && !isProcessing && (
         <div className="mt-2 text-[10px] text-white/40">
           选区：{Math.round(selection!.w)} × {Math.round(selection!.h)} px
         </div>

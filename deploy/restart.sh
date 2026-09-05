@@ -4,12 +4,15 @@ echo "=== Project Pulse 更新部署 $(date) ==="
 
 REPO_DIR="/opt/project-pulse-repo"
 DEPLOY_DIR="/opt/project-pulse"
-DB_DIR="$DEPLOY_DIR/db"
+DB_DIR="$DEPLOY_DIR/api/data"
 DB_PATH="$DB_DIR/project-pulse.db"
 
 # 使用淘宝镜像加速（国内服务器）
 NPM_REGISTRY="https://registry.npmmirror.com"
 NPM_FLAGS="--registry=$NPM_REGISTRY --fetch-timeout=120000 --fetch-retries=5 --no-audit --no-fund --prefer-offline --loglevel info"
+
+# 0. 确保部署目录存在
+mkdir -p "$DEPLOY_DIR"
 
 # 1. 拉取最新代码
 echo "[1/8] 拉取最新代码..."
@@ -38,19 +41,20 @@ cd "$REPO_DIR" && npm run build
 # 4. 复制前端产物
 echo "[4/8] 复制 dist..."
 rm -rf "$DEPLOY_DIR/dist"
+mkdir -p "$DEPLOY_DIR"
 cp -r "$REPO_DIR/dist" "$DEPLOY_DIR/dist"
 
-# 5. 复制 API（代码可以安全删除，数据库在独立目录）
+# 5. 复制 API（含 data 子目录，保留数据库）
 echo "[5/8] 复制 api..."
 rm -rf "$DEPLOY_DIR/api"
-mkdir -p "$DEPLOY_DIR/api"
-for f in "$REPO_DIR"/deploy/api/*; do
-  [ -f "$f" ] && cp "$f" "$DEPLOY_DIR/api/"
-done
+cp -r "$REPO_DIR/deploy/api" "$DEPLOY_DIR/api"
 
 # 6. 确保数据库目录存在
 echo "[6/8] 检查数据库..."
 mkdir -p "$DB_DIR"
+if [ ! -f "$DB_PATH" ]; then
+  echo "  数据库不存在，将自动创建"
+fi
 
 # 7. 安装 API 依赖
 echo "[7/8] 安装 API 依赖..."

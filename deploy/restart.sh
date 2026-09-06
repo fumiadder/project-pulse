@@ -25,6 +25,8 @@ git pull origin main
 # 2. 安装前端依赖
 echo "[2/8] 安装前端依赖..."
 cd "$REPO_DIR"
+# 删除 .env.local（如果存在），避免 VITE_API_BASE 硬编码为 localhost
+rm -f .env.local
 # 保留 package-lock.json 加速依赖解析，仅清理 node_modules
 rm -rf node_modules
 # 设置 5 分钟超时，避免无限卡住

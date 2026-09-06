@@ -313,11 +313,15 @@ app.put('/api/users', (req, res) => {
       color=excluded.color,
       privatePassword=excluded.privatePassword
   `);
+  const userDefaults = {
+    id: null, name: '', role: 'member', color: '#00d4ff',
+    privatePassword: null, createdAt: null
+  };
   const tx = db.transaction((rows) => {
     for (const r of rows) {
       if (!r.id) r.id = uuidv4();
       if (!r.createdAt) r.createdAt = now();
-      insert.run(sanitizeRow(r));
+      insert.run(sanitizeRow(r, userDefaults));
     }
   });
   tx(items);
@@ -661,7 +665,10 @@ app.post('/api/sync/full', (req, res) => {
       VALUES (@id, @name, @role, @color, @createdAt)
       ON CONFLICT(id) DO UPDATE SET name=excluded.name, role=excluded.role, color=excluded.color
     `);
-    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
+    const userDefaults = {
+      id: null, name: '', role: 'member', color: '#00d4ff', createdAt: null
+    };
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r, userDefaults)); });
     tx(uArr);
   }
   if (rArr && Array.isArray(rArr)) {

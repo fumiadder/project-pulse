@@ -35,39 +35,56 @@ export const useUserStore = create<UserStore>()(
         const account = LOGIN_ACCOUNTS[username];
         if (!account) return 'username_not_found';
         if (password !== account.password) return 'password_wrong';
-        // Ensure users is always an array
-        const currentUsers = Array.isArray(get().users) ? get().users : [];
-        let user = currentUsers.find(u => u.id === account.id);
-        // If users not loaded yet, try to load from backend first
-        if (!user) {
-          try {
-            const res = await api.listUsers();
-            const users = res.data?.users ?? (Array.isArray(res.data) ? res.data : []) ?? [];
-            set({ users });
-            user = users.find((u: User) => u.id === account.id);
-          } catch (e) {
-            console.error('Failed to load users on login:', e);
+
+        try {
+          // 从后台加载用户列表
+          const res = await api.listUsers();
+          const users = res.data?.users ?? (Array.isArray(res.data) ? res.data : []) ?? [];
+          set({ users });
+
+          // 用用户名匹配后台用户（比 ID 更可靠）
+          let user = users.find((u: User) => u.name === username);
+
+          // 如果后台没有这个用户，自动创建并保存到后台
+          if (!user) {
+            user = {
+              id: account.id,
+              name: username,
+              role: 'member',
+              color: '#00d4ff',
+              createdAt: new Date().toISOString()
+            };
+            try {
+              await api.putUser(user);
+              set(state => ({ users: [...state.users, user] }));
+            } catch (e) {
+              console.error('Failed to create user on backend:', e);
+            }
           }
-        }
-        // Fallback: create a temporary user object
-        if (!user) {
-          user = {
+
+          set({ currentUser: user, isLoggedIn: true });
+          // 存储用户名（用用户名恢复会话更可靠）
+          localStorage.setItem('pp_current_username', username);
+          return 'ok';
+        } catch (e) {
+          console.error('Login failed:', e);
+          // API 不可用时的降级处理：创建临时用户
+          const user = {
             id: account.id,
             name: username,
             role: 'member',
             color: '#00d4ff',
             createdAt: new Date().toISOString()
           };
-          set({ users: [...currentUsers, user] });
+          set({ currentUser: user, isLoggedIn: true, users: [user] });
+          localStorage.setItem('pp_current_username', username);
+          return 'ok';
         }
-        set({ currentUser: user, isLoggedIn: true });
-        // 只存储 user ID，不存储登录状态（登录状态必须通过验证恢复）
-        localStorage.setItem('pp_current_user', account.id);
-        return 'ok';
       },
 
       logout: () => {
-        localStorage.removeItem('pp_current_user');
+        localStorage.removeItem('pp_current_username');
+        localStorage.removeItem('pp_current_user'); // 清理旧版
         set({ currentUser: null, isLoggedIn: false });
       },
 
@@ -75,7 +92,7 @@ export const useUserStore = create<UserStore>()(
         const user = get().users.find(u => u.id === userId);
         if (user) {
           set({ currentUser: user });
-          localStorage.setItem('pp_current_user', userId);
+          localStorage.setItem('pp_current_username', user.name);
         }
       },
 
@@ -88,15 +105,35 @@ export const useUserStore = create<UserStore>()(
           const res = await api.listUsers();
           const users = res.data?.users ?? (Array.isArray(res.data) ? res.data : []) ?? [];
           set({ users });
-          // 从 localStorage 恢复会话：仅当用户在后台数据中存在时才恢复
-          const savedUserId = localStorage.getItem('pp_current_user');
-          if (savedUserId) {
-            const user = users.find((u: User) => u.id === savedUserId);
-            if (user) {
-              // 验证成功：用户存在于后台，恢复登录状态
+
+          // 从 localStorage 恢复会话：用用户名匹配（比 ID 更可靠）
+          const savedUsername = localStorage.getItem('pp_current_username')
+            || (() => {
+              // 兼容旧版：从 pp_current_user 迁移
+              const oldId = localStorage.getItem('pp_current_user');
+              if (oldId) {
+                const matched = Object.entries(LOGIN_ACCOUNTS).find(
+                  ([, acc]) => acc.id === oldId
+                );
+                if (matched) {
+                  localStorage.setItem('pp_current_username', matched[0]);
+                  localStorage.removeItem('pp_current_user');
+                  return matched[0];
+                }
+              }
+              return null;
+            })();
+
+          if (savedUsername) {
+            // 验证：用户必须存在于 LOGIN_ACCOUNTS 且存在于后台用户列表
+            const validAccount = LOGIN_ACCOUNTS[savedUsername];
+            const user = users.find((u: User) => u.name === savedUsername);
+            if (validAccount && user) {
+              // 验证成功
               set({ currentUser: user, isLoggedIn: true });
             } else {
-              // 验证失败：用户不存在于后台，清除残留会话
+              // 验证失败，清除残留会话
+              localStorage.removeItem('pp_current_username');
               localStorage.removeItem('pp_current_user');
               set({ currentUser: null, isLoggedIn: false });
             }

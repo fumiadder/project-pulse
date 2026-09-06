@@ -221,11 +221,10 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* Footer hint */}
+          {/* Footer */}
           <div className="mt-6 text-center">
-            <p className="text-[10px] text-text-muted">
-              <i className="fas fa-info-circle mr-1" />
-              测试账号: 唐宝 / 唐宝, 周刚 / 周刚
+            <p className="text-[10px] text-text-muted/50">
+              &copy; {new Date().getFullYear()} Project Pulse
             </p>
           </div>
         </div>

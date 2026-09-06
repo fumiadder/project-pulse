@@ -71,8 +71,9 @@ const pageComponents: Record<string, React.LazyExoticComponent<() => ReactNode>>
 };
 
 function App() {
-  const { isLoggedIn, loadUsers } = useUserStore();
+  const { isLoggedIn, currentUser, loadUsers } = useUserStore();
   const { activePage } = useUIStore();
+  const [authReady, setAuthReady] = useState(false);
 
   // Global ProgressEditorModal state for Ctrl+N shortcut
   const [globalProgressOpen, setGlobalProgressOpen] = useState(false);
@@ -80,9 +81,9 @@ function App() {
   // 定时提醒：检查待办提醒时间，发送浏览器通知
   useReminder();
 
-  // On mount: load users
+  // On mount: load users and validate session
   useEffect(() => {
-    loadUsers();
+    loadUsers().finally(() => setAuthReady(true));
   }, []);
 
   // Ctrl+N (or Cmd+N on Mac) keyboard shortcut to open ProgressEditorModal
@@ -102,8 +103,20 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // Not logged in -> show login page
-  if (!isLoggedIn) {
+  // 等待会话验证完成
+  if (!authReady) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-bg-primary">
+        <div className="flex flex-col items-center gap-3">
+          <i className="fas fa-satellite-dish fa-spin text-2xl text-accent-cyan" />
+          <span className="text-xs text-text-muted">正在验证登录状态...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 未登录或 currentUser 为空 -> 显示登录页
+  if (!isLoggedIn || !currentUser) {
     return <LoginPage />;
   }
 

@@ -61,15 +61,13 @@ export const useUserStore = create<UserStore>()(
           set({ users: [...currentUsers, user] });
         }
         set({ currentUser: user, isLoggedIn: true });
+        // 只存储 user ID，不存储登录状态（登录状态必须通过验证恢复）
         localStorage.setItem('pp_current_user', account.id);
-        localStorage.setItem('pp_logged_in', 'true');
         return 'ok';
       },
 
       logout: () => {
         localStorage.removeItem('pp_current_user');
-        localStorage.removeItem('pp_logged_in');
-        localStorage.removeItem('pp_remember');
         set({ currentUser: null, isLoggedIn: false });
       },
 
@@ -83,18 +81,30 @@ export const useUserStore = create<UserStore>()(
 
       loadUsers: async () => {
         try {
+          // 清理旧版遗留的登录标记
+          localStorage.removeItem('pp_logged_in');
+          localStorage.removeItem('pp_remember');
+          
           const res = await api.listUsers();
           const users = res.data?.users ?? (Array.isArray(res.data) ? res.data : []) ?? [];
           set({ users });
-          // Restore session
+          // 从 localStorage 恢复会话：仅当用户在后台数据中存在时才恢复
           const savedUserId = localStorage.getItem('pp_current_user');
-          const isLoggedIn = localStorage.getItem('pp_logged_in');
-          if (isLoggedIn && savedUserId) {
+          if (savedUserId) {
             const user = users.find((u: User) => u.id === savedUserId);
-            if (user) set({ currentUser: user, isLoggedIn: true });
+            if (user) {
+              // 验证成功：用户存在于后台，恢复登录状态
+              set({ currentUser: user, isLoggedIn: true });
+            } else {
+              // 验证失败：用户不存在于后台，清除残留会话
+              localStorage.removeItem('pp_current_user');
+              set({ currentUser: null, isLoggedIn: false });
+            }
           }
         } catch (e) {
           console.error('Failed to load users:', e);
+          // API 加载失败时，不恢复任何会话
+          set({ isLoggedIn: false });
         }
       },
 
@@ -123,7 +133,8 @@ export const useUserStore = create<UserStore>()(
     }),
     {
       name: 'pp-user-store',
-      partialize: (state) => ({ isLoggedIn: state.isLoggedIn }),
+      // 不持久化任何状态：登录状态必须通过 loadUsers() 验证后恢复
+      partialize: () => ({}),
     }
   )
 );

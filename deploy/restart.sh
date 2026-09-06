@@ -60,10 +60,28 @@ fi
 echo "[7/8] 安装 API 依赖..."
 cd "$DEPLOY_DIR/api"
 rm -rf node_modules
+
+# better-sqlite3 是原生模块，需要编译工具，先检查
+if ! command -v gcc >/dev/null 2>&1 || ! command -v make >/dev/null 2>&1; then
+  echo "  检测到缺少编译工具，尝试安装 build-essential..."
+  apt-get update -qq && apt-get install -y -qq build-essential python3 >/dev/null 2>&1 || {
+    echo "  ⚠️  无法安装编译工具，请手动执行: apt-get install -y build-essential python3"
+  }
+fi
+
 timeout 180 npm install --production $NPM_FLAGS || {
   echo "❌ API 安装超时或失败，清理后重试..."
   rm -rf node_modules package-lock.json
   timeout 180 npm install --production $NPM_FLAGS
+}
+
+# 验证 better-sqlite3 是否可用
+echo "  验证 better-sqlite3..."
+node -e "require('better-sqlite3')" 2>&1 && echo "  ✓ better-sqlite3 正常" || {
+  echo "  ❌ better-sqlite3 加载失败，尝试重新编译..."
+  npm rebuild better-sqlite3 2>&1 || {
+    echo "  ❌ 编译失败，请检查是否安装了 build-essential 和 python3"
+  }
 }
 
 # 8. 重启服务
@@ -80,11 +98,20 @@ if [ -f "$DEPLOY_DIR/api/.env" ]; then
   set +a
 fi
 
+# 确保日志目录存在
+mkdir -p /var/log
+
 DB_PATH="$DB_PATH" FEISHU_APP_ID="$FEISHU_APP_ID" FEISHU_APP_SECRET="$FEISHU_APP_SECRET" \
   nohup node server.js > /var/log/pp-api.log 2>&1 &
 sleep 3
 
 # 验证
 HEALTH=$(curl -s http://localhost:3080/api/health 2>&1)
-echo "=== 完成! API: $HEALTH ==="
+if echo "$HEALTH" | grep -q "ok"; then
+  echo "=== 完成! API 运行正常 ==="
+else
+  echo "=== ⚠️  API 可能未启动成功 ==="
+  echo "=== 最近 20 行错误日志 ==="
+  tail -20 /var/log/pp-api.log 2>/dev/null || echo "  无日志"
+fi
 echo "=== 数据库: $DB_PATH ==="

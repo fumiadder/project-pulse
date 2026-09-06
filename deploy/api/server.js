@@ -158,9 +158,11 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const now = () => new Date().toISOString();
 
 // Helper: sanitize row for SQLite (convert non-primitives to JSON strings)
-function sanitizeRow(row) {
+function sanitizeRow(row, defaults) {
+  // 先合并默认值，确保 better-sqlite3 命名参数不会缺失
+  const merged = defaults ? { ...defaults, ...row } : { ...row };
   const out = {};
-  for (const [k, v] of Object.entries(row)) {
+  for (const [k, v] of Object.entries(merged)) {
     if (v === null || v === undefined) {
       out[k] = null;
     } else if (typeof v === 'boolean') {
@@ -523,12 +525,18 @@ app.put('/api/todos', (req, res) => {
       completedAt=excluded.completedAt,
       updatedAt=excluded.updatedAt
   `);
+  const todoDefaults = {
+    id: null, userId: null, title: '', description: null, category: null,
+    tags: null, priority: 'medium', status: 'pending', dueDate: null,
+    reminderTime: null, images: null, pinned: 0, subtasks: '[]',
+    completedAt: null, createdAt: null, updatedAt: null
+  };
   const tx = db.transaction((rows) => {
     for (const r of rows) {
       if (!r.id) r.id = uuidv4();
       if (!r.createdAt) r.createdAt = now();
       r.updatedAt = now();
-      insert.run(sanitizeRow(r));
+      insert.run(sanitizeRow(r, todoDefaults));
     }
   });
   tx(items);
@@ -573,12 +581,16 @@ app.put('/api/checkins', (req, res) => {
       history=excluded.history,
       updatedAt=excluded.updatedAt
   `);
+  const checkinDefaults = {
+    id: null, userId: null, name: '', emoji: '✓', color: '#4a9a7a',
+    streak: 0, lastDoneDate: null, history: '[]', createdAt: null, updatedAt: null
+  };
   const tx = db.transaction((rows) => {
     for (const r of rows) {
       if (!r.id) r.id = uuidv4();
       if (!r.createdAt) r.createdAt = now();
       r.updatedAt = now();
-      insert.run(sanitizeRow(r));
+      insert.run(sanitizeRow(r, checkinDefaults));
     }
   });
   tx(items);
@@ -684,7 +696,13 @@ app.post('/api/sync/full', (req, res) => {
         images=excluded.images, pinned=excluded.pinned, subtasks=excluded.subtasks,
         completedAt=excluded.completedAt, updatedAt=excluded.updatedAt
     `);
-    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
+    const todoDefaults = {
+      id: null, userId: null, title: '', description: null, category: null,
+      tags: null, priority: 'medium', status: 'pending', dueDate: null,
+      reminderTime: null, images: null, pinned: 0, subtasks: '[]',
+      completedAt: null, createdAt: null, updatedAt: null
+    };
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r, todoDefaults)); });
     tx(tArr);
   }
   const { checkins: cArr } = req.body || {};
@@ -696,7 +714,11 @@ app.post('/api/sync/full', (req, res) => {
         userId=excluded.userId, name=excluded.name, emoji=excluded.emoji, color=excluded.color,
         streak=excluded.streak, lastDoneDate=excluded.lastDoneDate, history=excluded.history, updatedAt=excluded.updatedAt
     `);
-    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r)); });
+    const checkinDefaults = {
+      id: null, userId: null, name: '', emoji: '✓', color: '#4a9a7a',
+      streak: 0, lastDoneDate: null, history: '[]', createdAt: null, updatedAt: null
+    };
+    const tx = db.transaction((rows) => { for (const r of rows) stmt.run(sanitizeRow(r, checkinDefaults)); });
     tx(cArr);
   }
   if (sObj && typeof sObj === 'object') {

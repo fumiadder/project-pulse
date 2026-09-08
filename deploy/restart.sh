@@ -65,9 +65,18 @@ node -e "require('express'); require('cors'); require('multer'); require('uuid')
 # 7. 重启服务
 echo "[7/7] 重启服务..."
 
-# 停掉旧进程
-kill $(lsof -t -i:3080) 2>/dev/null 2>&1 || true
-sleep 1
+# 停掉旧进程（多种方式确保生效）
+lsof -t -i:3080 2>/dev/null | xargs kill 2>/dev/null || true
+pkill -f "node server.js" 2>/dev/null || true
+fuser -k 3080/tcp 2>/dev/null || true
+sleep 2
+
+# 确认端口已释放
+if lsof -i:3080 2>/dev/null | grep -q LISTEN; then
+  echo "  ⚠️  端口 3080 仍被占用，强制杀进程..."
+  lsof -t -i:3080 2>/dev/null | xargs kill -9 2>/dev/null || true
+  sleep 1
+fi
 
 # 加载飞书凭证（从 .env 文件读取，如不存在则忽略）
 if [ -f "$DEPLOY_DIR/api/.env" ]; then
@@ -79,10 +88,9 @@ fi
 # 确保日志目录存在
 mkdir -p /var/log
 
-# 启动 API 服务（飞书凭证通过环境变量传入）
+# 启动 API 服务（不设置 FEISHU_BASE_TOKEN，让 feishu-client.js 使用内置默认值）
 FEISHU_APP_ID="${FEISHU_APP_ID:-}" \
 FEISHU_APP_SECRET="${FEISHU_APP_SECRET:-}" \
-FEISHU_BASE_TOKEN="${FEISHU_BASE_TOKEN:-KKJ4bGWI1aPDeJsfmRrcnmXBntc}" \
   nohup node server.js > /var/log/pp-api.log 2>&1 &
 sleep 3
 

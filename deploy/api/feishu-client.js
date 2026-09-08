@@ -7,19 +7,19 @@ const FEISHU_BASE_URL = 'https://open.feishu.cn/open-apis';
 
 // 飞书多维表格配置
 const FEISHU_CONFIG = {
-  baseToken: process.env.FEISHU_BASE_TOKEN || 'KKJ4bGWI1aPDeJsfmRrcnmXBntc',
+  baseToken: process.env.FEISHU_BASE_TOKEN || 'T2MfbUrH7aMmRSso8srcgby0nHb',
   tables: {
-    todos: 'tblGm9Ds5nzBCn64',       // 待办事项
-    subtasks: 'tblNAmk9g3WqwMeD',    // 子任务
-    projects: 'tblt3gyVjXYIwASX',    // 项目
-    settings: 'tbl0iT1Cgc42jC4M',    // 设置
+    todos: 'tblJK5Qq3cvRgDXN',       // 待办事项
+    subtasks: 'tblInXP8cl9AjfeQ',    // 子任务
+    projects: 'tblxpPkTm0bav6Pt',    // 项目
+    settings: 'tblWbxUvo4vPFrwk',    // 设置
   }
 };
 
 // 默认凭证（环境变量不可用时的兜底）
 const DEFAULT_CREDENTIALS = {
-  appId: 'cli_a9477853f6381cd4',
-  appSecret: 'LtBbpX8UAcBcmA9g96fUkeW8lQx310Hm'
+  appId: 'cli_aa2aa85de9b8dcc4',
+  appSecret: 'oGHqb2zEgCFXNrEJ7TEsog0mi8NXl2Gq'
 };
 
 // Token 缓存
@@ -224,9 +224,9 @@ function todoToFeishuFields(todo) {
 
   if (todo.title !== undefined) fields['标题'] = todo.title || '';
   if (todo.description !== undefined) fields['描述'] = todo.description || '';
-  if (todo.category !== undefined) fields['分类'] = todo.category ? [todo.category] : [];
-  if (todo.priority !== undefined) fields['优先级'] = todo.priority ? [todo.priority] : [];
-  if (todo.status !== undefined) fields['状态'] = todo.status ? [todo.status] : [];
+  if (todo.category !== undefined) fields['分类'] = todo.category || '';
+  if (todo.priority !== undefined) fields['优先级'] = todo.priority || '';
+  if (todo.status !== undefined) fields['状态'] = todo.status || '';
   if (todo.dueDate !== undefined) fields['截止日期'] = todo.dueDate ? new Date(todo.dueDate).getTime() : null;
   if (todo.reminderTime !== undefined) fields['提醒配置'] = todo.reminderTime || '';
   if (todo.pinned !== undefined) fields['置顶'] = !!todo.pinned;
@@ -324,8 +324,8 @@ function projectToFeishuFields(project) {
 
   if (project.name !== undefined) fields['项目名'] = project.name || '';
   if (project.desc !== undefined) fields['描述'] = project.desc || project.description || '';
-  if (project.priority !== undefined) fields['优先级'] = project.priority ? [project.priority] : [];
-  if (project.status !== undefined) fields['状态'] = project.status ? [project.status] : [];
+  if (project.priority !== undefined) fields['优先级'] = project.priority || '';
+  if (project.status !== undefined) fields['状态'] = project.status || '';
   if (project.startDate !== undefined) fields['开始日期'] = project.startDate ? new Date(project.startDate).getTime() : null;
   if (project.endDate !== undefined) fields['结束日期'] = project.endDate ? new Date(project.endDate).getTime() : null;
   if (project.progress !== undefined) fields['进度'] = Number(project.progress) || 0;

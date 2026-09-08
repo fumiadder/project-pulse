@@ -110,32 +110,15 @@ app.put('/api/todos', async (req, res) => {
       if (!item.createdAt) item.createdAt = nowTime;
       item.updatedAt = nowTime;
 
-      if (item.id && !item.id.startsWith('record')) {
-        // 已有记录：搜索是否存在于飞书
-        try {
-          const existing = await feishu.searchRecords('todos', {
-            conjunction: 'and',
-            conditions: []
-          });
-          const found = existing.find(r => r.record_id === item.id);
-          if (found) {
-            // 更新
-            const fields = feishu.todoToFeishuFields(item);
-            const updated = await feishu.updateRecord('todos', item.id, fields);
-            results.push(feishu.feishuToTodo(updated));
-            continue;
-          }
-        } catch {
-          // 搜索失败，尝试直接更新
-        }
-        // 尝试直接作为 record_id 更新
+      // 如果有 ID（以 rec 开头），直接尝试更新
+      if (item.id && item.id.startsWith('rec')) {
         try {
           const fields = feishu.todoToFeishuFields(item);
           const updated = await feishu.updateRecord('todos', item.id, fields);
           results.push(feishu.feishuToTodo(updated));
           continue;
         } catch {
-          // 更新失败，创建新记录
+          // 更新失败（记录不存在），创建新记录
         }
       }
 

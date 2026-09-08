@@ -278,12 +278,32 @@ function feishuToTodo(record) {
     tags = f['标签JSON'] ? JSON.parse(f['标签JSON']) : [];
   } catch { tags = []; }
 
-  // 处理 select 字段（返回数组，取第一个）
+  // 处理 select 字段（飞书可能返回字符串、数组、或对象）
   const getSelect = (v) => {
     if (!v) return '';
-    if (Array.isArray(v)) return v[0]?.name || v[0] || '';
     if (typeof v === 'string') return v;
-    if (v.name) return v.name;
+    if (Array.isArray(v)) {
+      const item = v[0];
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      return item.name || item.text || '';
+    }
+    if (typeof v === 'object') return v.name || v.text || '';
+    return '';
+  };
+
+  // 处理纯文本字段（确保返回字符串，不返回对象）
+  const getString = (v) => {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number') return String(v);
+    if (Array.isArray(v)) {
+      const item = v[0];
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      return item.text || item.name || '';
+    }
+    if (typeof v === 'object') return v.text || v.name || '';
     return '';
   };
 
@@ -297,15 +317,15 @@ function feishuToTodo(record) {
 
   return {
     id: record.record_id,
-    userId: f['用户ID'] || '',
-    title: f['标题'] || '',
-    description: f['描述'] || '',
+    userId: getString(f['用户ID']),
+    title: getString(f['标题']),
+    description: getString(f['描述']),
     category: getSelect(f['分类']),
     tags: tags,
     priority: getSelect(f['优先级']) || 'medium',
     status: getSelect(f['状态']) || 'pending',
     dueDate: getDatetime(f['截止日期']),
-    reminderTime: f['提醒配置'] || null,
+    reminderTime: getString(f['提醒配置']) || null,
     images: images,
     pinned: f['置顶'] === true || f['置顶'] === 1,
     subtasks: subtasks,
@@ -342,9 +362,27 @@ function feishuToProject(record) {
   const now = new Date().toISOString();
   const getSelect = (v) => {
     if (!v) return '';
-    if (Array.isArray(v)) return v[0]?.name || v[0] || '';
     if (typeof v === 'string') return v;
-    if (v.name) return v.name;
+    if (Array.isArray(v)) {
+      const item = v[0];
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      return item.name || item.text || '';
+    }
+    if (typeof v === 'object') return v.name || v.text || '';
+    return '';
+  };
+  const getString = (v) => {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number') return String(v);
+    if (Array.isArray(v)) {
+      const item = v[0];
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      return item.text || item.name || '';
+    }
+    if (typeof v === 'object') return v.text || v.name || '';
     return '';
   };
   const getDatetime = (v) => {
@@ -356,16 +394,16 @@ function feishuToProject(record) {
 
   return {
     id: record.record_id,
-    userId: f['用户ID'] || '',
-    name: f['项目名'] || '',
-    description: f['描述'] || '',
-    desc: f['描述'] || '',
+    userId: getString(f['用户ID']),
+    name: getString(f['项目名']),
+    description: getString(f['描述']),
+    desc: getString(f['描述']),
     priority: getSelect(f['优先级']) || 'medium',
     status: getSelect(f['状态']) || 'planning',
     startDate: getDatetime(f['开始日期']),
     endDate: getDatetime(f['结束日期']),
     progress: f['进度'] || 0,
-    tags: f['标签'] ? (typeof f['标签'] === 'string' ? f['标签'].split(',') : f['标签']) : [],
+    tags: f['标签'] ? (typeof f['标签'] === 'string' ? f['标签'].split(',') : (Array.isArray(f['标签']) ? f['标签'] : [])) : [],
     createdAt: getDatetime(f['创建时间']) || now,
     updatedAt: getDatetime(f['更新时间']) || now
   };

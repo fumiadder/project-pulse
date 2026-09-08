@@ -16,6 +16,12 @@ const FEISHU_CONFIG = {
   }
 };
 
+// 默认凭证（环境变量不可用时的兜底）
+const DEFAULT_CREDENTIALS = {
+  appId: 'cli_a9477853f6381cd4',
+  appSecret: 'LtBbpX8UAcBcmA9g96fUkeW8lQx310Hm'
+};
+
 // Token 缓存
 let tokenCache = { token: null, expiresAt: 0 };
 
@@ -33,7 +39,7 @@ function setRuntimeCredentials(creds) {
 
 /**
  * 获取飞书应用凭证
- * 优先级：运行时注入 > 环境变量
+ * 优先级：运行时注入 > 环境变量 > 默认值
  */
 function getCredentials() {
   // 优先使用运行时注入的凭证
@@ -50,7 +56,8 @@ function getCredentials() {
       appSecret: process.env.FEISHU_APP_SECRET
     };
   }
-  return null;
+  // 使用默认凭证兜底
+  return DEFAULT_CREDENTIALS;
 }
 
 /**

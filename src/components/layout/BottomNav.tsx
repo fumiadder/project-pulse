@@ -1,4 +1,5 @@
 import { useUIStore } from '@/stores/useUIStore';
+import { haptic } from '@/utils/haptic';
 
 const bottomNavItems = [
   { key: 'workbench', label: '工作台', icon: 'fa-tasks' },
@@ -12,6 +13,7 @@ export function BottomNav() {
   const { activePage, setActivePage } = useUIStore();
 
   const handleNavClick = (key: string) => {
+    haptic(activePage === key ? 'light' : 'medium');
     setActivePage(key);
   };
 

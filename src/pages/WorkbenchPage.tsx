@@ -14,6 +14,7 @@ import { WeeklyHeatmap } from '@/components/shared/WeeklyHeatmap';
 import { SortableWorkbench, type WidgetConfig } from '@/components/shared/SortableWorkbench';
 import { getReminderLabel, parseReminderConfig } from '@/utils/reminder';
 import { api } from '@/services/api';
+import { haptic } from '@/utils/haptic';
 import type { Todo, CheckIn } from '@/types';
 
 // ============================================
@@ -185,7 +186,7 @@ function TodoCard({
         {/* 顶部：复选框 + 标题 + 操作按钮 */}
         <div className="flex items-start gap-2.5">
           <button
-            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            onClick={(e) => { e.stopPropagation(); haptic(todo.status === 'completed' ? 'light' : 'success'); onToggle(); }}
             className={`mt-0.5 flex h-6 w-6 md:h-5 md:w-5 shrink-0 items-center justify-center rounded border transition-all ${
               todo.status === 'completed'
                 ? 'border-accent-green bg-accent-green/20 text-accent-green'
@@ -201,7 +202,7 @@ function TodoCard({
 
           {/* 置顶按钮 — 始终可见 */}
           <button
-            onClick={(e) => { e.stopPropagation(); onPin(); }}
+            onClick={(e) => { e.stopPropagation(); haptic('light'); onPin(); }}
             className={`flex h-8 w-8 md:h-6 md:w-6 shrink-0 items-center justify-center rounded transition-all ${
               todo.pinned
                 ? 'text-accent-orange bg-accent-orange/10'
@@ -213,7 +214,7 @@ function TodoCard({
           </button>
 
           <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            onClick={(e) => { e.stopPropagation(); haptic('warning'); onDelete(); }}
             className="flex h-8 w-8 md:h-6 md:w-6 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-all hover:bg-accent-red/10 hover:text-accent-red group-hover:opacity-100 md:group-hover:opacity-100 max-md:opacity-60"
             title="删除"
           >
@@ -253,7 +254,7 @@ function TodoCard({
                 <div key={st.id} className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={(e) => { e.stopPropagation(); onToggleSubtask(st.id); }}
+                      onClick={(e) => { e.stopPropagation(); haptic('light'); onToggleSubtask(st.id); }}
                       className={`flex h-4 w-4 md:h-3.5 md:w-3.5 shrink-0 items-center justify-center rounded border text-[8px] ${
                         st.done ? 'border-accent-green bg-accent-green/20 text-accent-green' : 'border-border-hover text-transparent'
                       }`}
@@ -413,10 +414,10 @@ function CheckinCard({
 
       {/* 操作按钮 */}
       <div className="flex items-center gap-1 opacity-60 md:opacity-0 transition-opacity md:group-hover:opacity-100">
-        <button onClick={onEdit} className="flex h-8 w-8 md:h-6 md:w-6 items-center justify-center rounded text-text-muted hover:text-accent-cyan active:scale-95" title="编辑">
-          <i className="fas fa-pen text-[10px]" />
+        <button onClick={(e) => { e.stopPropagation(); haptic('light'); onEdit(); }} className="flex h-8 w-8 md:h-6 md:w-6 items-center justify-center rounded text-text-muted hover:text-accent-cyan active:scale-95" title="编辑">
+          <i className="fas fa-pen text-xs" />
         </button>
-        <button onClick={onDelete} className="flex h-8 w-8 md:h-6 md:w-6 items-center justify-center rounded text-text-muted hover:text-accent-red active:scale-95" title="删除">
+        <button onClick={(e) => { e.stopPropagation(); haptic('warning'); onDelete(); }} className="flex h-8 w-8 md:h-6 md:w-6 items-center justify-center rounded text-text-muted hover:text-accent-red active:scale-95" title="删除">
           <i className="fas fa-trash text-[10px]" />
         </button>
       </div>
@@ -430,7 +431,7 @@ function CheckinCard({
 function QuickAddButton({ icon, label, color, onClick }: { icon: string; label: string; color: string; onClick: () => void }) {
   return (
     <button
-      onClick={onClick}
+      onClick={() => { haptic('light'); onClick(); }}
       className="flex flex-col items-center gap-1.5 rounded-lg border border-border-custom bg-bg-secondary p-2.5 md:p-3 min-h-[48px] transition-all hover:border-border-hover hover:shadow-md active:scale-95 no-select-mobile"
     >
       <div className={`flex h-9 w-9 md:h-9 md:w-9 items-center justify-center rounded-lg ${color}`}>
@@ -1035,7 +1036,7 @@ export function WorkbenchPage() {
                 ].map((opt) => (
                   <button
                     key={opt.v}
-                    onClick={() => setFilterStatus(opt.v)}
+                    onClick={() => { haptic('light'); setFilterStatus(opt.v); }}
                     className={`shrink-0 rounded-full px-3.5 py-2 md:px-2.5 md:py-1 text-xs md:text-xs transition-colors ${
                       filterStatus === opt.v ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                     }`}
@@ -1047,7 +1048,7 @@ export function WorkbenchPage() {
               <div className="hidden md:block h-4 w-px bg-border-custom shrink-0" />
               <div className="flex items-center gap-1 shrink-0">
                 <button
-                  onClick={() => setFilterCategory('all')}
+                  onClick={() => { haptic('light'); setFilterCategory('all'); }}
                   className={`shrink-0 rounded-full px-3.5 py-2 md:px-2.5 md:py-1 text-xs md:text-xs transition-colors ${
                     filterCategory === 'all' ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                   }`}
@@ -1057,7 +1058,7 @@ export function WorkbenchPage() {
                 {EISENHOWER_CATEGORIES.map((cat) => (
                   <button
                     key={cat.value}
-                    onClick={() => setFilterCategory(cat.value)}
+                    onClick={() => { haptic('light'); setFilterCategory(cat.value); }}
                     className={`shrink-0 rounded-full px-3.5 py-2 md:px-2.5 md:py-1 text-xs md:text-xs transition-colors ${
                       filterCategory === cat.value ? 'bg-accent-cyan/20 text-accent-cyan font-medium' : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary'
                     }`}
@@ -1068,7 +1069,7 @@ export function WorkbenchPage() {
               </div>
               <div className="hidden md:block h-4 w-px bg-border-custom shrink-0" />
               <button
-                onClick={() => setShowCompleted(!showCompleted)}
+                onClick={() => { haptic('light'); setShowCompleted(!showCompleted); }}
                 className={`flex shrink-0 items-center gap-1 rounded-full px-3.5 py-2 md:px-2.5 md:py-1 text-xs md:text-xs transition-colors ${
                   showCompleted ? 'text-text-muted hover:text-text-primary' : 'text-accent-cyan bg-accent-cyan/15 font-medium'
                 }`}

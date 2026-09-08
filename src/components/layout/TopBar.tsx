@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useUIStore } from '@/stores/useUIStore';
 import { NotificationCenter } from './NotificationCenter';
+import { haptic } from '@/utils/haptic';
 
 interface TopBarProps {
   onMenuToggle: () => void;
@@ -63,7 +64,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
     <header className="mobile-header-h flex h-14 shrink-0 items-center border-b border-border-custom bg-bg-secondary/80 backdrop-blur-md px-1.5 md:px-6 safe-area-top">
       {/* Left: Menu Toggle (mobile only) */}
       <button
-        onClick={onMenuToggle}
+        onClick={() => { haptic('light'); onMenuToggle(); }}
         className="mr-0.5 flex h-11 w-11 md:h-9 md:w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-tertiary active:bg-bg-tertiary hover:text-text-primary transition-colors md:hidden no-select-mobile shrink-0"
         aria-label="打开菜单"
       >
@@ -79,7 +80,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
       <div className="flex items-center gap-1 md:gap-3 shrink-0">
         {/* Mobile Preview Toggle (desktop only) */}
         <button
-          onClick={toggleMobilePreview}
+          onClick={() => { haptic('light'); toggleMobilePreview(); }}
           className={`hidden md:flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs transition-all ${
             mobilePreview
               ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
@@ -99,7 +100,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
 
         {/* Export Button - icon only on mobile */}
         <button
-          onClick={handleExport}
+          onClick={() => { haptic('medium'); handleExport(); }}
           className="flex h-11 w-11 md:h-9 md:w-auto items-center justify-center gap-1.5 rounded-lg border border-border-custom bg-bg-tertiary/50 md:px-3 text-xs text-text-secondary hover:border-accent-cyan/30 hover:text-accent-cyan transition-all no-select-mobile active:scale-95 shrink-0"
           title="导出数据"
           aria-label="导出数据"

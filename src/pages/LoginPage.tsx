@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useUserStore } from '@/stores/useUserStore';
+import { haptic } from '@/utils/haptic';
 
 const REMEMBER_KEY = 'pp_remember_credentials';
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -53,7 +54,9 @@ export function LoginPage() {
       const result = await login(username.trim(), password);
       if (result !== 'ok') {
         setError(ERROR_MESSAGES[result] ?? '登录失败');
+        haptic('error');
       } else {
+        haptic('success');
         if (remember) {
           const creds: SavedCredentials = {
             username: username.trim(),

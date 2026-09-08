@@ -1,5 +1,6 @@
 import { useUIStore } from '@/stores/useUIStore';
 import { useUserStore } from '@/stores/useUserStore';
+import { haptic } from '@/utils/haptic';
 import {
   Tooltip,
   TooltipContent,
@@ -30,12 +31,15 @@ export function Sidebar({ collapsed, onItemClick }: SidebarProps) {
   const { currentUser, logout } = useUserStore();
 
   const handleNavClick = (page: string) => {
+    haptic(activePage === page ? 'light' : 'medium');
     setActivePage(page);
     onItemClick?.();
   };
 
   const handleLogout = () => {
+    haptic('warning');
     if (window.confirm('确定要退出登录吗？')) {
+      haptic('medium');
       logout();
     }
   };

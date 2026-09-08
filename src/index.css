@@ -822,4 +822,192 @@
   }
 }
 
+/* ============================================
+   Haptic Feedback Visual Enhancement
+   按键微弱震动感的视觉反馈（配合 navigator.vibrate）
+   ============================================ */
+
+/* 移动端按钮按下时的涟漪效果 */
+@media (max-width: 767px) {
+  button:active:not(:disabled),
+  [role="button"]:active:not(:disabled) {
+    transform: scale(0.96);
+    transition: transform 0.08s ease;
+  }
+
+  /* 卡片点击时的反馈 */
+  .card-glass:active,
+  [class*="rounded-xl"]:active:not(button) {
+    transform: scale(0.985);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* 移动端预览模式也应用同样的效果 */
+.mobile-preview-container button:active:not(:disabled),
+.mobile-preview-container [role="button"]:active:not(:disabled) {
+  transform: scale(0.96);
+  transition: transform 0.08s ease;
+}
+
+/* ============================================
+   Additional Mobile Polish
+   ============================================ */
+
+/* 移动端：表单输入框增大 */
+@media (max-width: 767px) {
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="search"],
+  textarea,
+  select {
+    min-height: 2.75rem;
+    font-size: 16px; /* 防止 iOS 缩放 */
+  }
+}
+
+/* 移动端：对话框/弹窗适配 */
+@media (max-width: 767px) {
+  .fixed.inset-0:not([class*="z-\["]) {
+    padding: 0.5rem;
+  }
+
+  /* 对话框内容占满宽度 */
+  [class*="fixed"][class*="inset-0"] [class*="w-full"][class*="max-w"] {
+    max-width: 100% !important;
+    margin: auto;
+  }
+}
+
+/* 移动端预览模式：表单输入框 */
+.mobile-preview-container input[type="text"],
+.mobile-preview-container input[type="password"],
+.mobile-preview-container input[type="email"],
+.mobile-preview-container textarea,
+.mobile-preview-container select {
+  min-height: 2.75rem;
+  font-size: 16px;
+}
+
+/* 移动端：卡片间距更紧凑 */
+@media (max-width: 767px) {
+  .gap-4 { gap: 0.75rem !important; }
+  .gap-6 { gap: 1rem !important; }
+  .p-4 { padding: 0.75rem !important; }
+  .p-6 { padding: 0.875rem !important; }
+}
+
+/* 移动端：用户管理页面卡片网格 */
+@media (max-width: 767px) {
+  .sm\:grid-cols-2,
+  .sm\:grid-cols-3 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  .lg\:grid-cols-3,
+  .xl\:grid-cols-4 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+}
+
+/* 移动端预览模式：用户管理卡片网格 */
+.mobile-preview-container .sm\:grid-cols-2,
+.mobile-preview-container .sm\:grid-cols-3 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+.mobile-preview-container .lg\:grid-cols-3,
+.mobile-preview-container .xl\:grid-cols-4 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+/* 移动端：flex-row 在小屏幕自动换行 */
+@media (max-width: 767px) {
+  .md\:flex-row {
+    flex-direction: column !important;
+  }
+  .md\:flex-row .md\:items-center {
+    align-items: flex-start !important;
+  }
+}
+
+/* 移动端预览模式同样 */
+.mobile-preview-container .md\:flex-row {
+  flex-direction: column !important;
+}
+
+/* 移动端：防止水平溢出 */
+@media (max-width: 767px) {
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* 表格容器水平滚动 */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 移动端预览模式：防止水平溢出 */
+.mobile-preview-container {
+  overflow-x: hidden;
+}
+
+/* 移动端：长文本截断 */
+@media (max-width: 767px) {
+  .truncate-mobile {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+}
+
+/* 移动端：底部导航的触觉反馈视觉 */
+@media (max-width: 767px) {
+  nav.mobile-bottom-nav button:active {
+    transform: scale(0.92);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* 移动端预览：底部导航 */
+.mobile-preview-container nav.mobile-bottom-nav button:active {
+  transform: scale(0.92);
+  transition: transform 0.1s ease;
+}
+
+/* 移动端：筛选栏 pill 按钮按下效果 */
+@media (max-width: 767px) {
+  .filter-bar-mobile button:active,
+  .dashboard-filter-bar button:active {
+    transform: scale(0.94);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* 移动端预览：筛选栏 */
+.mobile-preview-container .filter-bar-mobile button:active,
+.mobile-preview-container .dashboard-filter-bar button:active {
+  transform: scale(0.94);
+  transition: transform 0.1s ease;
+}
+
+/* 移动端：待办卡片按下效果 */
+@media (max-width: 767px) {
+  .card-glass:active,
+  [class*="rounded-xl"][class*="border"]:active:not(button) {
+    transform: scale(0.98);
+    transition: transform 0.12s ease;
+  }
+}
+
+/* 移动端预览：待办卡片 */
+.mobile-preview-container .card-glass:active,
+.mobile-preview-container [class*="rounded-xl"][class*="border"]:active:not(button) {
+  transform: scale(0.98);
+  transition: transform 0.12s ease;
+}
+
 

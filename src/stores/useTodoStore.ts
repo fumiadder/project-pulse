@@ -99,17 +99,37 @@ export const useTodoStore = create<TodoStore>((set, get) => ({
     if (!res.success) {
       throw new Error(res.error || '创建待办失败');
     }
-    set((state) => ({ todos: [todo, ...safeTodos(state)] }));
+    // 服务器返回 data 可能是数组或单个对象
+    const saved = Array.isArray(res.data) ? res.data[0] : res.data;
+    const savedTodo = saved ?? todo;
+    set((state) => ({ todos: [savedTodo, ...safeTodos(state)] }));
   },
 
   updateTodo: async (todo) => {
-    const res = await api.putTodo(todo);
-    if (!res.success) {
-      throw new Error(res.error || '保存待办失败');
-    }
+    // 乐观更新：先更新本地状态，再保存到服务器
+    const prevTodos = get().todos;
     set((state) => ({
       todos: safeTodos(state).map((t) => (t.id === todo.id ? todo : t)),
     }));
+    try {
+      const res = await api.putTodo(todo);
+      if (!res.success) {
+        set({ todos: prevTodos });
+        throw new Error(res.error || '保存待办失败');
+      }
+      const saved = Array.isArray(res.data) ? res.data[0] : res.data;
+      const savedTodo = saved ?? todo;
+      if (savedTodo.id !== todo.id) {
+        set((state) => ({
+          todos: safeTodos(state).map((t) =>
+            t.id === todo.id ? savedTodo : (t.id === savedTodo.id ? savedTodo : t)
+          ),
+        }));
+      }
+    } catch (err) {
+      set({ todos: prevTodos });
+      throw err;
+    }
   },
 
   deleteTodo: async (id) => {

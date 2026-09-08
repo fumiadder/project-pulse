@@ -260,22 +260,40 @@ function feishuToTodo(record) {
   const f = record.fields || {};
   const now = new Date().toISOString();
 
-  // 解析子任务
+  // getString: 从飞书返回值中提取纯文本（飞书多行文本返回 [{text, type}] 格式）
+  const getString = (v) => {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number') return String(v);
+    if (Array.isArray(v)) {
+      const item = v[0];
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      return item.text || item.name || '';
+    }
+    if (typeof v === 'object') return v.text || v.name || '';
+    return '';
+  };
+
+  // 解析子任务（飞书返回 [{text: "json string", type: "text"}]，需先提取文本）
   let subtasks = [];
   try {
-    subtasks = f['子任务JSON'] ? JSON.parse(f['子任务JSON']) : [];
+    const raw = getString(f['子任务JSON']);
+    subtasks = raw ? JSON.parse(raw) : [];
   } catch { subtasks = []; }
 
   // 解析图片
   let images = [];
   try {
-    images = f['图片Base64'] ? JSON.parse(f['图片Base64']) : [];
+    const raw = getString(f['图片Base64']);
+    images = raw ? JSON.parse(raw) : [];
   } catch { images = []; }
 
   // 解析标签
   let tags = [];
   try {
-    tags = f['标签JSON'] ? JSON.parse(f['标签JSON']) : [];
+    const raw = getString(f['标签JSON']);
+    tags = raw ? JSON.parse(raw) : [];
   } catch { tags = []; }
 
   // 处理 select 字段（飞书可能返回字符串、数组、或对象）
@@ -289,21 +307,6 @@ function feishuToTodo(record) {
       return item.name || item.text || '';
     }
     if (typeof v === 'object') return v.name || v.text || '';
-    return '';
-  };
-
-  // 处理纯文本字段（确保返回字符串，不返回对象）
-  const getString = (v) => {
-    if (v === null || v === undefined) return '';
-    if (typeof v === 'string') return v;
-    if (typeof v === 'number') return String(v);
-    if (Array.isArray(v)) {
-      const item = v[0];
-      if (!item) return '';
-      if (typeof item === 'string') return item;
-      return item.text || item.name || '';
-    }
-    if (typeof v === 'object') return v.text || v.name || '';
     return '';
   };
 
@@ -344,6 +347,11 @@ function projectToFeishuFields(project) {
 
   if (project.name !== undefined) fields['项目名'] = project.name || '';
   if (project.desc !== undefined) fields['描述'] = project.desc || project.description || '';
+  if (project.parentId !== undefined) fields['父项目ID'] = project.parentId || '';
+  if (project.owner !== undefined) fields['owner'] = project.owner || '';
+  if (project.color !== undefined) fields['color'] = project.color || '';
+  if (project.notes !== undefined) fields['notes'] = project.notes || '';
+  if (project.collaborators !== undefined) fields['collaborators'] = Array.isArray(project.collaborators) ? project.collaborators.join(',') : (project.collaborators || '');
   if (project.priority !== undefined) fields['优先级'] = project.priority || '';
   if (project.status !== undefined) fields['状态'] = project.status || '';
   if (project.startDate !== undefined) fields['开始日期'] = project.startDate ? new Date(project.startDate).getTime() : null;
@@ -395,9 +403,14 @@ function feishuToProject(record) {
   return {
     id: record.record_id,
     userId: getString(f['用户ID']),
+    parentId: getString(f['父项目ID']) || null,
     name: getString(f['项目名']),
     description: getString(f['描述']),
     desc: getString(f['描述']),
+    owner: getString(f['owner']),
+    color: getString(f['color']),
+    notes: getString(f['notes']),
+    collaborators: f['collaborators'] ? (typeof f['collaborators'] === 'string' ? f['collaborators'].split(',') : []) : [],
     priority: getSelect(f['优先级']) || 'medium',
     status: getSelect(f['状态']) || 'planning',
     startDate: getDatetime(f['开始日期']),

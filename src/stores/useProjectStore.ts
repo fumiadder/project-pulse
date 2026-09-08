@@ -52,15 +52,35 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     if (!res.success) {
       throw new Error(res.error || '创建项目失败');
     }
-    // 后端返回 { id, saved: true }，使用本地 project 对象确保数据完整
-    set(state => ({ projects: [...safeProjects(state), project] }));
+    const saved = Array.isArray(res.data) ? res.data[0] : res.data;
+    const savedProject = saved ?? project;
+    set(state => ({ projects: [...safeProjects(state), savedProject] }));
   },
 
   updateProject: async (project) => {
-    await api.putProject(project);
+    const prevProjects = get().projects;
     set(state => ({
       projects: safeProjects(state).map(p => p.id === project.id ? project : p),
     }));
+    try {
+      const res = await api.putProject(project);
+      if (!res.success) {
+        set({ projects: prevProjects });
+        throw new Error(res.error || '保存项目失败');
+      }
+      const saved = Array.isArray(res.data) ? res.data[0] : res.data;
+      const savedProject = saved ?? project;
+      if (savedProject.id !== project.id) {
+        set(state => ({
+          projects: safeProjects(state).map(p =>
+            p.id === project.id ? savedProject : (p.id === savedProject.id ? savedProject : p)
+          ),
+        }));
+      }
+    } catch (err) {
+      set({ projects: prevProjects });
+      throw err;
+    }
   },
 
   deleteProject: async (id) => {

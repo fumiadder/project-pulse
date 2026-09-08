@@ -7,19 +7,19 @@ const FEISHU_BASE_URL = 'https://open.feishu.cn/open-apis';
 
 // 飞书多维表格配置
 const FEISHU_CONFIG = {
-  baseToken: process.env.FEISHU_BASE_TOKEN || 'T2MfbUrH7aMmRSso8srcgby0nHb',
+  baseToken: process.env.FEISHU_BASE_TOKEN || 'QEFrbjB69ag7hdshEHFcHDzHnVb',
   tables: {
-    todos: 'tblJK5Qq3cvRgDXN',       // 待办事项
-    subtasks: 'tblInXP8cl9AjfeQ',    // 子任务
-    projects: 'tblxpPkTm0bav6Pt',    // 项目
-    settings: 'tblWbxUvo4vPFrwk',    // 设置
+    todos: 'tblSsUNdaT7BboZM',       // 待办事项
+    subtasks: 'tbliSbMEpihNRIQo',    // 子任务
+    projects: 'tblB9SB2VKz1EaRh',    // 项目
+    settings: 'tblSwmYOOlHZ6rhu',    // 设置
   }
 };
 
 // 默认凭证（环境变量不可用时的兜底）
 const DEFAULT_CREDENTIALS = {
-  appId: 'cli_aa2aa85de9b8dcc4',
-  appSecret: 'oGHqb2zEgCFXNrEJ7TEsog0mi8NXl2Gq'
+  appId: 'cli_aa2a924ce9f89cd9',
+  appSecret: 'PzsLDFoNNnFlhUVBTTXO8Ntsi3H75P2Z'
 };
 
 // Token 缓存

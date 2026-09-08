@@ -808,6 +808,27 @@ app.post('/api/migrate/kv', (req, res) => {
 });
 
 // ============================================
+// 静态文件服务（前端构建产物）
+// ============================================
+
+// dist 目录在上级目录（部署结构: /opt/project-pulse/dist + /opt/project-pulse/api/）
+const distPath = path.join(__dirname, '..', 'dist');
+
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  // SPA 回退：所有非 API 路由返回 index.html
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ success: false, error: 'API not found' });
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+  console.log(`Static files served from: ${distPath}`);
+} else {
+  console.log(`Warning: dist directory not found at ${distPath}`);
+}
+
+// ============================================
 // 启动服务器
 // ============================================
 
